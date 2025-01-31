@@ -1,0 +1,18 @@
+{
+  "Matlab": {
+    "name": "Matlab",
+    "description": "Matlab",
+    "category": "Scientific",
+    "version": "1.0.0",
+    "author": "username2",
+    "last_updated": "2025-01-31"
+  },
+  "Generic": {
+    "name": "Generic",
+    "description": "Generic environment for basic jobs",
+    "category": "Basic",
+    "version": "1.0.0",
+    "author": "username5",
+    "last_updated": "2025-01-31"
+  }
+}
