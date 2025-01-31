@@ -1,3 +1,6 @@
+def get_directories(path):
+    return [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+
 def update_metadata():
     for cluster in get_directories("./"):
         if cluster.startswith("."): continue
