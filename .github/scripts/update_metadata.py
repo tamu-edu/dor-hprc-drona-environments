@@ -16,3 +16,6 @@ def update_metadata():
         
         with open(f"{cluster}/metadata.json", "w") as f:
             json.dump(metadata, f, indent=2)
+
+if __name__ == "__main__":
+    update_metadata()
