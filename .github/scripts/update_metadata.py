@@ -1,3 +1,8 @@
+import os
+import yaml
+import json
+import time
+
 def get_directories(path):
     return [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
 
@@ -14,7 +19,6 @@ def update_metadata():
                     metadata[env] = {
                         **manifest,
                         "last_updated": time.strftime("%Y-%m-%d"),
-                        "size": get_dir_size(f"{cluster}/{env}")
                     }
         
         with open(f"{cluster}/metadata.json", "w") as f:
