@@ -1,16 +1,16 @@
 {
-  "Matlab": {
-    "name": "Matlab",
-    "description": "Matlab",
+  "R-beta": {
+    "name": "R-beta",
+    "description": "R-beta environment",
     "category": "Scientific",
     "version": "1.0.0",
     "author": "",
     "last_updated": "2025-02-03"
   },
-  "Generic": {
-    "name": "Generic",
-    "description": "Generic environment",
-    "category": "generic",
+  "Matlab-beta": {
+    "name": "Matlab-beta",
+    "description": "Matlab-beta",
+    "category": "Scientific",
     "version": "1.0.0",
     "author": "",
     "last_updated": "2025-02-03"
