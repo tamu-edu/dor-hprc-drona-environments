@@ -1,0 +1,5 @@
+name: "test-row"
+description: "Test environment for row-based operations"
+category: "Testing"
+version: "1.0.0"
+author: ""

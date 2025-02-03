@@ -1,0 +1,5 @@
+name: "Abaqus.grace"
+description: "Environment for running Abaqus finite element analysis software"
+category: "Engineering"
+version: "1.0.0"
+author: ""
