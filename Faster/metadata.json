@@ -7,6 +7,14 @@
     "author": "username2",
     "last_updated": "2025-02-03"
   },
+  "Generic2": {
+    "name": "Generic2",
+    "description": "Generic environment for basic jobs",
+    "category": "Basic",
+    "version": "1.0.1",
+    "author": "username6",
+    "last_updated": "2025-02-03"
+  },
   "Generic1": {
     "name": "Generic1",
     "description": "Generic environment for basic jobs",
