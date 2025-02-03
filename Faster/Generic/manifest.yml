@@ -1,5 +1,5 @@
 name: "Generic"
-description: "Generic environment for basic jobs"
-category: "Basic"
+description: "Generic environment"
+category: "generic"
 version: "1.0.0"
-author: "username5"
+author: ""
