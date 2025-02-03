@@ -1,0 +1,26 @@
+{
+  "R": {
+    "name": "R",
+    "description": "R environment",
+    "category": "Scientific",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  },
+  "Matlab": {
+    "name": "Matlab",
+    "description": "Matlab",
+    "category": "Scientific",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  },
+  "Generic": {
+    "name": "Generic",
+    "description": "Generic environment",
+    "category": "generic",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  }
+}
