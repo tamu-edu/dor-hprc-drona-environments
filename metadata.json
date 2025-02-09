@@ -1,0 +1,93 @@
+{
+  "R-ACES": {
+    "name": "R-ACES",
+    "description": "R environment",
+    "category": "Scientific",
+    "cluster":"ACES",
+    "organization":"TAMU",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  },
+  
+  "Matlab-ACES": {
+    "name": "Matlab-ACES",
+    "description": "Matlab",
+    "category": "Scientific",
+    "cluster": "ACES",
+    "organiztion" : "TAMU",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  },
+  
+  "Generic-ACES": {
+    "name": "Generic-ACES",
+    "description": "Generic environment",
+    "category": "generic",
+    "cluster": "ACES",
+    "organization" : "TAMU",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  },
+  
+  
+  "Matlab-FASTER": {
+    "name": "Matlab-FASTER",
+    "description": "Matlab",
+    "category": "Scientific",
+    "cluster":"FASTER",
+    "organization":"TAMU",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  },
+  
+  "Generic-FASTER": {
+    "name": "Generic-FASTER",
+    "description": "Generic environment",
+    "category": "generic",
+    "cluster":"FASTER",
+    "organization":"TAMU",    
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  },
+  
+  
+  "Generic-Launch": {
+    "name": "Generic-Launch",
+    "description": "Generic environment",
+    "category": "generic",
+    "cluster":"launch",
+    "organization":"TAMU",    
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  },
+  
+  
+  "Matlab-Grace": {
+    "name": "Matlab-Grace",
+    "description": "Matlab",
+    "category": "Scientific",
+    "cluster":"grace",
+    "organization":"TAMU",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  },
+  
+  "Generic-Grace": {
+    "name": "Generic-Grace",
+    "description": "Generic environment",
+    "category": "generic",
+    "cluster":"grace",
+    "organization":"TAMU",    
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
+  }
+  
+}

@@ -7,13 +7,8 @@ def retrieve_R_driver(mpistring=""):
         return f""
 
 
-def retrieve_R_version_grace(version=""):
-    if version == "4.1.2":
-        return f"module load foss/2021b R_tamu/4.1.2"
-    elif version == "4.2.0":
-        return f"module load foss/2021b R_tamu/4.2.0"
-    else:
-        return f"module load foss/2022b R_tamu/4.3.1"
+def retrieve_R_version_aces(version=""):
+    return f"module load foss/2022b R_tamu/4.2.2"
 
 
 def retrieve_loaded_modules_grace(modules=""):
@@ -22,10 +17,12 @@ def retrieve_loaded_modules_grace(modules=""):
     else:
         return "module load foss/2023a " + modules
 
-def retrieve_tamubatch_opts(cores,memory,walltime,extra_slurm="",gpu=""):
+def retrieve_tamubatch_opts(parallel,cores,memory,walltime,extra_slurm="",gpu=""):
     options_string=""
     additional=extra_slurm + " " + gpu
     if  cores != "":
+        if parallel == "sock" and  int(cores) > 95:
+            cores="96"
         options_string=options_string+"-n " + cores + " "
     if walltime != "":
         times=walltime.split(':')
@@ -37,5 +34,14 @@ def retrieve_tamubatch_opts(cores,memory,walltime,extra_slurm="",gpu=""):
     if additional != "":
         options_string="-x '" + additional + "' " + options_string
     return f"" + options_string
+
+def check_code(parallel, cores, memory):
+    warnings = []
+    if memory == "":
+        warnings.append("Memory unspecified, using default values")
+    if parallel == "sock"
+        if cores > 95:
+            warnings.append("more than 95 cores requested for SOCK cluster. Reducing to 95 to fit on a single node")
+    return str(warnings)
 
 
