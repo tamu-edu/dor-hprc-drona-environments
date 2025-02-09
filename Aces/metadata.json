@@ -5,7 +5,7 @@
     "category": "Scientific",
     "version": "1.0.0",
     "author": "",
-    "last_updated": "2025-02-03"
+    "last_updated": "2025-02-09"
   },
   "Matlab": {
     "name": "Matlab",
@@ -13,7 +13,7 @@
     "category": "Scientific",
     "version": "1.0.0",
     "author": "",
-    "last_updated": "2025-02-03"
+    "last_updated": "2025-02-09"
   },
   "Generic": {
     "name": "Generic",
@@ -21,6 +21,6 @@
     "category": "generic",
     "version": "1.0.0",
     "author": "",
-    "last_updated": "2025-02-03"
+    "last_updated": "2025-02-09"
   }
 }
