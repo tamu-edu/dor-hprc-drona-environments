@@ -15,6 +15,16 @@
     "author": "",
     "last_updated": "2025-02-09"
   },
+
+  "Python": {
+    "name": "Python",
+    "description": "Python",
+    "category": "Scientific",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-09"
+  },
+
   "Generic": {
     "name": "Generic",
     "description": "Generic environment",

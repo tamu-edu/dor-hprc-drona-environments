@@ -4,8 +4,9 @@ import os
 # Path to metadata.json
 
 def get_current_env():
-    scratch=os.getenv('SCRATCH')
-    meta_data_file=scratch+"/virtual_envs/metadata.json"
+    user=os.getenv('USER')
+    meta_data_file = f"/scratch/user/{user}/virtual_envs/metadata.json"
+    #meta_data_file=scratch+"/virtual_envs/metadata.json"
     """Retrieve a list of environment names with commands from metadata.json."""
     if os.path.exists(meta_data_file):
         # Load metadata.json
@@ -16,7 +17,7 @@ def get_current_env():
         environments = metadata.get("environments", [])
         formatted_envs = [
             {
-                "value": f"module load {env['GCCcore_version']} {env['python_version']}; source $SCRATCH/virtual_envs/{env['name']}/bin/activate",
+                "value": f"source activate_venv {env['name']}", 
                 "label": env["name"]
             }
             for env in environments
