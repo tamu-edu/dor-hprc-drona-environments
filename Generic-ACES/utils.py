@@ -13,6 +13,7 @@ def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,
    tasknum = int(tasks)
    nodenum  = 0 if nodes == "" else int(nodes)
    cpunum = 1 if cpus == "" else int(cpus)
+  
    totalmemnum = 0 if mem =="" else int(mem[:-1])
    timestring = "02:00" if walltime == "" else walltime 
   
@@ -59,10 +60,12 @@ def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,
       drona_add_warning("ERROR: Limit for cpu jobs is 64 nodes. Your job will not run. Please adjust #nodes.") 
 
    if gpu != "" and gpu != "none":
-       if int(numgpu) > 10:
-           drona_add_warning("WARNING: max num of gpus is 10, requested " + numgpu + " GPUs. Reducing to max of 10.")
-           numgpu="10"
-       partition="--partition=gpu --gres=gpu:"+gpu+":"+numgpu + " "
+       gpunum = 1 if numgpu == "" else numgpu
+       ptype = "pvc" if gpu == "pvc" else "gpu"
+       if int(gpunum) > 10:
+           drona_add_warning("WARNING: max num of gpus is 10, requested " + gpunum + " GPUs. Reducing to max of 10.")
+           gpunum="10"
+       partition="--partition="+ptype+" --gres=gpu:"+gpu+":"+str(gpunum) + " "
    else:
        partition="--partition=cpu"
    # set the time

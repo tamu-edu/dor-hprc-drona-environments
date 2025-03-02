@@ -9,6 +9,7 @@
    "testModule1": {
     "type": "module",
     "label": "Add modules",
+    "name": "module_list",
     "help": "Modules are used to manage all the software packages available on ACES. If your job needs a software package, just start typing in the search bar, and it will show all available software modules matching the entered string. Select the software module you want and click the add button. The dropdown on the right shows all available toolchains. If you need multiple software modules, use the same toolchain. All added modules will show up in little blue bubbles. If you want to remove any of the added modules, just click on its name.",  
     "toolchains": [
       {
@@ -46,7 +47,7 @@
     "help" : "Only set this field if you requested multiple tasks above and you want to distribute these tasks over multiple nodes. This is most common for MPI codes. If you are not sure, or if you don't want to explicitly distribute tasks over multiple nodes, leave this value at 0.",
     "name": "nodes",
     "value": "",
-    "condition": "AdvancedCheckbox.Yes"
+    "condition": "advancedbox.Yes"
   },
 
    "cpus": {
@@ -56,7 +57,7 @@
     "name": "cpus",
     "value": "1",
     "max": "48",
-    "condition": "AdvancedCheckbox.Yes"
+    "condition": "advancedbox.Yes"
   }
 }
 },
@@ -105,7 +106,7 @@
     "help" : "Number of accelerators you want to use. On ACES, in theory you can request up to 10.",
     "name": "numgpu",
     "value": "1",
-    "condition": "gpuDropdown.h100 || gpuDropdown.a30 || gpuDropdown.pvc"
+    "condition": "gpu.h100 || gpu.a30 || gpu.pvc"
   
 }
 }
