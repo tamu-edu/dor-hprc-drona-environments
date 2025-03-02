@@ -35,7 +35,7 @@
    "AdvancedCheckbox": {
     "type": "checkbox",
     "label":"Advanced task options",
-    "name": "advancedbox",
+    "name": "AdvancedCheckbox",
     "help": "Check this box if you want to provide advanced task placement options. These are advanced settings. Only use if you are familiar with these options",
     "value": "Yes"
   },

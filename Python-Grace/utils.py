@@ -1,20 +1,36 @@
 import math
 
-def dummy(walltime):
-    return f""+walltime
+  
+def setup_python_env(penv, pythonVersionDropdown, createEnvName, currentEnvDropdown, sharedEnvDropdown):
+    if penv == "":
+        drona_add_warning("Warning: No Python environment selected. Your job might not run correctly.")
+        return f""
+    if penv == "module":
+        return f"# Load latest Python module\nmodule load GCCcore Python"
+    elif penv == "private":
+        return f"#Setup private virtual environment\n"+currentEnvDropdown
+    elif penv == "create":
+        if createEnvName=="":
+            return f""
+        else:
+            return f"#Create new virtual env\n"+pythonVersionDropdown+"\ncreate_venv " + createEnvName + f"\nsource activate_venv " + createEnvName
+    elif penv == "shared":
+        return f"#Setup shared virtual environment\n"+sharedEnvDropdown
+    else:
+        return f""
 
-def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,account,extra):
-   tasknum = int(tasks)
+def retrieve_tasks_and_other_resources(nodes="",tasks="",cpus="",mem="",gpu="",numgpu="",walltime="",account="",extra=""):
+   tasknum = 1 if tasks == "" else int(tasks)
    nodenum  = 0 if nodes == "" else int(nodes)
    cpunum = 1 if cpus == "" else int(cpus)
    totalmemnum = 0 if mem =="" else int(mem[:-1])
-   timestring = "02:00" if walltime == "" else walltime 
-  
+   timestring = "02:00" if walltime == "" else walltime
+
    # compute the number of hours requested
-   times=timestring.split(':') 
+   times=timestring.split(':')
    total_hours = (int(times[0])+int(times[1])/60)
    memnum = 0
-  
+
    maxcpunode=48
    maxmemnode=360
    partition = ""
@@ -24,7 +40,7 @@ def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,
        cpunum=maxcpunode
    # if nodes is not set, match the number of nodes based on requested tasks and cpus
    if nodenum == 0:
-      nodenum = (cpunum*tasknum // maxcpunode) if  (cpunum*tasknum) % maxcpunode == 0 else (cpunum*tasknum // maxcpunode)+1 
+      nodenum = (cpunum*tasknum // maxcpunode) if  (cpunum*tasknum) % maxcpunode == 0 else (cpunum*tasknum // maxcpunode)+1
    else:
       # check for
       # cpu=1 and tasks < nodes  --> set nodes to match tasks
@@ -38,7 +54,8 @@ def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,
             drona_add_warning("#total cores (tasks*cpu) requested needs more nodes than requested. Increasing number of nodes.")
             nodenum=needed_nodes
 
-   memnum = int(totalmemnum // nodenum)
+
+   int(totalmemnum // nodenum)
    if memnum == 0:
       cpn = (cpunum*tasknum) // nodenum
       memnum = int((maxmemnode/maxcpunode)*cpn)
@@ -55,7 +72,7 @@ def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,
    elif total_hours > 21 * 24:
       drona_add_warning("ERROR: Limit  for  wall time is 21 days  nodes is 24 hours. Your job will not run. Please adjust time")
    elif total_hours > 4*24:
-      partition=partition+ "--partition xlong " 
+      partition=partition+ "--partition xlong "
       if memnum > maxmemnode:
          drona_add_warning("CONFLICT: request both xlong and bigmem partitions. Your job will not run.")
       elif gpu != "" and gpu != "none":
@@ -80,8 +97,8 @@ def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,
             numgpu="2"
 
       partition=partition+"--partition=gpu --gres=gpu:"+gpu+":"+numgpu + " "
-      if total_hours > 4*24:
-         drona_add_warning("ERROR: jobs requesting a gpu have max time limit of 4 days. job will not run.")
+   if total_hours > 4*24:
+      drona_add_warning("ERROR: jobs requesting a gpu have max time limit of 4 days. job will not run.")
 
    # set the time
    if total_hours == 0:
@@ -98,14 +115,13 @@ def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,
       drona_add_mapping("EXTRA",extra_all)
    else:
       drona_add_mapping("EXTRA","")
-  
+
    # we are ready to define all the placeholders now
    drona_add_mapping("NODES",str(nodenum))
    drona_add_mapping("CPUS",str(cpunum))
    drona_add_mapping("MEM",str(memnum)+"G")
 
-   return f""+tasks
-
+   return f""+str(tasknum)
 
 
 def retrieve_loaded_modules(modules=""):
