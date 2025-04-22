@@ -1,18 +1,26 @@
 {
-  "Matlab": {
-    "name": "Matlab",
-    "description": "Matlab",
-    "category": "Scientific",
-    "version": "1.0.0",
-    "author": "",
-    "last_updated": "2025-02-09"
-  },
   "Generic": {
     "name": "Generic",
     "description": "Generic environment",
     "category": "generic",
     "version": "1.0.0",
     "author": "",
-    "last_updated": "2025-02-09"
+    "last_updated": "2025-04-22"
+  },
+  "Matlab": {
+    "name": "Matlab",
+    "description": "Matlab",
+    "category": "Scientific",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-04-22"
+  },
+  "Python": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for Python",
+    "name": "Python",
+    "version": "1.0.0",
+    "last_updated": "2025-04-22"
   }
 }
