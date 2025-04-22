@@ -1,0 +1,108 @@
+{
+
+    "ContainerVersion": {
+        "type": "rowContainer",
+        "label": "Additional",
+        "elements": {
+
+            "nodes": {
+                "type": "number",
+                "label": "#nodes",
+                "help" : "Enter the total number of nodes the commands should be distributed on",
+                "name": "nodes",
+                "value": "1"
+            },
+
+            "commandspernode": {
+                "type": "text",
+                "label": "commands per node",
+                "help" : "Set the commands per node. If you leave this empty, it will set the commansa per node to the maximum possible",
+                "name": "commandspernode",
+                "value": ""
+            },
+
+	    "threads": {
+                "type": "number",
+                "label": "#threads/command",            
+	        "help" : "Optional: if your commands are multi threaded, provde max number of threads to user per command",
+                "name": "threads",
+                "value": "1"
+            }
+        }
+    },
+
+    "ContainerCommands": {
+        "type": "rowContainer",
+        "label": "commands",
+        "elements": {
+	    
+	    "commandfilePicker": {
+                "type": "picker",
+                "label": "Select commands file",
+                "name": "commandfile",
+                "remoteLabel": "local",
+                "localLabel": "cluster",
+                "showFiles": "True",
+                "files": "True"
+            }
+	}
+    },
+
+    "additionalCollapsable": {
+        "type": "collapsibleRowContainer",
+        "title": "Additional Info",
+        "elements": {
+
+
+            "testModule1": {
+                "type": "module",
+                "label": "Add modules",
+                "name": "module_list",
+                "help": "Modules are used to manage all the software packages available on ACES. If your job needs a software package, just start typing in the search bar, and it will show all available software modules matching the entered string. Select the software module you want and click the add button. The dropdown on the right shows all available toolchains. If you need multiple software modules, use the same toolchain. All added modules will show up in little blue bubbles. If you want to remove any of the added modules, just click on its name.",
+                "toolchains": [
+                    {
+                        "label": "Default (foss/2023b)",
+                        "value": "modules"
+                    }
+                ]
+            },
+
+	    "ContainerAdditionl": {
+                "type": "rowContainer",
+                "label": "commands",
+                "elements": {
+
+                    "memory": {
+                        "type": "unit",
+                        "label": "Memory",
+                        "help": "OPTIONAL: provide the total amount of memory you esttimate the job needs. It's best to be conservative and request more. If your job will try to use more memory than requested, your job will be killed immediately and you might loose all intermediate results. If you don't enter any value, composer will use a default value.",
+                        "name": "memory",
+	                "units": [
+                            {
+                                "label": "GB",
+                                "value": "G"
+                            }
+                        ]
+                    },  
+  
+                    "Walltime": {
+                        "type": "time",
+                        "label": "Expected run time",
+                        "help": "OPTIONAL: provide the time you estimate the job will need. It's best to be conservative when requesting walltime. If your job exceeds the requested walltime, your job will be killed immediately and you might loose all intermediate results. If you don't enter a value, composer will use a default value of 2 hours",
+                        "name": "walltime",
+                        "value": ""
+                    },
+
+                    "account": {
+                        "type": "dynamicSelect",
+                        "label": "Project Account",
+                        "help": " OPTIONAL: if you want to use a different project account than your default account, you can provide the account number here.",
+                        "name": "account",
+                        "retriever" : "/scratch/user/pennings/drona_composer/environments/tamulauncher/list_accounts"
+                    }
+
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,5 @@
+name: "tamulauncher"
+description: "Tool to run a larged number of sequential or multi-trheaded commands in a single job"
+category: "Scientific"
+version: "1.0.0"
+author: "Marinus Pennings"

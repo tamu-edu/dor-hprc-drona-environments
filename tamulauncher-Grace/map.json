@@ -1,0 +1,7 @@
+{
+  "JOBNAME" :"$name",
+  "SLURM": "!retrieve_slurm($nodes,$commandspernode,$threads,$memory,$walltime,$account)",
+  "flocation": "$location",
+  "MODULES": "!retrieve_loaded_modules($module_list)",
+  "COMMANDFILE": "!retrieve_commandsfile($commandfile)"
+}

@@ -1,4 +1,15 @@
 {
+  "tamulauncher-Grace": {
+    "name": "tamulauncher-Grace",
+    "description": "Tool to run a larged number of sequential or multi-trheaded commands in a single job",
+    "category": "Scientific",
+    "cluster":"grace",
+    "organization":"TAMU",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-04-22"
+  },
+
   "R-ACES": {
     "name": "R-ACES",
     "description": "R environment",

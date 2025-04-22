@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH --job-name=[JOBNAME]
+#SBATCH --time=[TIME] --mem=[MEM]
+#SBATCH --nodes=[NODES] --ntasks-per-node=1 --cpus-per-task=[CPUS]
+#SBATCH --output=out.%j --error=error.%j
+
+module purge
+module load WebProxy [MODULES]
+
+
+
+tamulauncher -p [CPN] [COMMANDFILE]
+
+
