@@ -3,9 +3,9 @@ import math
 import os
 
 def retrieve_slurm(nodes,tasks,threads,memory,walltime,account):
-    #cluster=str(subprocess.run(['/sw/local/bin/clustername' ], stdout=subprocess.PIPE).stdout.decode('utf-8').lower())
-    #drona_add_warning("CLUSTER: "+cluster)
-    cluster="grace"
+    cluster=str(subprocess.run(['/sw/local/bin/clustername' ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower())
+    maxcpu=0
+    mempercore=0
     if cluster == "grace":
         maxcpu=48
         mempercore=7.5
@@ -15,7 +15,7 @@ def retrieve_slurm(nodes,tasks,threads,memory,walltime,account):
     elif cluster ==  "aces":
         maxcpu=96
         mempercore=5
-    else:
+    elif cluster == "launch":
         maxcpu=192
         mempercore=1.88
 

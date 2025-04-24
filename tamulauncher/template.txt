@@ -12,3 +12,5 @@ module load WebProxy [MODULES]
 tamulauncher -p [CPN] [COMMANDFILE]
 
 
+[SLURM]
+
