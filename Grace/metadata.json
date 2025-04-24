@@ -5,7 +5,7 @@
     "category": "generic",
     "version": "1.0.0",
     "author": "",
-    "last_updated": "2025-04-22"
+    "last_updated": "2025-04-24"
   },
   "Matlab": {
     "name": "Matlab",
@@ -13,7 +13,7 @@
     "category": "Scientific",
     "version": "1.0.0",
     "author": "",
-    "last_updated": "2025-04-22"
+    "last_updated": "2025-04-24"
   },
   "Python": {
     "author": "",
@@ -21,6 +21,6 @@
     "description": "Environment for Python",
     "name": "Python",
     "version": "1.0.0",
-    "last_updated": "2025-04-22"
+    "last_updated": "2025-04-24"
   }
 }
