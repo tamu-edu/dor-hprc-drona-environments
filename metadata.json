@@ -1,5 +1,14 @@
 {
-
+  "tamulauncher": {
+    "name": "tamulauncher",
+    "description": "Tool to run a large number of sequential or multi-threaded commands in a single job",
+    "category": "Scientific",
+    "organization":"TAMU",
+    "version": "1.0.0",
+    "author": "Marinus Pennings",
+    "last_updated": "2025-02-03"
+  },
+  
   "R-ACES": {
     "name": "R-ACES",
     "description": "R environment",
