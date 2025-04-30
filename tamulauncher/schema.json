@@ -98,7 +98,7 @@
                         "label": "Project Account",
                         "help": " OPTIONAL: if you want to use a different project account than your default account, you can provide the account number here.",
                         "name": "account",
-                        "retriever" : "/scratch/user/pennings/drona_composer/environments/tamulauncher/list_accounts"
+                        "retriever" : "list_accounts"
                     }
 
                 }
