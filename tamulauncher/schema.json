@@ -27,7 +27,14 @@
 	        "help" : "Optional: if your commands are multi threaded, provde max number of threads to user per command",
                 "name": "threads",
                 "value": "1"
-            }
+            },
+	    "norestart" : {
+	        "type" : "checkbox",
+                "label":"No restart",
+                "name": "norestart",
+                "help": "By default, tamulauncher will restart executing commands from where it left off during  a previous run. If you want to disable this functionality check the no-restart box",
+                "value": "Yes"		
+	    }
         }
     },
 

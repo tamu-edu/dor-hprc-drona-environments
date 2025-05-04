@@ -2,6 +2,12 @@ import subprocess
 import math
 import os
 
+def set_norestart(norestart=""):
+    if norestart == "":
+        return ""
+    else:
+        return "--norestart"
+
 def retrieve_slurm(nodes,tasks,threads,memory,walltime,account):
     cluster=str(subprocess.run(['/sw/local/bin/clustername' ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower())
     maxcpu=0
@@ -57,7 +63,7 @@ def retrieve_slurm(nodes,tasks,threads,memory,walltime,account):
     else:
        memnum = int(totalmemnum // nodes)
 
-
+    drona_add_mapping("CPUPT",str(threadnum))
     drona_add_mapping("MEM",str(int(memnum))+"G")
     drona_add_mapping("CPUS",str(tasknum*threadnum))
     drona_add_mapping("CPN",str(tasknum))

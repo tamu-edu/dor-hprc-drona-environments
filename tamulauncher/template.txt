@@ -7,10 +7,10 @@
 module purge
 module load WebProxy [MODULES]
 
+# setting OMP_NUM_THREADS to match cpus per command
+export OMP_NUM_THREADS=[CPUPT]
+
+tamulauncher -p [CPN] [NORESTART] [COMMANDFILE]
 
 
-tamulauncher -p [CPN] [COMMANDFILE]
-
-
-[SLURM]
 

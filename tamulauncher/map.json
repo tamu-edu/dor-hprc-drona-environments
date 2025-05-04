@@ -3,5 +3,6 @@
   "SLURM": "!retrieve_slurm($nodes,$commandspernode,$threads,$memory,$walltime,$account)",
   "flocation": "$location",
   "MODULES": "!retrieve_loaded_modules($module_list)",
+  "NORESTART": "!set_norestart($norestart)",
   "COMMANDFILE": "!retrieve_commandsfile($commandfile)"
 }
