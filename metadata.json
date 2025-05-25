@@ -1,4 +1,12 @@
 {
+   "MATLAB" : {
+       "name" : ""MATLAB",   
+       "description" : "Environment assists users in generating and submitting Matlal jobs. This environment uses matlabsubmit as the submission tool",
+       "category" : "Scientific",
+       "version" : "1.0.0",
+       "author" : "Marinus Pennings"
+    },
+
   "tamulauncher": {
     "name": "tamulauncher",
     "description": "Tool to run a large number of sequential or multi-threaded commands in a single job",
@@ -42,17 +50,6 @@
     "last_updated": "2025-02-03"
   },
   
-  "Matlab-ACES": {
-    "name": "Matlab-ACES",
-    "description": "Matlab",
-    "category": "Scientific",
-    "cluster": "ACES",
-    "organiztion" : "TAMU",
-    "version": "1.0.0",
-    "author": "",
-    "last_updated": "2025-02-03"
-  },
-  
   "Generic-ACES": {
     "name": "Generic-ACES",
     "description": "Generic environment",
@@ -64,17 +61,6 @@
     "last_updated": "2025-02-03"
   },
   
-  
-  "Matlab-FASTER": {
-    "name": "Matlab-FASTER",
-    "description": "Matlab",
-    "category": "Scientific",
-    "cluster":"FASTER",
-    "organization":"TAMU",
-    "version": "1.0.0",
-    "author": "",
-    "last_updated": "2025-02-03"
-  },
   
   "Generic-FASTER": {
     "name": "Generic-FASTER",
@@ -99,17 +85,6 @@
     "last_updated": "2025-02-03"
   },
   
-  
-  "Matlab-Grace": {
-    "name": "Matlab-Grace",
-    "description": "Matlab",
-    "category": "Scientific",
-    "cluster":"grace",
-    "organization":"TAMU",
-    "version": "1.0.0",
-    "author": "",
-    "last_updated": "2025-02-03"
-  },
   
   "Generic-Grace": {
     "name": "Generic-Grace",
