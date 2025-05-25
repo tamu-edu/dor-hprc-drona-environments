@@ -1,0 +1,5 @@
+name: "MATLAB"
+description: "Environment assists users in generating and submitting Matlal jobs. This environment uses matlabsubmit as the submission tool"
+category: "Scientific"
+version: "1.0.0"
+author: "Marinus Pennings"
