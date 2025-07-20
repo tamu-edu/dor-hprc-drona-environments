@@ -1,0 +1,46 @@
+#!/bin/bash
+
+#SBATCH --job-name=alphafold3-gpu
+#SBATCH --time=[gputime]
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1      # alphafold3 runs 4 x jackhmmer processes
+#SBATCH --cpus-per-task=8        # alphafold3 recommends using a max of 8 cpus per jackhmmer process
+#SBATCH --mem=64G                # minimum of 64GB recommended
+#SBATCH [gpu]
+#SBATCH --output=stdout.%x.%j
+#SBATCH --error=stderr.%x.%j
+
+module purge
+module load AlphaFold3/3.0.1
+
+protein_name=$(grep name alphafold3-input.json  | cut -f 4 -d '"' | sed 's/ /_/g')
+
+lc_protein_name=${protein_name,,}
+
+AF3_MODEL_PARAMETERS_DIR=[ALPHAFOLD3MODEL]
+AF3_DATABASES_DIR=/scratch/data/bio/alphafold3/db/2025.03.13
+AF3_CODE_DIR=/scratch/data/bio/alphafold3/code/alphafold3-3.0.1
+AF3_IMAGE=/sw/hprc/sw/bio/containers/alphafold/alphafold_3.0.1_unlhcc.sif
+
+AF3_OUTPUT_DIR=$PWD/output_${protein_name}_[timestamp]
+AF3_INPUT_DIR=$AF3_OUTPUT_DIR/$lc_protein_name 
+AF3_INPUT_FILE=${lc_protein_name}_data.json 
+
+singularity exec \
+  --nv  \
+  --bind $AF3_CODE_DIR \
+  --bind $AF3_INPUT_DIR:/root/af_input \
+  --bind $AF3_OUTPUT_DIR:/root/af_output \
+  --bind $AF3_MODEL_PARAMETERS_DIR:/root/models \
+  --bind $AF3_DATABASES_DIR:/root/public_databases \
+  $AF3_IMAGE \
+  python $AF3_CODE_DIR/run_alphafold.py \
+  --norun_data_pipeline  \
+  --input_dir=/root/af_input \
+  --json_path=/root/af_input/$AF3_INPUT_FILE \
+  --output_dir=/root/af_output \
+  --model_dir=/root/models \
+  --db_dir=/root/public_databases \
+  --max_template_date="[maxtemplate]" \
+  --num_recycles=[RECYCLES] [OLDGPUFLAGS]
+

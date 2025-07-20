@@ -1,0 +1,28 @@
+#!/bin/bash
+
+module purge
+[ALPHAFOLDMODULES]
+
+# run jobstats in the background (&) to monitor cpu and gpu usage
+jobstats &
+
+ALPHAFOLD_DATA_DIR=[datadir]
+
+run_alphafold.py \
+--use_gpu_relax \
+--data_dir=$ALPHAFOLD_DATA_DIR \
+--uniref90_database_path=$ALPHAFOLD_DATA_DIR/uniref90/uniref90.fasta \
+--mgnify_database_path=$ALPHAFOLD_DATA_DIR/mgnify/mgy_clusters_2022_05.fa \
+--small_bfd_database_path=$ALPHAFOLD_DATA_DIR/small_bfd/bfd-first_non_consensus_sequences.fasta \
+--model_preset=[modelpreset] \
+--pdb70_database_path=$ALPHAFOLD_DATA_DIR/pdb70/pdb70 \
+--template_mmcif_dir=$ALPHAFOLD_DATA_DIR/pdb_mmcif/mmcif_files \
+--obsolete_pdbs_path=$ALPHAFOLD_DATA_DIR/pdb_mmcif/obsolete.dat \
+--max_template_date=[maxtemplate] \
+--db_preset=[dbpreset] \
+--output_dir=[outputdir] \
+--fasta_paths=[proteinfasta]
+
+# run jobstats to create a graph of cpu and gpu usage for this job
+jobstats
+

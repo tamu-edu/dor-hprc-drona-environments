@@ -1,0 +1,57 @@
+#!/bin/bash
+#SBATCH --job-name=alphafold3-cpu
+#SBATCH --time=[time]
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4      
+#SBATCH --cpus-per-task=4       
+#SBATCH --mem=64G      
+#SBATCH --output=stdout.%x.%j
+#SBATCH --error=stderr.%x.%j
+
+module purge
+module load AlphaFold3/3.0.1
+
+######## VARIABLES #######
+
+########## INPUTS ##########
+AF3_INPUT_DIR=[JSONDIR]
+AF3_INPUT_FILE=[JSONFILE]
+
+# the model parameters file is the af3.bin.zst file downloaded after agreeing to the AlphaFold3 agreement
+AF3_MODEL_PARAMETERS_DIR=[ALPHAFOLD3MODEL]
+
+# the next three lines are the shared resources
+AF3_CODE_DIR=/scratch/data/bio/alphafold3/code/alphafold3-3.0.1
+AF3_DATABASES_DIR=/scratch/data/bio/alphafold3/db/2025.03.13
+AF3_IMAGE=/sw/hprc/sw/bio/containers/alphafold/alphafold_3.0.1_unlhcc.sif
+
+######## PARAMETERS ########
+num_recycles=[RECYCLES]
+max_template_date="[maxtemplate]"
+
+########## OUTPUTS #########
+protein_name=$(grep name $AF3_INPUT_DIR/$AF3_INPUT_FILE  | cut -f 4 -d '"' | sed 's/ /_/g')
+AF3_OUTPUT_DIR=$PWD/output_${protein_name}_[timestamp]
+
+################################### COMMANDS ###################################
+mkdir -p $AF3_OUTPUT_DIR
+lc_protein_name=${protein_name,,}
+
+# run CPU alignment part first then submit GPU job for prediction step
+singularity exec \
+  --bind $AF3_CODE_DIR \
+  --bind $AF3_INPUT_DIR:/root/af_input \
+  --bind $AF3_OUTPUT_DIR:/root/af_output \
+  --bind $AF3_MODEL_PARAMETERS_DIR:/root/models \
+  --bind $AF3_DATABASES_DIR:/root/public_databases \
+  $AF3_IMAGE \
+  python ${AF3_CODE_DIR}/run_alphafold.py \
+  --norun_inference \
+  --nhmmer_n_cpu=$SLURM_CPUS_PER_TASK \
+  --jackhmmer_n_cpu=$SLURM_CPUS_PER_TASK \
+  --json_path=/root/af_input/$AF3_INPUT_FILE \
+  --db_dir=/root/public_databases \
+  --output_dir=/root/af_output  
+
+  
+  

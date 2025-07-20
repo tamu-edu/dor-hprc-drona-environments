@@ -1,0 +1,275 @@
+{
+
+"AlphaFoldVersionRadio": {
+      "type": "radioGroup",
+      "name": "alphafoldversion",
+      "label": "AlphaFold version",
+      "options": [
+         {
+            "label" : "AlphaFold3",
+            "value": "alphafold3"
+         },
+	 {
+            "label" : "AlphaFold2",
+            "value": "alphafold2"
+         }
+      ]
+   },
+
+"ContainerAF3Disclaimer": {
+    "type": "rowContainer",
+    "label": "data",
+    "condition" : "alphafoldversion.alphafold3",
+    "elements": {
+
+       "disclaimer": {
+          "type": "staticText",
+          "label": "",
+          "value": "<div style='background:Gainsboro; padding: 10px; border-radius: 7px; margin-bottom: 10px;'><p style='font-size: 1.1em; margin-bottom: 0;'><center>To download the AlphaFold3 model file, you have to agree to the terms of use. <br>Please fill out the <a href='https://docs.google.com/forms/d/e/1FAIpQLSfWZAgo1aYk0O4MuAXZj8xRQ8DafeFJnldNOnh_13qAx2ceZw/viewform' target='_blank'>AlphaFold3 Google Form</a> to request the model file</center></p></div>",
+         "allowHtml": true
+      }
+    }
+},   
+
+"ContainerF3": {
+    "type": "rowContainer",
+    "label": "data",
+    "condition" : "alphafoldversion.alphafold3",
+    "elements": {
+
+"JSON": {
+    "type": "picker",
+    "label": "JSON input",
+    "name": "jsoninput",
+    "help":"Select JSON input file",
+    "localLabel": "select",
+    "showFiles": "True",
+    "files": "True",
+    "defaultPaths": {
+        "HOME": "$HOME",
+        "SCRATCH": "/scratch/user/$USER",
+	"Examples" : "/scratch/data/bio/alphafold3/examples/"
+    },
+    "useHPCDefaultPaths": "False"
+  },
+
+  "MODEL": {
+    "type": "picker",
+    "label": "Directory to model file",
+    "name": "modelinput",
+    "help":"Select the model file. You should have received this when registering with AlphaFold3",
+    "localLabel": "Select",
+    "showFiles": "False",
+    "files": "False",
+    "defaultPaths": {
+        "HOME": "$HOME",
+        "SCRATCH": "/scratch/user/$USER"
+    },
+    "useHPCDefaultPaths": "False"
+  },
+
+  "RECYCLES": {
+    "type": "number",
+    "label": "Number of recycles (default: 3)",
+    "name": "recycles",
+    "value": "3",
+    "help" : "Set the number of recycles, default is 3"
+  }
+
+
+    }
+  },
+
+  "Container1AF2": {
+    "type": "rowContainer",
+    "label": "data",
+    "condition" : "alphafoldversion.alphafold2",
+    "elements": {
+
+       "datadir": {
+          "type": "picker",
+          "label": "Data Dir (default /scratch/data/bio/alphafold/2.3.2)",
+          "name": "datadir",
+          "help":"OPTIONAL: set the data dir. Default directory is /scratch/data/bio/alphafold/2.3.2 ",
+          "localLabel": "select",
+          "default":"/scratch/data/bio/alphafold/2.3.2",
+          "defaultPaths": {
+             "HOME": "$HOME",
+             "SCRATCH":  "/scratch/user/$USER",
+             "Examples" : "/scratch/data/bio/alphafold/2.3.2"
+          },
+          "useHPCDefaultPaths": "False"
+       },
+
+        "FASTA": {
+           "type": "picker",
+           "label": "Select FASTA file",
+           "name": "proteinfasta",
+           "help":"Select the Fasta file. You can select a file located on the cluster, or pick a file from your local machine. In that case the fasta file will be automatically uploaded",
+           "remoteLabel": "Local",
+           "localLabel": "Cluster",
+           "showFiles": "True",
+           "files": "True",
+	   "defaultPaths": {
+              "HOME": "$HOME",
+              "SCRATCH":  "/scratch/user/$USER",
+              "Examples" : "/scratch/data/bio/alphafold3/examples/"
+	   },
+	   "useHPCDefaultPaths": "False"
+        }   
+    }
+  },
+
+
+  "Container2AF2": {
+     "type": "rowContainer",
+     "label": "GPU",
+     "condition" : "alphafoldversion.alphafold2",
+     "elements": {
+
+
+        "ModelPresetDropdown": {
+           "type": "select",
+           "label": "Model Preset",
+           "name": "modelpreset",
+           "options": [
+              {
+                 "value": "monomer",
+                 "label": "monomer"
+              },
+              {
+                 "value": "monomer_casp14",
+                 "label": "monomer_casp14"
+              },
+              {
+                 "value": "monomer_ptm",
+                 "label": "monomer_ptm"
+              },
+              {
+                 "value": "multimer",
+                 "label": "multimer"
+              }
+	   ]
+	},
+
+
+        "DBPresetDropdown": {
+           "type": "select",
+           "label": "DB Preset",
+           "name": "dbpreset",
+           "options": [
+              {
+                 "value": "full_dbs",
+                 "label": "full_dbs"
+              },
+              {
+                 "value": "reduced_dbs",
+                 "label": "reduced_dbs"
+              }
+	   ]
+	},
+
+
+        "pickleCheckbox": {
+           "type": "checkbox",
+           "label": "Alphapickle",
+           "name": "pickle",
+           "value": "true",
+           "help" : "Check this box, if you want to run AlphaPicle to collect additional data"
+	}
+     }
+  },
+
+
+  "ContainerAF2AF3": {
+     "type": "rowContainer",
+     "label": "GPU",
+     "condition" : "alphafoldversion.alphafold2 || alphafoldversion.alphafold3",
+     "elements": {
+
+        "DATEText": {
+           "type": "text",
+           "label": "Template Date (default today)",
+           "name": "maxtemplate",
+           "value": "",
+           "help" : "Provide a template date in the form YYYY-MM-DD. If you leave this field blank it will automatically pick today's date"
+	},
+
+        "gpuDropdown": {
+           "type": "dynamicSelect",
+           "label": "Accelerator",
+           "help": "Only select an accelerator if your job will utilize them. You might need to setup the environment for the accelerator you selected in the job script.",
+           "name": "gpu",
+	   "retriever" : "retrieve_gpus"
+	}
+     }
+  },
+
+
+  "ContainerSlurm": {
+     "type": "rowContainer",
+     "label": "SlurmOptions",
+     "condition" : "alphafoldversion.alphafold2 || alphafoldversion.alphafold3",
+     "elements": {
+
+        "account": {
+           "type": "dynamicSelect",
+           "label": "Project Account",
+           "help": " OPTIONAL: if you want to use a different project account than your default account, you can provide the account number here.",
+           "name": "account",
+           "retriever" : "list_accounts"
+        },
+
+        "Walltime": {
+           "type": "time",
+           "label": "Expected time (cpu part)",
+           "help": "OPTIONAL: Provide the time you estimate the cpu part of the computation  will need. It's best to be conservative when requesting wall time. If your job exceeds the requested wall time, your job will be killed immediately, and you might lose all intermediate results. If you don't enter a value, Drona will use a default value of 2 days.",
+           "name": "walltime",
+           "value": ""
+        },
+
+        "Walltimegpu": {
+           "type": "time",
+           "label": "Expected time (gpu part)",
+           "help": "OPTIONAL: Provide the time you estimate the gpu part will need. It's best to be conservative when requesting wall time. If your job exceeds the requested wall time, your job will be killed immediately, and you might lose all intermediate results. If you don't enter a value, Drona will use a default value of 1 day.",
+           "name": "walltimegpu",
+	   "condition": "alphafoldversion.alphafold3 || !dbpreset.reduced_dbs", 
+           "value": ""
+        },
+
+        "email": {
+           "type": "select",
+           "label": "Email notification options",
+           "help": "Select if you want to be notified when your job changes status.",
+           "name": "email",
+           "options": [
+              {
+                 "value": "none",
+                 "label": "NONE"
+              },
+              {
+                 "value": "begin",
+                 "label": "BEGIN"
+              },
+              {
+                 "value": "end",
+                 "label": "END"
+              },
+              {
+                 "value": "all",
+                 "label": "ALL"
+              }
+           ]
+        },
+
+        "EMAILText": {
+           "type": "text",
+           "label": "Email address",
+           "name": "emailaddress",
+           "value": "",
+           "help" : "Provide email address to send status updates to. Default user is current user.",
+           "condition" : "email.begin || email.end || email.all"
+	}
+     }
+  }
+}

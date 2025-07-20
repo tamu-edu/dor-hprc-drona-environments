@@ -1,0 +1,16 @@
+#!/bin/bash
+
+cluster=`/sw/local/bin/clustername`
+case $cluster in
+    aces)
+	    echo "[ { \"value\": \"auto\", \"label\": \"AUTO (based on availability)\" },  { \"value\": \"h100\", \"label\": \"H100\" }, { \"value\": \"a30\", \"label\": \"A30\" } ]"
+	;;
+    grace)
+        echo "[ { \"value\": \"auto\", \"label\": \"AUTO (based on availability)\" }, { \"value\": \"t4\", \"label\": \"T4\" }, { \"value\": \"a40\", \"label\": \"A40\" } , { \"value\": \"rtx\", \"label\": \"RTX\" }  ]"
+        ;;
+    faster)
+        echo "[ { \"value\": \"auto\", \"label\": \"AUTO (based on availability)\" }, { \"value\": \"t4\", \"label\": \"T4\" }, { \"value\": \"a40\", \"label\": \"A40\" } , { \"value\": \"a30\", \"label\": \"A30\" } , { \"value\": \"a10\", \"label\": \"A10\" }   ]"
+        ;;	    
+    *)
+        echo "[]"
+esac

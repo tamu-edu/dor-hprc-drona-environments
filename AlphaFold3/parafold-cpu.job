@@ -1,0 +1,13 @@
+#!/bin/bash
+
+module purge
+[ALPHAFOLDMODULES]
+
+protein_fasta=[proteinfasta]
+
+jobstats &
+
+# First, run CPU-only steps to get multiple sequence alignments:
+run_alphafold.sh -d [datadir] -o parafold_output_dir  -i $protein_fasta -p [modelpreset] -t [maxtemplate] -f
+
+jobstats

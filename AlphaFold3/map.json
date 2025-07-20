@@ -1,0 +1,17 @@
+
+{
+  "flocation": "$location",
+  "maxtemplate": "!retrieve_maxtemplate($maxtemplate)",
+  "outputdir" : "parafold_output_dir",
+  "gpu" : "!retrieve_gpu($gpu)",
+  "email" : "!retrieve_mail($email, $emailaddress)",
+  "time" : "!retrieve_walltime($walltime)",
+  "gputime" : "!retrieve_gpuwalltime($walltimegpu)",
+  "account" : "!retrieve_account($account)",
+  "alphafold2" : "!process_alpahfold2($alphafoldversion,$dbpreset,$proteinfasta,$modelpreset,$datadir,$pickle,$outputdir)",
+  "alphafold3" : "!process_alpahfold3($alphafoldversion,$jsoninput,$modelinput,$recycles,$location)",
+  "timestamp" : "!retrieve_timestamp()"
+}
+
+
+
