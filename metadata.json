@@ -17,7 +17,19 @@
     "author": "Marinus Pennings",
     "last_updated": "2025-02-03"
   },
-  
+
+
+  "AlphaFold": {
+    "name": "AlphaFold",
+    "description": "This env allows researchers to generate and submit AlphaFold workflows. It can generate both AlphaFold2 and AlphaFold3 jobs.  ",
+    "category": "Bio",
+    "cluster" : "TAMU",
+    "organization":"TAMU",
+    "version": "1.0.0",
+    "author": "Marinus Pennings",
+    "last_updated": "2025-07-18"
+  },
+
   "R-ACES": {
     "name": "R-ACES",
     "description": "R environment",
