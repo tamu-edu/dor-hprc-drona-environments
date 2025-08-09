@@ -1,0 +1,7 @@
+{
+  "JOBNAME" :"$name",
+  "DUMMY": "!retrieve_tasks_and_other_resources($nodes,$tasks,$cpus,$memory,$gpu,$numgpu,$walltime,$account,$extra_slurm,$advancedbox)",
+  "flocation": "$location",
+  "MODULES": "!retrieve_loaded_modules($module_list)"
+
+}
