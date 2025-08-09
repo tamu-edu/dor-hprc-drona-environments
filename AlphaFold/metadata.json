@@ -1,10 +1,10 @@
 {
   "__pycache__": {
     "author": "",
-    "category": "bio",
-    "description": "Environment for __pycache__. Allows researcher to run AlphaFold2 (full_dbs and reduced_dbs) and AlphaFold3",
+    "category": "Uncategorized",
+    "description": "Environment for __pycache__",
     "name": "__pycache__",
     "version": "1.0.0",
-    "last_updated": "2025-05-25"
+    "last_updated": "2025-08-09"
   }
 }
