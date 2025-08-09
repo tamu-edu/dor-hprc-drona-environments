@@ -48,9 +48,9 @@ def cluster_slurm_checks(nodenum,tasknum,cpunum,totalmemnum,gpu,numgpunum,timest
       drona_add_warning("You requested more walltime than the maximum of 7 days. Your job will not run.","error")
 
    if gpu != "" and gpu != "none":
-       if int(numgpu) > 10:
-           drona_add_message("Max num of gpus is 10, requested " + numgpu + " GPUs. Reducing to max of 10.")
-           numgpu="10"
+       if numgpunum > 10:
+           drona_add_message("Max num of gpus is 10, requested " + str(numgpunum) + " GPUs. Reducing to max of 10.","warning")
+           numgpunum=10
        partition="gpu"
        sbatchgpustring="--gres=gpu:"+gpu+":"+str(numgpunum)
    else:
