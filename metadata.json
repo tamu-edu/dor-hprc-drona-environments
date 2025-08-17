@@ -51,7 +51,7 @@
     "last_updated": "2025-02-03"
   },
 
-  "Python-ACES": {
+  "Python": {
     "name": "Python",
     "description": "Sets up Python environment for use on all TAMU clusters. This environment should be able to be used on non-TAMU clusters with few modifications. This environment uses ModuLair to manage virtual envs.",
     "category": "General",
@@ -60,6 +60,6 @@
     "version": "1.0.0",
     "author": "",
     "last_updated": "2025-08-16"
-  },
+  }
   
 }
