@@ -1,0 +1,11 @@
+{
+  "inputfile": "$filepicker",
+  "EXTRA"  : "!set_slurm_opts($reportjson)",
+  "summary": "!get_selected_summary($reportjson)",
+  "lmp_cmd": "!get_selected_lmp_cmd($reportjson)",
+  "setup": "!get_selected_setup($reportjson)",
+  "debug": "!debug_args($reportjson)",
+  "report":"!generate_full_report($filepicker)",
+  "flocation": "$location",
+  "workdir":"!compute_workdir($filepicker)"
+}

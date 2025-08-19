@@ -1,0 +1,57 @@
+{
+    "ContainerAF3Disclaimer": {
+        "type": "rowContainer",
+        "label": "data",
+        "elements":{
+            "disclaimer": {
+                "type": "staticText",
+                "label": "",
+		"isDynamic": true,
+		"retriever": "retrieve_welcome_message.sh",
+                "allowHtml": true
+	    }
+	}
+    },
+
+    "InputPicker": {
+        "type": "picker",
+        "label": "LAMMPS input file",
+        "name": "filepicker",
+        "remoteLabel": "local",
+        "localLabel": "cluster",
+        "showFiles": "True",
+	"defaultPaths": {
+	   "/": "/",
+           "HOME": "$HOME",
+           "SCRATCH": "/scratch/user/$USER"
+        },
+        "useHPCDefaultPaths": "False",
+        "help" : "Here you can specify the LAMMPS input file you want to evaluate. You can either select it from a location on ACES (select cluster) or upload it from your local machine (local).",
+        "files": "True"
+    },
+    "Module_select": {
+        "type": "dynamicSelect",
+        "name": "reportjson",
+        "label": "Acceleration Strategy",
+        "isDynamic": true,
+        "retriever": "option_generator.sh",
+        "retrieverParams": {
+            "FILE": "$filepicker"
+        },
+        "showRefreshButton": true,
+        "help": "Choose an acceleration strategy for your input file."
+    },
+    "Module_summary": {
+        "type": "staticText",
+        "name": "reporttext",
+        "label": "Description",
+        "isDynamic": true,
+        "retriever": "extract_summary.sh",
+        "retrieverParams": {
+                "REPORT_JSON": "$reportjson"
+        },
+        "showRefreshButton": false,
+        "allowHtml": true,
+        "help": "Summary for the currently selected acceleration strategy."
+    }
+}

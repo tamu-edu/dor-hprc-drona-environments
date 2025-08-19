@@ -40,15 +40,15 @@
     "last_updated": "2025-07-18"
   },
 
-  "R-ACES": {
-    "name": "R-ACES",
-    "description": "R environment",
+  "LAMMPS": {
+    "name": "LAMMPS",
+    "description": "This EXPERIMENTAL LAMMPS environment automatically generates a LAMMPS job by anaylyzing the LAMMPS input file.It will provide the researcher a list of accelerator strategies and LAMMMPS modules compatible with the input file. This environment is currently only available for the TAMU ACES cluster.",
     "category": "Scientific",
     "cluster":"ACES",
     "organization":"TAMU",
     "version": "1.0.0",
-    "author": "",
-    "last_updated": "2025-02-03"
+    "author": "Richard Lawrence",
+    "last_updated": "2025-08-18"
   },
 
   "Python": {
@@ -60,6 +60,17 @@
     "version": "1.0.0",
     "author": "",
     "last_updated": "2025-08-16"
+  },
+
+  "R-ACES": {
+    "name": "R-ACES",
+    "description": "R environment",
+    "category": "Scientific",
+    "cluster":"ACES",
+    "organization":"TAMU",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-02-03"
   }
   
 }
