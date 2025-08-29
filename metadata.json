@@ -1,7 +1,7 @@
 {
    "MATLAB" : {
        "name" : "MATLAB",   
-       "description" : "Environment assists users in generating and submitting Matlal jobs. This environment uses matlabsubmit as the submission tool",
+       "description" : "Environment assists users in generating and submitting MATLAB jobs. This environment uses matlabsubmit as the submission tool",
        "category" : "Scientific",
        "version" : "1.0.0",
        "author" : "Marinus Pennings",
@@ -20,7 +20,7 @@
 
   "Generic": {
     "name": "Generic",
-    "description": "This env is used to generate batch files for the Slurm scheduler. The form contains most of the common Slurm parmeters and an element to add module. The env is very general and should work on any cluster running Slurm ",
+    "description": "This env is used to generate batch files for the Slurm scheduler. The form contains most of the common Slurm parameters and an element to add a module. The env is very general and should work on any cluster running Slurm ",
     "category": "General",
     "cluster" : "",
     "organization":"TAMU",
@@ -42,7 +42,7 @@
 
   "LAMMPS": {
     "name": "LAMMPS",
-    "description": "This EXPERIMENTAL LAMMPS environment automatically generates a LAMMPS job by anaylyzing the LAMMPS input file.It will provide the researcher a list of accelerator strategies and LAMMMPS modules compatible with the input file. This environment is currently only available for the TAMU ACES cluster.",
+    "description": "This EXPERIMENTAL LAMMPS environment automatically generates a LAMMPS job by analyzing the LAMMPS input file. It will provide the researcher a list of accelerator strategies and LAMMMPS modules compatible with the input file. This environment is currently only available for the TAMU ACES cluster.",
     "category": "Scientific",
     "cluster":"ACES",
     "organization":"TAMU",
