@@ -50,6 +50,17 @@
     "author": "Richard Lawrence",
     "last_updated": "2025-08-18"
   },
+  
+  "Parabricks": {
+    "name": "Parabricks",
+    "description": "This env alloows reserachers to run OParabricks. Env is available on ACES and Grave.",
+    "category": "Bio",
+    "cluster" : "TAMU",
+    "organization":"TAMU",
+    "version": "1.0.0",
+    "author": "Owen Schillaci, Victor Valdez",
+    "last_updated": "2025-09-09"
+  },
 
   "Python": {
     "name": "Python",

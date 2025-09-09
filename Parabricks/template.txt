@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH --job-name=[JOBNAME]
+#SBATCH --time=[TIME]
+#SBATCH --ntasks=[TASKS]
+#SBATCH --nodes=[NODES]
+#SBATCH --cpus-per-task=[CPUS]
+#SBATCH --mem=[MEM]
+#SBATCH --output=%x.%j.stdout
+#SBATCH --error=%x.%j.stderr
+[EXTRA]
+
+# environment setup
+module purge    # ensure the working environment is clean
+module load WebProxy [MODULES]
+
+[setupEnv] 
+cd [flocation]
+[preprocess]
+
+[DUMMY]

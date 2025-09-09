@@ -1,0 +1,9 @@
+{
+  "JOBNAME" :"$name",
+  "TASKS": "!retrieve_tasks_and_other_resources($nodes,$tasks,$cpus,$memory,$gpu,$numgpu,$walltime,$account,$extra)",
+  "DUMMY": "!build_parabricks_command($analysisType, $ref, $fq1, $fq2, $genomeLibDir, $knownSites, $outputDir, $numgpu, $outBam, $outVariants, $outRecalFile, $outPrefix)",
+  "flocation": "$location",
+  "MODULES": "!retrieve_loaded_modules($module_list)",
+  "setupEnv": "!set_up_env($genomeLibDir,$analysisType)",
+  "preprocess": "!build_genome_index($analysisType, $genomeLibDir, $ref, $genomeAnnotation, $cpus)"
+}

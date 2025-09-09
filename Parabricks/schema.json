@@ -1,0 +1,286 @@
+{
+    "ParabricksIntro": {
+        "type": "rowContainer",
+        "label": "introForm",
+        "elements": {
+         "IntroText" :{
+             "type" : "staticText",
+             "label": "",
+             "value":"<div style='background: linear-gradient(135deg, #76B900, #5a8f00); color: white; padding: 10px; border-radius: 3px; margin-bottom: 3px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); font-family: \"Segoe UI\", Arial, sans-serif;'><div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;'><h2 style='margin: 0; font-weight: bold; display: flex; align-items: center; gap: 16px;'><a href='https://www.nvidia.com/en-us/clara/genomics/' target='_blank'><img style='height: 40px; transition: transform 0.2s ease; background: white; padding: 6px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);' src='https://upload.wikimedia.org/wikipedia/sco/2/21/Nvidia_logo.svg' alt='NVIDIA Logo'></a>Clara Parabricks</h2><div style='display: flex; gap: 12px; align-items: center;'><a href='https://hprc.tamu.edu/kb/Software/Parabricks/' style='background-color: rgba(0,0,0,0.2); color: white; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85em;' target='_blank'><svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'></path><path d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'></path></svg>Knowledge Base</a><a href='https://docs.nvidia.com/clara/parabricks/4.0.0/index.html' style='background-color: rgba(0,0,0,0.2); color: white; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85em;' target='_blank'><svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'></circle><path d='M12 8v4M12 16h.01'></path></svg>Documentation</a><a href='https://www.nvidia.com/en-us/clara/genomics/' style='background-color: rgba(0,0,0,0.2); color: white; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85em;' target='_blank'><svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'></path><path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'></path></svg>Official Website</a></div></div><p style='font-size: 1.05em; line-height: 1.6; margin-bottom: 20px;'>Clara Parabricks is a software suite that allows users to perform secondary analysis of next-generation sequencing DNA and RNA data. The software incorporated into Clara Parabricks has been optimized to run on GPUs, drastically increasing the speed at which common NGS analyses and tasks can be completed.</p><div style='height: 1px; background-color: rgba(255,255,255,0.3); margin: 20px 0;'></div></div>",
+             "allowHtml": "true"
+          }
+        }
+    },
+    
+  "ParabricksForm": {
+    "type": "rowContainer",
+    "label": "Parabricks Workflow",
+    "elements": {
+      "analysisType": {
+        "type": "select",
+        "label": "Select Analysis Type",
+        "name": "analysisType",
+        "help": "Choose between germline or RNA-seq analysis",
+        "options": [
+          { "value": "germline", "label": "Germline" },
+          { "value": "rna_fq2bam", "label": "RNA fq2bam" }
+        ]
+      }
+    }
+  },
+  
+  "dataOutputContainer": {
+        "type": "collapsibleRowContainer",
+        "title": "Output Data",
+        "elements": {
+            "outputDir": {
+                "type": "picker",
+                "label": "Output Directory",
+                "name": "outputDir",
+                "help": "Choose a folder on the cluster to write Parabricks results. If not specified, results will go to your run folder.",
+                "remoteLabel": "",
+                "localLabel": "Select",
+                "showFiles": false,
+                "files": false
+              },
+              
+            "ParabricksGeneralOutput": {
+                "type": "rowContainer",
+                "label": "Output Data",
+                "elements": {
+                    "outputBam": {
+                        "type": "text",
+                        "label": "Output BAM File",
+                        "name": "outBam",
+                        "help": "Filename for output BAM file. If not specified, file will be named output.bam and written inside your selected output directory.",
+                        "value": "output.bam"
+                    },
+                      
+                    "outputPrefix": {
+                        "type": "text",
+                        "label": "Output Prefix",
+                        "name": "outPrefix",
+                        "help": "Prefix for RNA output files. If not specified, all output files will be written inside your selected output directory.",
+                        "condition": "analysisType.rna_fq2bam",
+                        "value":"output"
+                    }
+                }
+            },
+              
+              
+            "ParabricksOutputGermline": {
+                "type": "rowContainer",
+                "label": "Output Data Germline",
+                "condition": "analysisType.germline",
+                "elements": {
+                    "outputVCF": {
+                        "type": "text",
+                        "label": "Output VCF File",
+                        "name": "outVariants",
+                        "help": "Filename for output VCF file. If not specified, file will be named output.vcf and written inside your selected output directory.",
+                        "value": "output.vcf"
+                      },
+                      
+                    "outputTXT": {
+                        "type": "text",
+                        "label": "Output TXT File",
+                        "name": "outRecalFile",
+                        "help": "Filename for recalibration output (TXT file). If not specified, file will be named output.txt and written inside your selected output directory.",
+                        "condition": "analysisType.germline",
+                        "value": "output.txt"
+                        
+                    }
+                }
+            }
+        }
+  },
+  
+    "dataSourceContainer": {
+        "type": "collapsibleRowContainer",
+        "title": "Input Data",
+        "elements": {
+            
+            "ParabricksInputFiles1": {
+                "type": "rowContainer",
+                "label": "Input Data 1",
+                "elements": {
+                  "ref": {
+                    "type": "picker",
+                    "label": "Reference Genome",
+                    "name": "ref",
+                    "help": "Select the indexed reference genome FASTA file. You can upload or select from cluster.",
+                    "remoteLabel": "Upload",
+                    "localLabel": "Select",
+                    "showFiles": true,
+                    "files": true,
+                    "defaultPaths": {
+                        "Data": "/scratch/data"
+                    },
+                    "useHPCDefaultPaths": "True"
+                  },      
+                  
+            
+                  
+                  "genomeLibDir": {
+                    "type": "picker",
+                    "label": "Genome Library Directory",
+                    "name": "genomeLibDir",
+                    "help": "Only for RNA workflow: Path to indexed genome directory",
+                    "condition": "analysisType.rna_fq2bam",
+                    "remoteLabel": "Upload",
+                    "localLabel": "Select",
+                    "showFiles": true,
+                    "files": true,
+                    "defaultPaths": {
+                        "Data": "/scratch/data"
+                    },
+                    "useHPCDefaultPaths": "True"
+                  },      
+            
+                  "knownSites": {
+                    "type": "picker",
+                    "label": "Known Sites VCF",
+                    "name": "knownSites",
+                    "help": "Upload or select the known sites VCF file (Germline only).",
+                    "condition": "analysisType.germline",
+                    "remoteLabel": "Upload",
+                    "localLabel": "Select",
+                    "showFiles": true,
+                    "files": true,
+                    "defaultPaths": {
+                        "Data": "/scratch/data"
+                    },
+                    "useHPCDefaultPaths": "True"
+                  }      
+                }
+              },
+            
+              "ParabricksInputFiles2": {
+                "type": "rowContainer",
+                "label": "Input Data 2",
+                "elements": {
+                  "inFq1": {
+                    "type": "picker",
+                    "label": "Input FASTQ File 1",
+                    "name": "fq1",
+                    "help": "Upload or select the forward read FASTQ file.",
+                    "remoteLabel": "Upload",
+                    "localLabel": "Select",
+                    "showFiles": true,
+                    "files": true,
+                    "defaultPaths": {
+                        "Data": "/scratch/data"
+                    },
+                    "useHPCDefaultPaths": "True"
+                  },  
+            
+                  "inFq2": {
+                    "type": "picker",
+                    "label": "Input FASTQ File 2",
+                    "name": "fq2",
+                    "help": "Upload or select the reverse read FASTQ file.",
+                    "remoteLabel": "Upload",
+                    "localLabel": "Select",
+                    "showFiles": true,
+                    "files": true,
+                    "defaultPaths": {
+                        "Data": "/scratch/data"
+                    },
+                    "useHPCDefaultPaths": "True"
+                  }
+                }
+              },
+
+              "ParabricksInputFiles3":{
+                "type": "rowContainer",
+                "label": "Input Data 3",
+                "elements": {
+                  "genomeAnnotation": {
+                    "type": "picker",
+                    "label": "Genome Annotation (GTF, optional)",
+                    "name": "genomeAnnotation",
+                    "help": "Optional GTF/GFF file to use when generating a genome index. Only needed if your genome index library doesn't contain .ht2 files.",
+                    "condition": "analysisType.rna_fq2bam",
+                    "remoteLabel": "Upload",
+                    "localLabel": "Select",
+                    "showFiles": true,
+                    "files": true,
+                    "defaultPaths": { "Data": "/scratch/data" },
+                    "useHPCDefaultPaths": "True"
+                  }
+                }
+              }
+        }
+    },
+  
+    "ParabricksTasks": {
+      "type": "rowContainer",
+      "label": "Basic Compute Resources",
+      "elements": {
+        "cpus": {
+          "type": "number",
+          "label": "Number of CPUs per tasks",
+          "name": "cpus",
+          "value": "1",
+          "max": "48",
+          "help": "This option is mostly used for hybrid codes (typically codes that use both MPI and OpenMP). Only set this field if you are sure your code will utilze multiple threads per task. Keep in mind the total number of cores will be #tasks multiplied by #cpus_per_task)"
+        }
+      }
+    },
+
+  "ParabricksGPU": {
+    "type": "rowContainer",
+    "label": "GPU Resources",
+    "elements": {
+      "gpuDropdown": {
+        "type": "dynamicSelect",
+        "label": "Select GPU Type",
+        "name": "gpu",
+        "help": "Choose your preferred GPU. Default is A30.",
+        "retriever": "list_gpus",
+
+	"default": "a30"
+      },
+      "numgpu": {
+        "type": "number",
+        "label": "Number of GPUs",
+        "name": "numgpu",
+        "help": "Number of accelerators you want to use. On ACES, in theory you can request up to 10.",
+        "value": "1"
+      }
+    }
+  },
+
+  "ParabricksSlurm": {
+    "type": "rowContainer",
+    "label": "Job Configuration",
+    "elements": {
+      "memory": {
+        "type": "unit",
+        "label": "TOTAL Memory",
+        "name": "memory",
+        "help": "OPTIONAL: Provide the total amount of memory you need to estimate the job needs. It's best to be conservative and request more. If your job tries to use more memory than requested, your job will be killed immediately, and you might lose all intermediate results. The composer will use a default value if you don't enter any value.",
+        "units": [
+          { "label": "GB", "value": "G" }
+        ],
+        "value": ""
+      },
+
+      "walltime": {
+        "type": "time",
+        "label": "Expected Runtime",
+        "name": "walltime",
+        "help": "OPTIONAL: Provide the time you estimate the job will need. It's best to be conservative when requesting wall time. If your job exceeds the requested wall time, your job will be killed immediately, and you might lose all intermediate results. If you don't enter a value, composer will use a default value of 2 days.",
+        "value": ""
+      },
+
+      "account": {
+        "type": "dynamicSelect",
+        "label": "Project Account",
+        "name": "account",
+        "help": "Select your project account if different from the default",
+        "retriever": "list_accounts"
+      }
+    }
+  }
+}
