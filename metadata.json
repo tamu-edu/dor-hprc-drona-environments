@@ -53,7 +53,7 @@
   
   "Parabricks": {
     "name": "Parabricks",
-    "description": "This env alloows reserachers to run OParabricks. Env is available on ACES and Grave.",
+    "description": "This environment allows researchers to run Parabricks through a graphical interface. Env is available on ACES and Grace.",
     "category": "Bio",
     "cluster" : "TAMU",
     "organization":"TAMU",
