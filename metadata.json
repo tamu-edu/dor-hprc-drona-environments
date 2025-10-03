@@ -73,6 +73,18 @@
     "last_updated": "2025-08-16"
   },
 
+  "DronaPrimer": {
+    "name": "DronaPrimer",
+    "description": "Training environment used by online training session 'Introduction to the Drona Workflow Engine' on the ACES cluster.",
+    "category": "Training",
+    "cluster":"",
+    "organization":"TAMU",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2025-10-02"
+  },
+ 
+  
   "R-ACES": {
     "name": "R-ACES",
     "description": "R environment",

@@ -1,0 +1,40 @@
+{
+
+   "mainscriptPicker": {
+      "type": "picker",
+      "label": "Source file",
+      "name": "mainscript",
+      "remoteLabel": "local",
+      "localLabel": "cluster",
+      "showFiles": "True",
+      "help" : "Select the source file to compile and run.",
+      "files": "True"
+   },
+
+
+
+   "ContainerAdditionals": {
+      "type": "rowContainer",
+      "label": "Additional",
+      "elements": {
+
+
+         "tasks": {
+            "type": "number",
+            "label": "Number of tasks",
+            "help": "This is the number of tasks your code can utilize. This is mainly for codes that use MPI",
+            "name": "tasks",
+            "value": "1"
+         }, 
+
+         "cpus": {
+            "type": "number",
+            "label": "Number of cpus per task",
+            "help": "This is the number of cpus per task. This is mainly for codes that use OpenMP. If you are not sure, just leave this as 1",
+            "name": "cpus",
+            "value": "1"
+         }
+      } 
+   }
+
+}   

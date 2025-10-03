@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#SBATCH --job-name=[JOBNAME]
+#SBATCH --time=1:0:0 --mem=5G
+#SBATCH --nodes=1 --ntasks=[TASKS] --cpus-per-task=[CPUS]
+#SBATCH --output=out.%j --error=error.%j
+
+module purge
+module load WebProxy
+module load foss/2023b
+
+# compile the code
+mpicc -o runcode.x -fopenmp [fmainscript] 
+
+export OMP_NUM_THREADS=[CPUS]
+time mpirun ./runcode.x
