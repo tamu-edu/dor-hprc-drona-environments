@@ -1,0 +1,130 @@
+{
+  "AlphaFold": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for AlphaFold",
+    "name": "AlphaFold",
+    "version": "1.0.0",
+    "last_updated": "2026-02-11"
+  },
+  "DronaPrimer": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for DronaPrimer",
+    "name": "DronaPrimer",
+    "version": "1.0.0",
+    "last_updated": "2026-02-11"
+  },
+  "Generic": {
+    "name": "Generic",
+    "description": "Generic environment",
+    "category": "generic",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2026-02-11"
+  },
+  "Generic-ACES": {
+    "name": "Generic",
+    "description": "Generic environment",
+    "category": "generic",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2026-02-11"
+  },
+  "Generic-FASTER": {
+    "name": "Generic",
+    "description": "Generic environment",
+    "category": "generic",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2026-02-11"
+  },
+  "Generic-Grace": {
+    "name": "Generic",
+    "description": "Generic environment",
+    "category": "generic",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2026-02-11"
+  },
+  "Generic-Launch": {
+    "name": "Generic",
+    "description": "Generic environment",
+    "category": "generic",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2026-02-11"
+  },
+  "LAMMPS": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for LAMMPS",
+    "name": "LAMMPS",
+    "version": "1.0.0",
+    "last_updated": "2026-02-11"
+  },
+  "MATLAB": {
+    "name": "MATLAB",
+    "description": "Environment assists users in generating and submitting Matlal jobs. This environment uses matlabsubmit as the submission tool",
+    "category": "Scientific",
+    "version": "1.0.0",
+    "author": "Marinus Pennings",
+    "last_updated": "2026-02-11"
+  },
+  "Parabricks": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for Parabricks",
+    "name": "Parabricks",
+    "version": "1.0.0",
+    "last_updated": "2026-02-11"
+  },
+  "Python": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for Python",
+    "name": "Python",
+    "version": "1.0.0",
+    "last_updated": "2026-02-11"
+  },
+  "Python-ACES": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for Python-ACES",
+    "name": "Python-ACES",
+    "version": "1.0.0",
+    "last_updated": "2026-02-11"
+  },
+  "Python-Grace": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for Python-Grace",
+    "name": "Python-Grace",
+    "version": "1.0.0",
+    "last_updated": "2026-02-11"
+  },
+  "R-ACES": {
+    "name": "R",
+    "description": "R environment",
+    "category": "Scientific",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2026-02-11"
+  },
+  "Testing": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for Testing",
+    "name": "Testing",
+    "version": "1.0.0",
+    "last_updated": "2026-02-11"
+  },
+  "tamulauncher": {
+    "name": "tamulauncher",
+    "description": "Tool to run a large number of sequential or multi-trheaded commands in a single job",
+    "category": "Scientific",
+    "version": "1.0.0",
+    "author": "Marinus Pennings",
+    "last_updated": "2026-02-11"
+  }
+}
