@@ -15,14 +15,6 @@
     "version": "1.0.0",
     "last_updated": "2026-04-16"
   },
-  "bak": {
-    "name": "Generic",
-    "description": "Generic environment",
-    "category": "generic",
-    "version": "1.0.0",
-    "author": "",
-    "last_updated": "2026-04-16"
-  },
   "configuration": {
     "author": "",
     "category": "Uncategorized",
@@ -44,14 +36,6 @@
     "category": "Uncategorized",
     "description": "Environment for jobscripts",
     "name": "jobscripts",
-    "version": "1.0.0",
-    "last_updated": "2026-04-16"
-  },
-  "modules": {
-    "author": "",
-    "category": "Uncategorized",
-    "description": "Environment for modules",
-    "name": "modules",
     "version": "1.0.0",
     "last_updated": "2026-04-16"
   }
