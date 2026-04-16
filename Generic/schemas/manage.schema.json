@@ -1,0 +1,251 @@
+{
+
+  "envSelect": {
+     "type": "dynamicSelect",
+     "label": "Select Workflow",
+     "name": "allworkflows",
+     "retriever" : "drona_select_wf.sh"
+  },
+
+  "hidden_jobs_check": {
+    "type": "hidden",
+    "label" : "JOB_IDS",
+    "name": "jobs",
+    "refreshInterval" : "21",
+    "isDynamic": true,
+    "retrieverParams": {
+       "WORKFLOW_ID": "$allworkflows"
+    },
+    "retriever": "drona_info_jobs.sh"
+  },
+
+  "hidden_status_check": {
+    "type": "hidden",
+    "name": "status",
+    "label": "Status",
+    "isDynamic": true,
+    "condition" : "!jobs.",
+    "refreshInterval" : "27",
+    "retrieverParams": {
+       "JOBID": "$jobs"
+    },
+    "retriever": "drona_info_slurmstatus.sh"
+  },
+
+  "hidden_jobdir_path": {
+    "type": "hidden",
+    "name": "job_dir",
+    "label": "Job Directory Path",
+    "isDynamic": true,
+    "condition": "!jobs.",
+    "retrieverParams": {
+      "WORKFLOW_ID": "$allworkflows"
+    },
+    "retriever": "drona_info_jobdir.sh"
+  },
+
+   "workingDirectory": {
+    "type": "rowContainer",
+    "label": "Workflow Directory",
+    "condition": "!jobs.",
+    "elements": {
+      "jobDirLabel": {
+        "type": "staticText",
+        "label": "Workflow Directory",
+        "name": "job_dir_html",
+        "isDynamic": true,
+        "allowHtml": true,
+	"condition": "!job_dir.",
+        "retrieverParams": {
+          "JOB_DIR": "$job_dir"
+        },
+        "retriever": "drona_info_jobdir_html.sh"
+      }
+    }
+  },
+
+  "slurmrow" : {
+    "type": "rowContainer",
+    "condition" : "!jobs.",
+    "elements": {
+      "slurm_summary": {
+        "type": "staticText",
+        "label" : "Slurm Jobs",
+        "name": "slurm",
+        "isDynamic": true,
+        "allowHtml": true,
+	"showRefreshButton": true,
+        "retrieverParams": {
+          "JOBS": "$jobs"
+        },
+        "retriever": "drona_slurm_jobs.sh"
+      }
+    }
+  },
+
+
+  "sstat_section": {
+    "type": "rowContainer",
+    "condition" : "!allworkflows. &&  !status. && status.RUNNING && !jobs. ",
+    "title": "Resource Utilization",
+    "elements": {
+      "sstat2_utiliztion": {
+        "type": "staticText",
+        "name": "sstat2",
+        "label": "",
+        "refreshInterval" : "20",
+        "isDynamic": true,
+        "retrieverParams": {
+          "JOBID": "$jobs",
+          "NODE": "$node"
+        },
+        "retriever": "drona_slurm_sstat.sh",
+        "showRefreshButton": false,
+        "allowHtml": true
+      }
+    }
+  },
+
+  "utilization_section": {
+    "type": "rowContainer",
+    "condition" : "!allworkflows. &&  !status. && status.RUNNING && !jobs. ",
+    "title": "Resource Utilization",
+    "elements": {
+      "node_utiliztion": {
+        "type": "staticText",
+        "name": "nodueutil",
+        "label": "",
+        "refreshInterval" : "10",
+        "isDynamic": true,
+        "retrieverParams": {
+          "JOBID": "$jobs"
+        },
+        "retriever": "drona_slurm_nodeutil.sh",
+        "showRefreshButton": false,
+        "allowHtml": true
+      }
+    }
+  },
+
+
+  "job_summary_section": {
+    "type": "rowContainer",
+    "condition": "!allworkflows. && !status. && status.DONE && !jobs.",
+    "label": "Job Summary",
+    "elements": {
+      "seff_summary": {
+        "type": "staticText",
+        "name": "seffsummary",
+        "label": "Job Summary",
+        "isDynamic": true,
+        "retrieverParams": {
+          "JOBIDS": "$jobs"
+        },
+        "retriever": "drona_slurm_seff.sh",
+        "showRefreshButton": false,
+        "allowHtml": true
+      }
+    }
+  },
+
+  "logCollapse": {
+    "type" : "collapsibleRowContainer",
+    "title" : "Output/Error logs",
+    "condition" : " !jobs.",
+    "default_state" : "collapsed",
+    "elements" :  {
+      "row_section": {
+        "type": "rowContainer",
+        "elements": {
+          "log_tabs": {
+            "type": "staticText",
+            "name": "logname",
+            "label": "",
+            "isDynamic": true,
+            "retrieverParams": {
+               "WORKFLOW_ID": "$allworkflows"
+            },
+            "retriever": "drona_slurm_logs.sh",
+            "refreshInterval" : "10",
+            "showRefreshButton": false,
+            "allowHtml": true
+          }
+        }
+      }
+    }
+  },
+
+  "utilization_detail_section": {
+    "type": "collapsibleRowContainer",
+    "condition" : "!allworkflows. &&  !status. && status.RUNNING && !jobs. ",
+    "title": "Resource Utilization",
+    "elements": {
+      "nodeSelect": {
+        "type": "dynamicSelect",
+        "label": "pick node to inspect",
+        "name": "node",
+        "retriever" : "drona_select_nodes.sh",
+        "retrieverParams": {
+          "JOBID": "$jobs"
+        }
+      },
+      "top_table": {
+        "type": "staticText",
+        "name": "toptable",
+        "condition" : "!node.",
+        "label": "",
+        "isDynamic": true,
+        "retrieverParams": {
+          "JOBID": "$jobs",
+          "NODE": "$node"
+        },
+        "retriever": "drona_slurm_cgroups.sh",
+        "refreshInterval" : "7",
+        "showRefreshButton": false,
+        "allowHtml": true
+      }
+    }
+  },
+
+  "job_summary_section": {
+    "type": "rowContainer",
+    "condition": "!allworkflows. && !status. && status.DONE && !jobs.",
+    "label": "Job Summary",
+    "elements": {
+      "seff_summary": {
+        "type": "staticText",
+        "name": "seffsummary",
+        "label": "Job Summary",
+        "isDynamic": true,
+        "retrieverParams": {
+          "JOBIDS": "$jobs"
+        },
+        "retriever": "drona_slurm_seff.sh",
+        "showRefreshButton": false,
+        "allowHtml": true
+      }
+    }
+  },
+
+  "action_select": {
+    "type": "select",
+    "name": "action",
+    "label": "Action",
+    "labelOnTop": true,
+    "condition": "!allworkflows.",
+    "options": [
+      { "value": "none",   "label": "No Action" },
+      { "value": "cancel", "label": "Cancel Job" },
+      { "value": "delete", "label": "Delete Workflow" }
+    ],
+    "value": { "value": "none", "label": "No Action" }
+  },
+  
+  "delete_dir_checkbox": {
+    "type": "checkbox",
+    "name": "delete_workdir",
+    "label": "Delete the working directory along with workflow",
+    "condition": "action.delete",
+    "value": "yes"
+  }
+}

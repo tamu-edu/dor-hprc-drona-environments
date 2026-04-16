@@ -1,0 +1,6 @@
+echo "[
+  { \"label\": \"No action\", \"value\": \"alphafold3_no_action\" },
+  { \"label\": \"Cancel CPU job\", \"value\": \"alphafold2_cancel_cpu\" },
+  { \"label\": \"Cancel GPU job\", \"value\": \"alphafold2_cancel_gpu\" },
+  { \"label\": \"Request walltime extension CPU job\", \"value\": \"alphafold2_extend_cpu\" }
+]"

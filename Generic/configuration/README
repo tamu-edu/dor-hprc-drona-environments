@@ -1,0 +1,32 @@
+
+If you use a hierarchical module system, you can add additional toolchains manually.
+
+
+Step 1: create new module data base
+===================================
+
+Suppose you want to create a database of modules under toolchain foss/2025
+
+cd $DRONA_ENV_DIR/configuration
+module load foss/2025
+./generate_modules_db.py -b
+mv modules.sqlite3 ../modules/modules-foss-2025.sqlite
+
+
+Step 2: Add toolchain to module element in schema
+=================================================
+
+cd ../schemas
+vi create.schema.json
+
+in Module element, under toolchains, add :
+
+      {
+        "label": "foss/2025",
+        "value": "modules-foss-2025"
+      }
+
+
+Since this is a JSON formatted file, don't forget to add a comma between the old label/value element and the newly added label/value element.
+
+The newlyy  added toolchain will be available in the dropdown. You can add as many toolchains as needed. 

@@ -1,0 +1,16 @@
+{
+  "runDestinationFinal": {
+    "type": "jobNameLocation",
+    "customJobName": "configuration-fiels",
+    "showName": false,
+    "showLocation": false,
+    "disableJobNameChange": true,
+    "disableJobLocationChange": true
+  },
+
+  "text" : {
+    "type" : "staticText",
+    "value" : "Running setup script"
+  }
+
+}

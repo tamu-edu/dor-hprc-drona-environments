@@ -1,0 +1,160 @@
+{
+  "runDestinationFinal": {
+    "type": "jobNameLocation",
+    "label" : "Job Name and Location",
+    "help": "Optional. Leave blank to use defaults. If empty, the engine will assign a job ID and staging path automatically.",
+    "customJobName": "",
+    "pickerLabel": "Location",
+    "showName": true,
+    "showLocation": true,
+    "disableJobNameChange": false,
+    "disableJobLocationChange": false
+  },
+
+
+  "Modules": {
+    "type": "module",
+    "label": "Add modules (optional)",
+    "name": "module_list",
+    "module_db_root" : "/var/www/ood/apps/sys/dor-hprc-drona-composer-beta/environments/Generic/modules",
+    "help": "Modules are used to manage all the software packages available. If your job needs a software package, just start typing in the search bar, and it will show all available software modules matching the entered string. Select the software module you want and click the add button. The dropdown on the right shows all available toolchains. If you need multiple software modules, use the same toolchain. All added modules will show up in little blue bubbles. If you want to remove any of the added modules, just click on its name.",
+    "toolchainName": "toolchain",
+    "toolchains": [
+      {
+        "label": "No toolchain (default)",
+        "value": "modules/modules"
+      }
+    ]
+  },
+    
+  "ImportUpload": {
+    "type": "rowContainer",
+    "label": "",
+    "elements": {
+
+      "Script": {
+        "type": "picker",
+        "label" : "Import Script (optional)",
+        "localLabel": "Import",
+        "showFiles": "true",
+        "name": "importscript",
+        "help": "Select the script you want to import.",
+        "useHPCDDefaultPaths": true
+      },
+
+      "fileUploader": {
+        "type": "uploader",
+        "label": "Upload files",
+        "help": "If your job needs any additional files or directories that are stored on your local machine, e.g., data files, to run your job, you can upload them here. In the dropdown, select if you wish to upload files or directories, and click the Add button. The file browser will pop up, where you can select files or directories. You can upload multiple files and directories. If you selected a file to upload by mistake, you can remove it by clicking on that particular file's name."
+      }
+    }
+  },
+  
+  
+  "slurmCollapse": {
+    "type" : "collapsibleRowContainer",
+    "title" : "Slurm Options",
+    "default_state" : "collapsed",
+    "elements" :  { 
+  
+      "ContainerTasks": {
+        "type": "rowContainer",
+        "label": "GPU",
+        "elements": {
+
+          "tasks": {
+            "type": "number",
+            "label": "Number of tasks",
+            "help": "This is the number of tasks your code can utilize. This is mainly for codes that use MPI. If you are not sure, just leave this as 1",
+            "name": "tasks",
+            "value": "1"
+          },
+
+
+          "nodes": {
+            "type": "text",
+            "label": "Number of nodes (optional)",
+            "help": "Only set this field if you requested multiple tasks above and you want to distribute these tasks over multiple nodes. This is most common for MPI codes.",
+            "name": "nodes",
+            "value": ""
+          },
+
+          "cpus": {
+            "type": "number",
+            "label": "Number of cpus per tasks",
+            "help": "Mostly used for hybrid codes that use multiple threads per task.",
+            "name": "cpus",
+            "value": "1"
+          }
+	}
+      },
+    
+      "ContainerGPU": {
+        "type": "rowContainer",
+        "label": "GPU",
+        "elements": {
+          "gpuDropdown": {
+            "type": "dynamicSelect",
+            "label": "Use Accelerator",
+            "help": "Only select an accelerator if your job will utilize them. You might need to setup the environment for the accelerator you selected in the job script.",
+            "name": "gpu",
+            "retriever": "retrieve_gpus"
+          },
+
+          "numgpus": {
+            "type": "number",
+            "label": "#GPUs",
+            "help": "Number of accelerators you want to use.",
+            "name": "numgpu",
+            "value": "1",
+            "condition": " !gpu.none && !gpu. "
+          }
+        }
+      },
+
+      "ContainerAdditional": {
+        "type": "rowContainer",
+        "label": "Additional",
+        "elements": {
+
+          "memory": {
+            "type": "unit",
+            "label": "TOTAL Memory",
+            "name": "memory",
+            "help": "OPTIONAL: Provide the total amount of memory you need to estimate the job needs.",
+            "units": [
+              {
+                "label": "GB",
+                "value": "G"
+              }
+            ]
+          },
+
+          "Walltime": {
+            "type": "time",
+            "label": "Expected run time",
+            "help": "OPTIONAL: Provide the time you estimate the job will need.",
+            "name": "walltime",
+            "value": ""
+          },
+
+          "account": {
+            "type": "dynamicSelect",
+            "label": "Project Account",
+            "help": "OPTIONAL: Use a different project account than your default.",
+            "name": "account",
+            "retriever": "list_accounts"
+          },
+
+          "extraText": {
+            "type": "text",
+            "label": "Additional Slurm parameters",
+            "help": "OPTIONAL: Provide Slurm-specific parameters (advanced).",
+            "name": "extra_slurm",
+            "value": ""
+          }
+	}
+      }
+    }
+  }
+}

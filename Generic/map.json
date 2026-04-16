@@ -1,7 +1,13 @@
 {
   "JOBNAME" :"$name",
+  "DRIVER" : "!retrieve_driver_contents( $mode )",
   "DUMMY": "!retrieve_tasks_and_other_resources($nodes,$tasks,$cpus,$memory,$gpu,$numgpu,$walltime,$account,$extra_slurm,$advancedbox)",
+  "CREATE_DIR": "$location",
+  "MANAGE_DIR": "$job_dir",
+  "JOBS": "$jobs",
+  "STATUS": "$status",
   "flocation": "$location",
-  "MODULES": "!retrieve_loaded_modules($module_list)"
-
+  "MODULES": "!retrieve_loaded_modules($module_list)",
+  "MANAGE": "!retrieve_manage_action($mode, $action, $allworkflows, $jobs, $status, $delete_workdir, $job_dir)",
+  "IMPORTSCRIPT": "!import_slurm_script($importscript)"
 }

@@ -24,9 +24,9 @@
     "category": "General",
     "cluster" : "",
     "organization":"TAMU",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "author": "Marinus Pennings",
-    "last_updated": "2025-08-09"
+    "last_updated": "2026-04-15"
   },
 
   "AlphaFold": {

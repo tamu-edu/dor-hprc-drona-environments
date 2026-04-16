@@ -1,6 +1,2 @@
-#!/bin/bash
-source /etc/profile
+[DRIVER]
 
-cd [flocation]
- 
-/sw/local/bin/sbatch [job-file-name] 
