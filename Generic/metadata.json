@@ -1,10 +1,58 @@
 {
+  "drivers": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for drivers",
+    "name": "drivers",
+    "version": "1.0.0",
+    "last_updated": "2026-04-16"
+  },
   "clusters": {
     "author": "",
     "category": "Uncategorized",
     "description": "Environment for clusters",
     "name": "clusters",
     "version": "1.0.0",
-    "last_updated": "2025-08-09"
+    "last_updated": "2026-04-16"
+  },
+  "bak": {
+    "name": "Generic",
+    "description": "Generic environment",
+    "category": "generic",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2026-04-16"
+  },
+  "configuration": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for configuration",
+    "name": "configuration",
+    "version": "1.0.0",
+    "last_updated": "2026-04-16"
+  },
+  "schemas": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for schemas",
+    "name": "schemas",
+    "version": "1.0.0",
+    "last_updated": "2026-04-16"
+  },
+  "jobscripts": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for jobscripts",
+    "name": "jobscripts",
+    "version": "1.0.0",
+    "last_updated": "2026-04-16"
+  },
+  "modules": {
+    "author": "",
+    "category": "Uncategorized",
+    "description": "Environment for modules",
+    "name": "modules",
+    "version": "1.0.0",
+    "last_updated": "2026-04-16"
   }
 }
