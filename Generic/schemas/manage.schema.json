@@ -115,13 +115,13 @@
         "type": "staticText",
         "name": "nodueutil",
         "label": "",
-        "refreshInterval" : "10",
+        "refreshInterval" : "120",
         "isDynamic": true,
         "retrieverParams": {
           "JOBID": "$jobs"
         },
         "retriever": "drona_slurm_nodeutil.sh",
-        "showRefreshButton": false,
+        "showRefreshButton": true,
         "allowHtml": true
       }
     }
@@ -166,8 +166,8 @@
                "WORKFLOW_ID": "$allworkflows"
             },
             "retriever": "drona_slurm_logs.sh",
-            "refreshInterval" : "10",
-            "showRefreshButton": false,
+            "refreshInterval" : "70",
+            "showRefreshButton": true,
             "allowHtml": true
           }
         }
@@ -200,27 +200,7 @@
           "NODE": "$node"
         },
         "retriever": "drona_slurm_cgroups.sh",
-        "refreshInterval" : "7",
-        "showRefreshButton": false,
-        "allowHtml": true
-      }
-    }
-  },
-
-  "job_summary_section": {
-    "type": "rowContainer",
-    "condition": "!allworkflows. && !status. && status.DONE && !jobs.",
-    "label": "Job Summary",
-    "elements": {
-      "seff_summary": {
-        "type": "staticText",
-        "name": "seffsummary",
-        "label": "Job Summary",
-        "isDynamic": true,
-        "retrieverParams": {
-          "JOBIDS": "$jobs"
-        },
-        "retriever": "drona_slurm_seff.sh",
+        "refreshInterval" : "120",
         "showRefreshButton": false,
         "allowHtml": true
       }

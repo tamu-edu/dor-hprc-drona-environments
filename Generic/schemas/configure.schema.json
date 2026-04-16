@@ -1,7 +1,7 @@
 {
   "runDestinationFinal": {
     "type": "jobNameLocation",
-    "customJobName": "configuration-fiels",
+    "customJobName": "configuration-fields",
     "showName": false,
     "showLocation": false,
     "disableJobNameChange": true,
