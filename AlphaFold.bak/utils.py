@@ -1,7 +1,7 @@
 import math
 import os
 import subprocess
-from datetime import date
+import datetime
 from collections import defaultdict
 
 aces_parafold_modules = '''module load GCC/11.3.0  OpenMPI/4.1.4 AlphaFold/2.3.2-CUDA-11.8.0
@@ -20,8 +20,8 @@ grace_pickle_module = ''' module load AlphaPickle/1.4.1 '''
 faster_pickle_module = '''module load AlphaPickle/1.4.1'''
 
 driver_alphafold3 = '''
-out=`/sw/local/bin/sbatch [account] [email] alphafold3-cpu.job`
-jobid=`echo "$out" | grep "Submitted batch job" | cut -d" " -f4`
+out=`/sw/local/bin/sbatch alphafold3-cpu.job`
+jobid=`echo $out | tail -n 1 | grep "Submitted batch job" | cut -d" " -f4`
 
 if [ -z "${jobid}" ]; then
    echo "The Alphafold job was not submitted succesfully. Exiting now"
@@ -29,13 +29,15 @@ if [ -z "${jobid}" ]; then
 fi
 
 echo "Submitted alphafold3-cpu.job, jobid: ${jobid}"
-
-out=`/sw/local/bin/sbatch [account] [email] --dependency=afterok:${jobid} alphafold3-gpu.job`
-jobidgpu=`echo "$out" | grep "Submitted batch job" | cut -d" " -f4`
-
-echo "Submitted alphafold3-gpu.job, jobid: ${jobidgpu}, depending on successful completion of job ${jobid}"
-
-printf "%s\n%s\n" "$jobid" "$jobidgpu" > slurm_jobids.txt
+   
+out=`/sw/local/bin/sbatch --dependency=afterok:${jobid} --kill-on-invalid-dep=yes  alphafold3-gpu.job`
+jobidgpu=`echo $out | tail -n 1 | grep "Submitted batch job" | cut -d" " -f4`
+echo
+echo "Submitted alphafold3-gpu.job, jobid: ${jobidgpu} (dependency: completion job ${jobid})"
+echo
+echo "Submission part of your AlphaFold workflow has been completed. Once the requested resources are available, your job will start running."
+echo
+echo "NOTE: Do NOT hit the "Submit job" button  again. It will re-submit the worklow, using the same output directory"
 '''
 
 driver_parafold= '''
@@ -49,9 +51,8 @@ if [ -z "${jobid}" ]; then
 else
    output2="--output=out-parafold.%j --error=out-parafold.%j"
    pparams="--job-name=parafold-[job-file-name] --time=[gputime] --ntasks-per-node=1 --cpus-per-task=24 --mem=122G [gpu] [account] [email]"
-   gpujobid=`/sw/local/bin/sbatch ${pparams} ${output2} --dependency=afterok:${jobid} parafold-gpu.job | tail -n 1 | grep "Submitted batch job" | cut -d" " -f4`
-   printf "%s\n%s\n" "$jobid" "$gpujobid" > slurm_jobids.txt
-fi
+   /sw/local/bin/sbatch ${pparams} ${output2}  --dependency=afterok:${jobid} parafold-gpu.job 
+fi 
 '''
 
 driver_alphafold2='''
@@ -59,8 +60,7 @@ output="--output=out-alphafold.%j --error=error.alphafold.%j"
 pparams="--time=[time] --ntasks-per-node=1 --cpus-per-task=24 --mem=180G [gpu] [account] [email]"
 
 #submit the job
-jobid=`/sw/local/bin/sbatch --job-name=alphafold-[job-file-name] ${pparams} ${output} reduced_dbs.job | tail -n 1 | grep "Submitted batch job" | cut -d" " -f4`
-printf "%s\n" "$jobid" > slurm_jobids.txt
+/sw/local/bin/sbatch --job-name=alphafold-[job-file-name] ${pparams} ${output}  reduced_dbs.job
 '''
 
 
@@ -73,14 +73,13 @@ message_reduced='''
 his script will run AlphaFold in a single step using Alphafold. See the Reduced_dbs tab for the Alphafold command. You are welcome to make any changes before submitting.
 '''
 
-af3_singularity_env = (
-    "--env 'XLA_PYTHON_CLIENT_PREALLOCATE=false' "
-    "--env 'TF_FORCE_UNIFIED_MEMORY=true' "
-    "--env 'XLA_CLIENT_MEM_FRACTION=3.2' "
-    "--env XLA_FLAGS=--xla_disable_hlo_passes=custom-kernel-fusion-rewriter"
-)
-af3_python_flags = "--flash_attention_implementation=xla"
-old_gpu_flags = af3_singularity_env
+old_gpu_flags=''' \\  
+  --nv --env 'XLA_PYTHON_CLIENT_PREALLOCATE=false' \\
+  --env 'TF_FORCE_UNIFIED_MEMORY=true' \\
+  --env 'XLA_CLIENT_MEM_FRACTION=3.2' \\
+  --env XLA_FLAGS=--xla_disable_hlo_passes=custom-kernel-fusion-rewriter \\
+  --flash_attention_implementation=xla
+'''
 
 def retrieve_modelpreset(modelpreset=""):
     if modelpreset == "":
@@ -99,7 +98,6 @@ def retrieve_dbpreset(db_preset=""):
     else:
         drona_add_additional_file("parafold-gpu.job", "parafold-gpu")
         drona_add_additional_file("parafold-cpu.job", "parafold-cpu")
-        driverfile=cwd+"driver_parafold.template"
         drona_add_mapping("runcommand",driver_parafold)
         drona_add_mapping("message",message_parafold)
         if db_preset == "":
@@ -172,16 +170,12 @@ def retrieve_gpu(gpu=""):
         drona_add_mapping("OLDGPUFLAGS", old_gpu_flags)
     else:
         drona_add_mapping("OLDGPUFLAGS", "")
-
-    gpupartition="gpu"
-    if finalgpustring == "a40":
-        gpupartition= "gpu-a40"
-    return f"--partition="+gpupartition+" --gres=gpu:"+finalgpustring+":1"
+    return f"--partition=gpu --gres=gpu:"+finalgpustring+":1"
 
 
 def retrieve_maxtemplate(maxtemplate=""):
     if maxtemplate == "":
-        return f""+str(date.today())
+        return f""+str(datetime.date.today())
     else:
         return f""+maxtemplate
 
@@ -213,10 +207,28 @@ def retrieve_mail(notification="", email=""):
     return result
 
 def retrieve_walltime(time=""):
-    return "48:00:00" if time == "" else (time+":00")
+    if time == "":
+        return "48:00:00" 
+    else:
+        times=time.split(':')
+        total_hours = (int(times[0])+int(times[1])/60)
+        if total_hours > 72:
+            drona_add_message("Requested walltime for cpu exceeded 72 hours. Reducing to max. See alphafold-cpu.job: #SBATCH--time","warning")
+            return "72:00:00"
+        else:
+            return f""+time+":00"
 
 def retrieve_gpuwalltime(gputime=""):
-    return "24:00:00" if gputime == "" else (gputime+":00")
+    if gputime == "":
+        return "24:00:00"
+    else:
+        times=gputime.split(':')
+        total_hours = (int(times[0])+int(times[1])/60)
+        if total_hours > 48:
+            drona_add_message("Requested walltime for gpu exceeded 48 hours. Reducing to max. See alphafold-gpu.job: #SBATCH --time","warning")
+            return "48:00:00"
+        else:
+            return f""+time+":00"
 
 def process_alpahfold2(version,dbpreset,proteinfasta,modelpreset,datadir,pickle,outputdir):
     if version != "alphafold2":
@@ -230,34 +242,20 @@ def process_alpahfold2(version,dbpreset,proteinfasta,modelpreset,datadir,pickle,
 
 
 
-def process_alpahfold3(version,jsoninput,modelinput,recycles,location,af3name=""):
+def process_alpahfold3(version,jsoninput,modelinput,recycles,location):
     if version != "alphafold3":
         return ""
 
+    drona_add_message("Drona configures the memory to 64GB. For longer sequences, > 1000 residues, you may need to increase the memory to 128GB. To do so, update the line  #SBATCH --mem=64G  in the alphafold3-cpu.job tab.","note")
     # process alphafold3 params
     drona_add_additional_file("alphafold3-cpu.job","alphafold3-cpu.job")
     drona_add_additional_file("alphafold3-gpu.job","alphafold3-gpu.job")
     drona_add_additional_file("alphafold3-input.json","alphafold3-input.json")
 
     drona_add_mapping("RECYCLES",str(recycles))
-    drona_add_mapping("JSONDIR",location)
+    drona_add_mapping("JSONDIR",location);
     drona_add_mapping("JSONFILE","alphafold3-input.json")
     drona_add_mapping("runcommand",driver_alphafold3)
-
-    # Run name — sanitise to safe characters, default to "af3run"
-    name = (af3name or "").strip()
-    if not name:
-        name = "af3run"
-    import re as _re
-    name = _re.sub(r'[^A-Za-z0-9_-]', '_', name)
-    drona_add_mapping("AF3NAME", name)
-
-    # Output directory — use the job's working directory (from location picker)
-    drona_add_mapping("AF3OUTPUTDIR", location)
-
-    # Singularity env vars and Python flags applied on all clusters
-    drona_add_mapping("AF3SINGULARITYENV", af3_singularity_env)
-    drona_add_mapping("AF3PYTHONFLAGS", af3_python_flags)
 
     if jsoninput == None or jsoninput == "":
         drona_add_message("No input JSON specified. Either provide one or create in preview window","warning")
@@ -273,4 +271,7 @@ def process_alpahfold3(version,jsoninput,modelinput,recycles,location,af3name=""
     return ""
 
 
-
+def retrieve_timestamp():
+    now = datetime.datetime.now()
+    timestamp = now.strftime("%Y%m%d-%H%M%S")
+    return f"{timestamp}"

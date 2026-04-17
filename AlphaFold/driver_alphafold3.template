@@ -1,0 +1,19 @@
+
+
+out=`/sw/local/bin/sbatch alphafold3-cpu.job`
+jobid=`echo "$out" | grep "Submitted batch job" | cut -d" " -f4`
+
+if [ -z "${jobid}" ]; then
+   echo "The Alphafold job was not submitted succesfully. Exiting now"
+   exit 0
+fi
+
+echo "Submitted alphafold3-cpu.job, jobid: ${jobid}"
+   
+out=`/sw/local/bin/sbatch --dependency=afterok:${jobid} alphafold3-gpu.job`
+jobidgpu=`tail -n 1 $out  | grep "Submitted batch job" | cut -d" " -f4`
+
+echo "Submitted alphafold3-gpu.job, jobid: ${jobidgpu}, depending on successful completion of job ${jobid}"
+
+# Record job IDs so the monitoring UI can track progress
+printf "%s\n%s\n" "$jobid" "$jobidgpu" > slurm_jobids.txt

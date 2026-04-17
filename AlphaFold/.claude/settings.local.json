@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import numpy; print\\(numpy.__file__\\)\" 2>/dev/null && echo \"PYTHONPATH=$PYTHONPATH\" && echo \"LMOD_CMD=$LMOD_CMD\")",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Read(//scratch/user/u.ak202494/alphafold_run/parafold_output_dir/1L2Y/**)",
+      "Bash(python3 -c \":*)"
+    ]
+  }
+}

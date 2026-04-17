@@ -1,0 +1,15 @@
+output1="--output=out-alphafold.%j --error=out-alphafold.%j"
+aparams="--job-name=alphafold-[job-file-name] --time=[time] --ntasks=1 --cpus-per-task=48 --mem=488G [account] [email]"
+jobid=`/sw/local/bin/sbatch ${aparams} ${output1} alphafold.job  2> /dev/null | tail -n 1 | grep "Submitted batch job" | cut -d" " -f4`
+
+if [ -z "${jobid}" ]; then
+   echo "The Alphafold job was not submitted succesfully. Exiting now"
+   exit 0
+else
+   output2="--output=out-parafold.%j --error=out-parafold.%j"
+   pparams="--job-name=parafold-[job-file-name] --time=[time] --ntasks-per-node=1 --cpus-per-task=24 --mem=122G [gpu] [account] [email]"
+   gpujobid=`/sw/local/bin/sbatch ${pparams} ${output2} --dependency=afterok:${jobid} parafold.job | tail -n 1 | grep "Submitted batch job" | cut -d" " -f4`
+
+   # Record job IDs so the monitoring UI can track progress
+   printf "%s\n%s\n" "$jobid" "$gpujobid" > slurm_jobids.txt
+fi

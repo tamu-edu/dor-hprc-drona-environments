@@ -9,7 +9,8 @@
   "gputime" : "!retrieve_gpuwalltime($walltimegpu)",
   "account" : "!retrieve_account($account)",
   "alphafold2" : "!process_alpahfold2($alphafoldversion,$dbpreset,$proteinfasta,$modelpreset,$datadir,$pickle,$outputdir)",
-  "alphafold3" : "!process_alpahfold3($alphafoldversion,$jsoninput,$modelinput,$recycles,$location,$name)"
+  "alphafold3" : "!process_alpahfold3($alphafoldversion,$jsoninput,$modelinput,$recycles,$location)",
+  "timestamp" : "!retrieve_timestamp()"
 }
 
 

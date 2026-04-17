@@ -1,275 +1,469 @@
 {
-
-"AlphaFoldVersionRadio": {
-      "type": "radioGroup",
-      "name": "alphafoldversion",
-      "label": "AlphaFold version",
-      "options": [
-         {
-            "label" : "AlphaFold3",
-            "value": "alphafold3"
-         },
-	 {
-            "label" : "AlphaFold2",
-            "value": "alphafold2"
-         }
-      ]
-   },
-
-"ContainerAF3Disclaimer": {
+  "VersionModeRow": {
     "type": "rowContainer",
-    "label": "data",
-    "condition" : "alphafoldversion.alphafold3",
+    "label": "",
     "elements": {
-
-       "disclaimer": {
-          "type": "staticText",
-          "label": "",
-          "value": "<div style='background:Gainsboro; padding: 10px; border-radius: 7px; margin-bottom: 10px;'><p style='font-size: 1.1em; margin-bottom: 0;'><center>To download the AlphaFold3 model file, you have to agree to the terms of use. <br>Please fill out the <a href='https://docs.google.com/forms/d/e/1FAIpQLSfWZAgo1aYk0O4MuAXZj8xRQ8DafeFJnldNOnh_13qAx2ceZw/viewform' target='_blank'>AlphaFold3 Google Form</a> to request the model file</center></p></div>",
-         "allowHtml": true
+      "AlphaFoldVersionRadio": {
+        "type": "radioGroup",
+        "name": "alphafoldversion",
+        "label": "AlphaFold version",
+        "options": [
+          {
+            "label": "AlphaFold3",
+            "value": "alphafold3"
+          },
+          {
+            "label": "AlphaFold2",
+            "value": "alphafold2"
+          }
+        ]
+      },
+      "ModeRadio": {
+        "type": "radioGroup",
+        "name": "mode",
+        "label": "Mode",
+        "options": [
+          {
+            "label": "Run",
+            "value": "run"
+          },
+          {
+            "label": "Monitor",
+            "value": "monitor"
+          }
+        ],
+        "value": "run"
       }
     }
-},   
-
-"ContainerF3": {
+  },
+  "ContainerAF3Disclaimer": {
     "type": "rowContainer",
     "label": "data",
-    "condition" : "alphafoldversion.alphafold3",
+    "condition": "mode.run && alphafoldversion.alphafold3",
     "elements": {
-
-"JSON": {
-    "type": "picker",
-    "label": "JSON input",
-    "name": "jsoninput",
-    "help":"Select JSON input file",
-    "localLabel": "select",
-    "showFiles": "True",
-    "files": "True",
-    "defaultPaths": {
-        "HOME": "$HOME",
-        "SCRATCH": "/scratch/user/$USER",
-	"Examples" : "/scratch/data/bio/alphafold3/examples/"
-    },
-    "useHPCDefaultPaths": "False"
-  },
-
-  "MODEL": {
-    "type": "picker",
-    "label": "Directory to model file",
-    "name": "modelinput",
-    "help":"Select the model file. You should have received this when registering with AlphaFold3",
-    "localLabel": "Select",
-    "showFiles": "False",
-    "files": "False",
-    "defaultPaths": {
-        "HOME": "$HOME",
-        "SCRATCH": "/scratch/user/$USER"
-    },
-    "useHPCDefaultPaths": "False"
-  },
-
-  "RECYCLES": {
-    "type": "number",
-    "label": "Number of recycles (default: 3)",
-    "name": "recycles",
-    "value": "3",
-    "help" : "Set the number of recycles, default is 3"
-  }
-
-
+      "disclaimer": {
+        "type": "staticText",
+        "label": "",
+        "value": "<div style='background:Gainsboro; padding: 10px; border-radius: 7px; margin-bottom: 10px;'><p style='font-size: 1.1em; margin-bottom: 0;'><center>To download the AlphaFold3 model file, you have to agree to the terms of use. Please fill out the <a href='https://docs.google.com/forms/d/e/1FAIpQLSfWZAgo1aYk0O4MuAXZj8xRQ8DafeFJnldNOnh_13qAx2ceZw/viewform' target='_blank'>AlphaFold3 Google Form</a> to request the model file</center></p></div>",
+        "allowHtml": true
+      }
     }
   },
-
+  "ContainerF3Meta": {
+    "type": "rowContainer",
+    "label": "Job",
+    "condition": "mode.run && alphafoldversion.alphafold3",
+    "elements": {
+      "AF3NAME": {
+        "type": "text",
+        "label": "Run name",
+        "name": "name",
+        "value": "",
+        "help": "Short name for this run (letters, digits, underscores). Used to label SLURM jobs and the output directory."
+      },
+      "AF3OUTPUTDIR": {
+        "type": "picker",
+        "label": "Output directory",
+        "name": "location",
+        "help": "Directory where AlphaFold 3 results will be written. Defaults to your scratch space.",
+        "localLabel": "Select",
+        "showFiles": "False",
+        "files": "False",
+        "defaultPaths": {
+          "HOME": "$HOME",
+          "SCRATCH": "/scratch/user/$USER"
+        },
+        "useHPCDefaultPaths": "False"
+      }
+    }
+  },
+  "ContainerF3": {
+    "type": "rowContainer",
+    "label": "data",
+    "condition": "mode.run && alphafoldversion.alphafold3",
+    "elements": {
+      "JSON": {
+        "type": "picker",
+        "label": "JSON input",
+        "name": "jsoninput",
+        "help": "Select JSON input file",
+        "localLabel": "select",
+        "showFiles": "True",
+        "files": "True",
+        "defaultPaths": {
+          "HOME": "$HOME",
+          "SCRATCH": "/scratch/user/$USER",
+          "Examples": "/scratch/data/bio/alphafold3/examples/"
+        },
+        "useHPCDefaultPaths": "False"
+      },
+      "MODEL": {
+        "type": "picker",
+        "label": "Directory to model file",
+        "name": "modelinput",
+        "help": "Select the model file. You should have received this when registering with AlphaFold3",
+        "localLabel": "Select",
+        "showFiles": "False",
+        "files": "False",
+        "defaultPaths": {
+          "HOME": "$HOME",
+          "SCRATCH": "/scratch/user/$USER"
+        },
+        "useHPCDefaultPaths": "False"
+      },
+      "RECYCLES": {
+        "type": "number",
+        "label": "Number of recycles (default: 3)",
+        "name": "recycles",
+        "value": "3",
+        "help": "Set the number of recycles, default is 3"
+      }
+    }
+  },
   "Container1AF2": {
     "type": "rowContainer",
     "label": "data",
-    "condition" : "alphafoldversion.alphafold2",
+    "condition": "mode.run && alphafoldversion.alphafold2",
     "elements": {
-
-       "datadir": {
-          "type": "picker",
-          "label": "Data Dir (default /scratch/data/bio/alphafold/2.3.2)",
-          "name": "datadir",
-          "help":"OPTIONAL: set the data dir. Default directory is /scratch/data/bio/alphafold/2.3.2 ",
-          "localLabel": "select",
-          "default":"/scratch/data/bio/alphafold/2.3.2",
-          "defaultPaths": {
-             "HOME": "$HOME",
-             "SCRATCH":  "/scratch/user/$USER",
-             "Examples" : "/scratch/data/bio/alphafold/2.3.2"
-          },
-          "useHPCDefaultPaths": "False"
-       },
-
-        "FASTA": {
-           "type": "picker",
-           "label": "Select FASTA file",
-           "name": "proteinfasta",
-           "help":"Select the Fasta file. You can select a file located on the cluster, or pick a file from your local machine. In that case the fasta file will be automatically uploaded",
-           "remoteLabel": "Local",
-           "localLabel": "Cluster",
-           "showFiles": "True",
-           "files": "True",
-	   "defaultPaths": {
-              "HOME": "$HOME",
-              "SCRATCH":  "/scratch/user/$USER",
-              "Examples" : "/scratch/data/bio/alphafold3/examples/"
-	   },
-	   "useHPCDefaultPaths": "False"
-        }   
+      "datadir": {
+        "type": "picker",
+        "label": "Data Dir (default /scratch/data/bio/alphafold/2.3.2)",
+        "name": "datadir",
+        "help": "OPTIONAL: set the data dir. Default directory is /scratch/data/bio/alphafold/2.3.2 ",
+        "localLabel": "select",
+        "default": "/scratch/data/bio/alphafold/2.3.2",
+        "defaultPaths": {
+          "HOME": "$HOME",
+          "SCRATCH": "/scratch/user/$USER",
+          "Examples": "/scratch/data/bio/alphafold/2.3.2"
+        },
+        "useHPCDefaultPaths": "False"
+      },
+      "FASTA": {
+        "type": "picker",
+        "label": "Select FASTA file",
+        "name": "proteinfasta",
+        "help": "Select the Fasta file. You can select a file located on the cluster, or pick a file from your local machine. In that case the fasta file will be automatically uploaded",
+        "remoteLabel": "Local",
+        "localLabel": "Cluster",
+        "showFiles": "True",
+        "files": "True",
+        "defaultPaths": {
+          "HOME": "$HOME",
+          "SCRATCH": "/scratch/user/$USER",
+          "Examples": "/scratch/data/bio/alphafold3/examples/"
+        },
+        "useHPCDefaultPaths": "False"
+      }
     }
   },
-
-
   "Container2AF2": {
-     "type": "rowContainer",
-     "label": "GPU",
-     "condition" : "alphafoldversion.alphafold2",
-     "elements": {
-
-
-        "ModelPresetDropdown": {
-           "type": "select",
-           "label": "Model Preset",
-           "name": "modelpreset",
-           "options": [
-              {
-                 "value": "monomer",
-                 "label": "monomer"
-              },
-              {
-                 "value": "monomer_casp14",
-                 "label": "monomer_casp14"
-              },
-              {
-                 "value": "monomer_ptm",
-                 "label": "monomer_ptm"
-              },
-              {
-                 "value": "multimer",
-                 "label": "multimer"
-              }
-	   ]
-	},
-
-
-        "DBPresetDropdown": {
-           "type": "select",
-           "label": "DB Preset",
-           "name": "dbpreset",
-           "options": [
-              {
-                 "value": "full_dbs",
-                 "label": "full_dbs"
-              },
-              {
-                 "value": "reduced_dbs",
-                 "label": "reduced_dbs"
-              }
-	   ]
-	},
-
-
-        "pickleCheckbox": {
-           "type": "checkbox",
-           "label": "Alphapickle",
-           "name": "pickle",
-           "value": "true",
-           "help" : "Check this box, if you want to run AlphaPicle to collect additional data"
-	}
-     }
+    "type": "rowContainer",
+    "label": "GPU",
+    "condition": "mode.run && alphafoldversion.alphafold2",
+    "elements": {
+      "ModelPresetDropdown": {
+        "type": "select",
+        "label": "Model Preset",
+        "name": "modelpreset",
+        "options": [
+          {
+            "value": "monomer",
+            "label": "monomer"
+          },
+          {
+            "value": "monomer_casp14",
+            "label": "monomer_casp14"
+          },
+          {
+            "value": "monomer_ptm",
+            "label": "monomer_ptm"
+          },
+          {
+            "value": "multimer",
+            "label": "multimer"
+          }
+        ]
+      },
+      "DBPresetDropdown": {
+        "type": "select",
+        "label": "DB Preset",
+        "name": "dbpreset",
+        "options": [
+          {
+            "value": "full_dbs",
+            "label": "full_dbs"
+          },
+          {
+            "value": "reduced_dbs",
+            "label": "reduced_dbs"
+          }
+        ]
+      },
+      "pickleCheckbox": {
+        "type": "checkbox",
+        "label": "Alphapickle",
+        "name": "pickle",
+        "value": "true",
+        "help": "Check this box, if you want to run AlphaPicle to collect additional data"
+      }
+    }
   },
-
-
   "ContainerAF2AF3": {
-     "type": "rowContainer",
-     "label": "GPU",
-     "condition" : "alphafoldversion.alphafold2 || alphafoldversion.alphafold3",
-     "elements": {
-
-        "DATEText": {
-           "type": "text",
-           "label": "Template Date (default today)",
-           "name": "maxtemplate",
-           "value": "",
-           "help" : "Provide a template date in the form YYYY-MM-DD. If you leave this field blank it will automatically pick today's date"
-	},
-
-        "gpuDropdown": {
-           "type": "dynamicSelect",
-           "label": "Accelerator",
-           "help": "Only select an accelerator if your job will utilize them. You might need to setup the environment for the accelerator you selected in the job script.",
-           "name": "gpu",
-	   "retriever" : "retrieve_gpus"
-	}
-     }
+    "type": "rowContainer",
+    "label": "GPU",
+    "condition": "mode.run && (alphafoldversion.alphafold2 || alphafoldversion.alphafold3)",
+    "elements": {
+      "DATEText": {
+        "type": "text",
+        "label": "Template Date (default today)",
+        "name": "maxtemplate",
+        "value": "",
+        "help": "Provide a template date in the form YYY-MM-DD. If you leave this field blank it will automatically pick today's date"
+      },
+      "gpuDropdown": {
+        "type": "dynamicSelect",
+        "label": "Accelerator",
+        "help": "Only select an accelerator if your job will utilize them. You might need to setup the environment for the accelerator you selected in the job script.",
+        "name": "gpu",
+        "retriever": "retrieve_gpus"
+      }
+    }
   },
-
-
   "ContainerSlurm": {
-     "type": "rowContainer",
-     "label": "SlurmOptions",
-     "condition" : "alphafoldversion.alphafold2 || alphafoldversion.alphafold3",
-     "elements": {
-
-        "account": {
-           "type": "dynamicSelect",
-           "label": "Project Account",
-           "help": " OPTIONAL: if you want to use a different project account than your default account, you can provide the account number here.",
-           "name": "account",
-           "retriever" : "list_accounts"
+    "type": "rowContainer",
+    "label": "SlurmOptions",
+    "condition": "mode.run && (alphafoldversion.alphafold2 || alphafoldversion.alphafold3)",
+    "elements": {
+      "account": {
+        "type": "dynamicSelect",
+        "label": "Project Account",
+        "help": " OPTIONAL: if you want to use a different project account than your default account, you can provide the account number here.",
+        "name": "account",
+        "retriever": "list_accounts"
+      },
+      "Walltime": {
+        "type": "time",
+        "label": "Expected time (cpu part)",
+        "help": "OPTIONAL: Provide the time you estimate the cpu part of the computation will need. It's best to be conservative when requesting wall time. If your job exceeds the requested wall time, your job will be killed immediately, and you might lose all intermediate results. If you don't enter a value, composer will use a default value of 2 days.",
+        "name": "walltime",
+        "value": ""
+      },
+      "Walltimegpu": {
+        "type": "time",
+        "label": "Expected time (gpu part)",
+        "help": "OPTIONAL: Provide the time you estimate the gpu part will need. It's best to be conservative when requesting wall time. If your job exceeds the requested wall time, your job will be killed immediately, and you might lose all intermediate results. If you don't enter a value, composer will use a default value of 2 days.",
+        "name": "walltimegpu",
+        "condition": "alphafoldversion.alphafold3 || !dbpreset.reduced_dbs",
+        "value": ""
+      },
+      "email": {
+        "type": "select",
+        "label": "Email notification options",
+        "help": "Select if you want to be notified when your job changes status.",
+        "name": "email",
+        "options": [
+          {
+            "value": "none",
+            "label": "NONE"
+          },
+          {
+            "value": "begin",
+            "label": "BEGIN"
+          },
+          {
+            "value": "end",
+            "label": "END"
+          },
+          {
+            "value": "all",
+            "label": "ALL"
+          }
+        ]
+      },
+      "EMAILText": {
+        "type": "text",
+        "label": "Email address",
+        "name": "emailaddress",
+        "value": "",
+        "help": "Provide email address to send status updates to. Default user is current user.",
+        "condition": "email.begin || email.end || email.all"
+      }
+    }
+  },
+  "af_workflow_select": {
+    "type": "dynamicSelect",
+    "label": "Select AlphaFold Run",
+    "name": "af_workflow",
+    "condition": "mode.monitor",
+    "retriever": "retrieve_af_workflows.sh"
+  },
+  "af_location_hidden": {
+    "type": "hidden",
+    "name": "af_location",
+    "isDynamic": true,
+    "condition": "mode.monitor && !af_workflow.",
+    "retrieverParams": {
+      "DRONA_ID": "$af_workflow"
+    },
+    "retriever": "retrieve_af_job_info.sh"
+  },
+  "af_status_hidden": {
+    "type": "hidden",
+    "name": "af_status",
+    "isDynamic": true,
+    "refreshInterval": "30",
+    "condition": "mode.monitor && !af_location.",
+    "retrieverParams": {
+      "LOCATION": "$af_location"
+    },
+    "retriever": "retrieve_af_slurm_status.sh"
+  },
+  "af_location_link_row": {
+    "type": "rowContainer",
+    "label": "",
+    "condition": "mode.monitor && !af_location.",
+    "elements": {
+      "af_location_link": {
+        "type": "staticText",
+        "name": "af_location_link_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "retrieverParams": {
+          "LOCATION": "$af_location"
         },
-
-        "Walltime": {
-           "type": "time",
-           "label": "Expected time (cpu part)",
-           "help": "OPTIONAL: Provide the time you estimate the cpu part of the computation  will need. It's best to be conservative when requesting wall time. If your job exceeds the requested wall time, your job will be killed immediately, and you might lose all intermediate results. If you don't enter a value, Drona will use a default value of 2 days.",
-           "name": "walltime",
-           "value": ""
+        "retriever": "retrieve_af_location_link.sh"
+      }
+    }
+  },
+  "af_slurm_summary_row": {
+    "type": "rowContainer",
+    "label": "SLURM Jobs",
+    "condition": "mode.monitor && !af_status.",
+    "elements": {
+      "af_slurm_summary": {
+        "type": "staticText",
+        "name": "af_slurm_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "30",
+        "retrieverParams": {
+          "LOCATION": "$af_location"
         },
-
-        "Walltimegpu": {
-           "type": "time",
-           "label": "Expected time (gpu part)",
-           "help": "OPTIONAL: Provide the time you estimate the gpu part will need. It's best to be conservative when requesting wall time. If your job exceeds the requested wall time, your job will be killed immediately, and you might lose all intermediate results. If you don't enter a value, Drona will use a default value of 1 day.",
-           "name": "walltimegpu",
-	   "condition": "alphafoldversion.alphafold3 || !dbpreset.reduced_dbs", 
-           "value": ""
+        "retriever": "retrieve_af_slurm_summary.sh"
+      }
+    }
+  },
+  "af_timeline_row": {
+    "type": "rowContainer",
+    "label": "Pipeline Timeline",
+    "condition": "mode.monitor && alphafoldversion.alphafold2 && !af_status.",
+    "elements": {
+      "af_timeline": {
+        "type": "staticText",
+        "name": "af_timeline_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "30",
+        "retrieverParams": {
+          "LOCATION": "$af_location"
         },
-
-        "email": {
-           "type": "select",
-           "label": "Email notification options",
-           "help": "Select if you want to be notified when your job changes status.",
-           "name": "email",
-           "options": [
-              {
-                 "value": "none",
-                 "label": "NONE"
-              },
-              {
-                 "value": "begin",
-                 "label": "BEGIN"
-              },
-              {
-                 "value": "end",
-                 "label": "END"
-              },
-              {
-                 "value": "all",
-                 "label": "ALL"
-              }
-           ]
+        "retriever": "retrieve_af_timeline.sh"
+      }
+    }
+  },
+  "af_logs_row": {
+    "type": "rowContainer",
+    "label": "Logs",
+    "condition": "mode.monitor && alphafoldversion.alphafold2 && !af_status.",
+    "elements": {
+      "af_logs": {
+        "type": "staticText",
+        "name": "af_log_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "30",
+        "retrieverParams": {
+          "LOCATION": "$af_location"
         },
-
-        "EMAILText": {
-           "type": "text",
-           "label": "Email address",
-           "name": "emailaddress",
-           "value": "",
-           "help" : "Provide email address to send status updates to. Default user is current user.",
-           "condition" : "email.begin || email.end || email.all"
-	}
-     }
+        "retriever": "retrieve_af_logs.sh"
+      }
+    }
+  },
+  "af_combined_viewer": {
+    "type": "dynamicViewer",
+    "name": "af_combined_monitor_viewer",
+    "condition": "mode.monitor && alphafoldversion.alphafold2 && af_status.DONE",
+    "useLabel": false,
+    "retriever": "retrieve_af_combined.sh",
+    "retrieverParams": {
+      "LOCATION": "$af_location"
+    },
+    "value": {
+      "title": "AlphaFold Results",
+      "description": "PAE heatmap, model rankings and 3D structure",
+      "cdnLibraries": [
+        "https://cdn.plot.ly/plotly-2.27.0.min.js",
+        "https://cdn.jsdelivr.net/npm/ngl@2.0.0-dev.37/dist/ngl.js"
+      ],
+      "height": "450px",
+      "initCode": "af_viewer.js"
+    }
+  },
+  "af3_timeline_row": {
+    "type": "rowContainer",
+    "label": "Pipeline Timeline",
+    "condition": "mode.monitor && alphafoldversion.alphafold3 && !af_status.",
+    "elements": {
+      "af3_timeline": {
+        "type": "staticText",
+        "name": "af3_timeline_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "30",
+        "retrieverParams": {
+          "LOCATION": "$af_location"
+        },
+        "retriever": "retrieve_af3_timeline.sh"
+      }
+    }
+  },
+  "af3_logs_row": {
+    "type": "rowContainer",
+    "label": "Logs",
+    "condition": "mode.monitor && alphafoldversion.alphafold3 && !af_status.",
+    "elements": {
+      "af3_logs": {
+        "type": "staticText",
+        "name": "af3_log_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "30",
+        "retrieverParams": {
+          "LOCATION": "$af_location"
+        },
+        "retriever": "retrieve_af3_logs.sh"
+      }
+    }
+  },
+  "af3_combined_viewer": {
+    "type": "dynamicViewer",
+    "name": "af3_combined_monitor_viewer",
+    "condition": "mode.monitor && alphafoldversion.alphafold3 && af_status.DONE",
+    "useLabel": false,
+    "retriever": "retrieve_af3_combined.sh",
+    "retrieverParams": {
+      "LOCATION": "$af_location"
+    },
+    "value": {
+      "title": "AlphaFold 3 Results",
+      "description": "PAE heatmap, sample rankings and 3D structure",
+      "cdnLibraries": [
+        "https://cdn.plot.ly/plotly-2.27.0.min.js",
+        "https://cdn.jsdelivr.net/npm/ngl@2.0.0-dev.37/dist/ngl.js"
+      ],
+      "height": "450px",
+      "initCode": "af3_viewer.js"
+    }
   }
 }

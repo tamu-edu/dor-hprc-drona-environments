@@ -1,0 +1,5 @@
+output="--output=out-alphafold.%j --error=error.alphafold.%j"
+pparams="--time=[time] --ntasks-per-node=1 --cpus-per-task=24 --mem=180G [gpu] [account] [email]"
+
+#submit the job
+/sw/local/bin/sbatch --job-name=alphafold-[job-file-name] ${pparams} ${output}  reduced_dbs.job

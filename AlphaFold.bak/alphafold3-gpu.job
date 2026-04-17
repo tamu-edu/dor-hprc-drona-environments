@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=af3-[AF3NAME]-gpu
+#SBATCH --job-name=alphafold3-gpu
 #SBATCH --time=[gputime]
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1      # alphafold3 runs 4 x jackhmmer processes
@@ -13,28 +13,21 @@
 module purge
 module load AlphaFold3/3.0.1
 
-# Shared resources (same as CPU job)
-AF3_CODE_DIR=/scratch/data/bio/alphafold3/code/alphafold3-3.0.1
-AF3_DATABASES_DIR=/scratch/data/bio/alphafold3/db/2025.03.13
-AF3_IMAGE=/sw/hprc/sw/bio/containers/alphafold/alphafold_3.0.1_unlhcc.sif
+protein_name=$(grep name alphafold3-input.json  | cut -f 4 -d '"' | sed 's/ /_/g')
+
+lc_protein_name=${protein_name,,}
+
 AF3_MODEL_PARAMETERS_DIR=[ALPHAFOLD3MODEL]
+AF3_DATABASES_DIR=/scratch/data/bio/alphafold3/db/2025.03.13
+AF3_CODE_DIR=/scratch/data/bio/alphafold3/code/alphafold3-3.0.1
+AF3_IMAGE=/sw/hprc/sw/bio/containers/alphafold/alphafold_3.0.1_unlhcc.sif
 
-# Find the output directory created by the CPU job
-AF3_OUTPUT_DIR=$(cat "$SLURM_SUBMIT_DIR/af3_output_dir.txt" 2>/dev/null)
-if [ -z "$AF3_OUTPUT_DIR" ] || [ ! -d "$AF3_OUTPUT_DIR" ]; then
-    echo "ERROR: Cannot find AF3 output directory. Expected af3_output_dir.txt in $SLURM_SUBMIT_DIR"
-    exit 1
-fi
-
-# Derive protein name from the subdirectory the CPU job created
-lc_protein_name=$(ls -1 "$AF3_OUTPUT_DIR" | head -1)
-AF3_INPUT_DIR=$AF3_OUTPUT_DIR/$lc_protein_name
-AF3_INPUT_FILE=${lc_protein_name}_data.json
-
+AF3_OUTPUT_DIR=$PWD/output_${protein_name}_[timestamp]
+AF3_INPUT_DIR=$AF3_OUTPUT_DIR/$lc_protein_name 
+AF3_INPUT_FILE=${lc_protein_name}_data.json 
 
 singularity exec \
-  --nv \
-  [AF3SINGULARITYENV] \
+  --nv  \
   --bind $AF3_CODE_DIR \
   --bind $AF3_INPUT_DIR:/root/af_input \
   --bind $AF3_OUTPUT_DIR:/root/af_output \
@@ -49,5 +42,5 @@ singularity exec \
   --model_dir=/root/models \
   --db_dir=/root/public_databases \
   --max_template_date="[maxtemplate]" \
-  --num_recycles=[RECYCLES] [AF3PYTHONFLAGS]
+  --num_recycles=[RECYCLES] [OLDGPUFLAGS]
 

@@ -1,0 +1,27 @@
+[message]
+
+For more information, please check:
+
+    - AlphaFold manual: https://github.com/deepmind/alphafold
+    - ParaFold: https://github.com/Zuricho/ParallelFold
+    - AlphaPickle: https://github.com/mattarnoldbio/alphapickle
+
+
+
+- Acknowledge TAMU HPRC: https://hprc.tamu.edu/research/citations.html
+
+    - AlphaFold:
+        Jumper, John et al. "Highly accurate protein structure prediction with AlphaFold". Nature 596. 7873(2021): 583–589.
+
+        Tunyasuvunakool, Kathryn et al. "Highly accurate protein structure prediction for the human proteome". Nature 596. 7873(2021): 590–596.
+
+    - AlphaFold-multimer:
+        Evans, R et al. Protein complex prediction with AlphaFold-Multimer, doi.org/10.1101/2021.10.04.463034
+
+    - ParaFold:
+        Bozitao Zhong, Xiaoming Su, Minhua Wen, Sichen Zuo, Liang Hong, James Lin. ParaFold: Paralleling AlphaFold for Large-Scale Predictions. 
+        2021. arXiv:2111.06340. doi.org/10.48550/arXiv.2111.06340
+
+    - AlphaPickle
+        Arnold, M. J. (2021) AlphaPickle, doi.org/10.5281/zenodo.5708709
+

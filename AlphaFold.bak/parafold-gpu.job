@@ -1,0 +1,15 @@
+#!/bin/bash
+
+module purge
+[ALPHAFOLDMODULES]
+[ALPHAPICKLEMODULE]
+
+protein_fasta=[proteinfasta]
+
+jobstats -i 1 &
+
+run_alphafold.sh -g -u 0 -d [datadir] -o [outputdir] -p [modelpreset] -i $protein_fasta -t [maxtemplate]
+
+[pickle]
+
+jobstats

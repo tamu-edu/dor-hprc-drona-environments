@@ -1,0 +1,19 @@
+
+{
+  "dbpreset": "!retrieve_dbpreset($dbpreset)",
+  "flocation": "$location",
+  "proteinfasta": "!retrieve_fasta($proteinfasta)",
+  "maxtemplate": "!retrieve_maxtemplate($maxtemplate)",
+  "modelpreset": "$modelpreset",
+  "outputdir" : "parafold_output_dir",
+  "pickle" : "!retrieve_pickle($pickle)",
+  "gpu" : "!retrieve_gpu($gpu)",
+  "email" : "!retrieve_mail($email, $emailaddress)",
+  "time" : "!retrieve_walltime($walltime)",
+  "datadir" : "!retrieve_datadir_vars($account, $datadir)",
+  "alphafold2" : "!process_alpahfold2($version,$dbpreset,$proteinfasta,$modelpreset)",
+  "alphafold3" : "!process_alpahfold3($version,$jsoninput,$modelinput)"
+}
+
+
+

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=af3-[AF3NAME]-cpu
+#SBATCH --job-name=alphafold3-cpu
 #SBATCH --time=[time]
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4      
@@ -31,14 +31,11 @@ max_template_date="[maxtemplate]"
 
 ########## OUTPUTS #########
 protein_name=$(grep name $AF3_INPUT_DIR/$AF3_INPUT_FILE  | cut -f 4 -d '"' | sed 's/ /_/g')
-AF3_OUTPUT_DIR=[AF3OUTPUTDIR]/output_${protein_name}_$SLURM_JOB_ID
+AF3_OUTPUT_DIR=$PWD/output_${protein_name}_[timestamp]
 
 ################################### COMMANDS ###################################
 mkdir -p $AF3_OUTPUT_DIR
 lc_protein_name=${protein_name,,}
-
-# Write output dir so the GPU job can find it
-echo "$AF3_OUTPUT_DIR" > "$SLURM_SUBMIT_DIR/af3_output_dir.txt"
 
 # run CPU alignment part first then submit GPU job for prediction step
 singularity exec \
