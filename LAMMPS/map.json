@@ -1,10 +1,9 @@
 {
   "inputfile": "$filepicker",
-  "EXTRA"  : "!set_slurm_opts($reportjson)",
+  "EXTRA"  : "!set_slurm_opts($reportjson, $gpu_count, $cpu_count)",
   "summary": "!get_selected_summary($reportjson)",
-  "lmp_cmd": "!get_selected_lmp_cmd($reportjson)",
+  "lmp_cmd": "!get_selected_lmp_cmd($reportjson, $gpu_count, $cpu_count)",
   "setup": "!get_selected_setup($reportjson)",
-  "debug": "!debug_args($reportjson)",
   "report":"!generate_full_report($filepicker)",
   "flocation": "$location",
   "workdir":"!compute_workdir($filepicker)"

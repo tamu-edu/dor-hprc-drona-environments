@@ -35,6 +35,15 @@ def main(tool, input_data_str, verbose=False):
         else:
             print("Error: 'summary' field not found for the selected acceleration strategy.")
             sys.exit(1)
+    if tool == 'gpu-type':
+        if 'data' in input_data.keys():
+            if "accelerator" in input_data['data'].keys() and input_data['data']["accelerator"]:
+                if input_data['data']["accelerator"] != "n/a":
+                    return input_data['data']["accelerator"]
+            return "cpu"
+        else:
+            print("Error: 'data' field not found for the selected acceleration strategy.")
+            sys.exit(1)
     if tool == 'data':
         if 'data' in input_data.keys():
             data_value = input_data['data']
@@ -46,12 +55,18 @@ def main(tool, input_data_str, verbose=False):
         print(f"Error: Tool '{tool}' not recognized.")
         sys.exit(1)
     
-def get_selected_lmp_cmd(json_input):
+def get_selected_lmp_cmd(json_input, gpu_count, cpu_count):
     if not json_input:
-        
         return "lmp command: Error (No acceleration strategy detected)"
     data=main("data", json_input)
-    x=2 # to-do: argument
+    try:
+        x=int(gpu_count)
+    except:
+        x=1
+    try:
+        y=int(cpu_count)
+    except:
+        y=x
     mpi_exe="mpirun"
     lmp_exe="lmp"
     prefix=""
@@ -64,8 +79,8 @@ def get_selected_lmp_cmd(json_input):
     if "framework" in data.keys() and data["framework"]:
         if data["framework"] == "kokkos":
             mpi_cmd=""
-            if x>1:
-                mpi_cmd=f"{mpi_exe} -np {x} "
+            if y>1:
+                mpi_cmd=f"{mpi_exe} -np {y} "
             return f"{prefix}{mpi_cmd}{lmp_exe} -k on g {x} -sf kk -pk kokkos gpu/aware on -in $INFILE"
         elif data["framework"] == "gpu":
             mpi_cmd=""
@@ -73,7 +88,7 @@ def get_selected_lmp_cmd(json_input):
                 mpi_cmd=f"{mpi_exe} -np {x} "
             return f"{prefix}{mpi_cmd}{lmp_exe} -sf gpu -pk gpu {x} -in $INFILE"
         elif data["framework"] == "openmp":
-            return f"{prefix}{lmp_exe} -sf omp -pk omp {x} -in $INFILE"
+            return f"{prefix}{lmp_exe} -sf omp -pk omp {y} -in $INFILE"
     else:
         return f"{prefix}{lmp_exe} -in $INFILE # (no acceleration framework detected)"
 
@@ -101,7 +116,7 @@ def debug_args(*args):
         n=0
     return f"# debug print {n} args:\n# "+"\n# ".join(["arg "+str(i)+": "+str(arg) for i, arg in enumerate(args)])
 
-def set_slurm_opts(json_input):
+def set_slurm_opts(json_input, gpu_count, cpu_count):
     """
     Sets variables to be used like this:
     #SBATCH --job-name=[JOBNAME]
@@ -111,24 +126,29 @@ def set_slurm_opts(json_input):
     [EXTRA]
     """
     if not json_input:
-        drona_add_message("(No acceleration strategy detected. Your LAMMPS job will not run","error")
-        return ""
+        return "#SBATCH: Error (No acceleration strategy detected)"
     extra=""
-    x=2 # to-do: argument
-    ntasks=x
+    try:
+        x=int(gpu_count)
+    except:
+        x=1
+    try:
+        y=int(cpu_count)
+    except:
+        y=x
+    ntasks=y
     cpu_per_task=1
     
     data=main("data", json_input)
     if "accelerator" in data.keys() and data["accelerator"]:
         if data["accelerator"].lower() == "cpu":
             ntasks=1
-            cpu_per_task=x
+            cpu_per_task=y
         elif data["accelerator"].lower() == "pvc":
-            ntasks=(x//2)*2
             extra+=f"#SBATCH --partition pvc --gres=gpu:pvc:{x}\n"
-            extra+=f"#SBATCH --constraint=xelink{x}\n"
+            if x in (2, 4):
+                extra+=f"#SBATCH --constraint=xelink{x}\n"
         else:
-            ntasks=x
             gpu_t=data["accelerator"]
             extra+=f"#SBATCH --partition gpu --gres=gpu:{gpu_t}:{x}\n"
     
@@ -138,9 +158,7 @@ def set_slurm_opts(json_input):
     drona_add_mapping("CPUS",str(cpu_per_task))
     drona_add_mapping("TASKS",str(ntasks))
     drona_add_mapping("MEM",str(40)+"G") # to-do: argument
-   
-    drona_add_message("Default values used for walltime and memory. You are welcome to adjust these values if needed. Do not change the accelerator settings","note")
-    drona_add_message("You can add additional LAMMPS options to the LAMMPS command line and/or adjust the working directory for read/dumps if needed.","note")
+    
     return extra
 
 def compute_workdir(path_to_file):
@@ -148,7 +166,6 @@ def compute_workdir(path_to_file):
 
 def generate_full_report(filename):
     drona_add_additional_file("report.txt", preview_name="Acceleration report")
-    drona_add_message("Check out the Acceleration report for information about the input file analysis.","note")
     from subprocess import run
     try:
         data = run(

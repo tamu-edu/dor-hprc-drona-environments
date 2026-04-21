@@ -1,0 +1,1 @@
+/sw/local/bin/gpuavail -m -c | /sw/hprc/sw/dor-hprc-tools-dashboard-utils/bin/gpuavail_to_json.py | ./gputable.py

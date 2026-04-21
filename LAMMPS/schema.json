@@ -1,17 +1,4 @@
 {
-
-    "runDestinationFinal": {
-    "type": "jobNameLocation",
-    "label" : "Job Name and Location",
-    "help": "Optional. Leave blank to use defaults. If empty, the engine will assign a job ID and staging path automatically.",
-    "customJobName": "",
-    "pickerLabel": "Location",
-    "showName": true,
-    "showLocation": true,
-    "disableJobNameChange": false,
-    "disableJobLocationChange": false
-  },
-  
     "ContainerAF3Disclaimer": {
         "type": "rowContainer",
         "label": "data",
@@ -19,37 +6,148 @@
             "disclaimer": {
                 "type": "staticText",
                 "label": "",
-		"isDynamic": true,
-		"retriever": "retrieve_welcome_message.sh",
+                "isDynamic": true,
+                "retriever": "retrieve_welcome_message.sh",
                 "allowHtml": true
-	    }
-	}
+            }
+        }
     },
-
     "InputPicker": {
         "type": "picker",
         "label": "LAMMPS input file",
         "name": "filepicker",
-        "remoteLabel": "local",
-        "localLabel": "cluster",
+        "localLabel": "select",
         "showFiles": "True",
-	"defaultPaths": {
-	   "/": "/",
-           "HOME": "$HOME",
-           "SCRATCH": "/scratch/user/$USER"
+        "defaultPaths": {
+            "Examples": "/sw/hprc/sw/lammps-validator/example-inputs"
         },
-        "useHPCDefaultPaths": "False",
-        "help" : "Here you can specify the LAMMPS input file you want to evaluate. You can either select it from a location on ACES (select cluster) or upload it from your local machine (local).",
+        "help" : "Here you can select the LAMMPS input file you want to evaluate. It must already be present on ACES.",
         "files": "True"
+    },
+    "GPU_fields": {
+        "type": "collapsibleColContainer",
+        "title": "Accelerator availability",
+        "isDynamic": true,
+        "condition": "!filepicker.",
+        "elements": {
+            "gpuavail_table": {
+                "type": "staticText",
+                "name": "gpuavail",
+                "label": "Available accelerator nodes, by type, and available accelerator count",
+                "isDynamic": true,
+                "retriever": "gputable.sh",
+                "showRefreshButton": false,
+                "allowHtml": true,
+                "help": "Available node configurations (number of nodes), (accelerators per node)."
+            }
+        }
+    },
+    "GPU_filter": {
+        "type": "rowContainer",
+        "title": "Filter Results",
+        "isDynamic": true,
+        "condition": "!filepicker.",
+        "elements": {
+            "filterlabel": {
+                "type": "staticText",
+                "label": "Filter results by:"
+            },
+            "filterpvcCheckbox": {
+                "type": "checkbox",
+                "label": "PVC",
+                "name": "filter_pvc",
+                "value": "Yes",
+                "help" : "Check this box to include PVC-ready builds in the Acceleration Strategy dropdown menu"
+            },
+            "filterh100Checkbox": {
+                "type": "checkbox",
+                "label": "H100 GPU",
+                "name": "filter_h100",
+                "value": "Yes",
+                "help" : "Check this box to include H100-ready builds in the Acceleration Strategy dropdown menu"
+            },
+            "filtera30Checkbox": {
+                "type": "checkbox",
+                "label": "A30 GPU",
+                "name": "filter_a30",
+                "value": "Yes",
+                "help" : "Check this box to include A30-ready builds in the Acceleration Strategy dropdown menu"
+            },
+            "filtercpuCheckbox": {
+                "type": "checkbox",
+                "label": "CPU",
+                "name": "filter_cpu",
+                "value": "Yes",
+                "help" : "Check this box to include CPU-ready builds in the Acceleration Strategy dropdown menu"
+            }
+        }
+    },
+    "Strategy_filter": {
+        "type": "rowContainer",
+        "title": "Filter Results",
+        "isDynamic": true,
+        "condition": "!filepicker.",
+        "elements": {
+            "filterlabel": {
+                "type": "staticText",
+                "label": "Filter results by:"
+            },
+            "filterkokkosCheckbox": {
+                "type": "checkbox",
+                "label": "Kokkos",
+                "name": "filter_kk",
+                "value": "Yes",
+                "help" : "Check this box to include Kokkos package strategies in the Acceleration Strategy dropdown menu"
+            },
+            "filtergpuCheckbox": {
+                "type": "checkbox",
+                "label": "GPU package",
+                "name": "filter_gpu",
+                "value": "Yes",
+                "help" : "Check this box to include GPU package strategies in the Acceleration Strategy dropdown menu"
+            },
+
+            "filterompCheckbox": {
+                "type": "checkbox",
+                "label": "OpenMP",
+                "name": "filter_omp",
+                "value": "Yes",
+                "help" : "Check this box to include OpenMP package strategies in the Acceleration Strategy dropdown menu"
+            },
+            "filterintelCheckbox": {
+                "type": "checkbox",
+                "label": "Intel CPU",
+                "name": "filter_int",
+                "value": "Yes",
+                "help" : "Check this box to include Intel package strategies in the Acceleration Strategy dropdown menu"
+            },
+            "filteroptCheckbox": {
+                "type": "checkbox",
+                "label": "Opt package",
+                "name": "filter_opt",
+                "value": "Yes",
+                "help" : "Check this box to include Opt package strategies in the Acceleration Strategy dropdown menu"
+            }
+        }
     },
     "Module_select": {
         "type": "dynamicSelect",
         "name": "reportjson",
-        "label": "Acceleration Strategy",
+        "label": "Module and Acceleration Strategy",
         "isDynamic": true,
+        "condition": "!filepicker.",
         "retriever": "option_generator.sh",
         "retrieverParams": {
-            "FILE": "$filepicker"
+            "FILE": "$filepicker",
+            "FILTER_H100": "$filter_h100",
+            "FILTER_A30":  "$filter_a30",
+            "FILTER_PVC":  "$filter_pvc",
+            "FILTER_CPU":  "$filter_cpu",
+            "FILTER_KK":   "$filter_kk",
+            "FILTER_GPU":  "$filter_gpu",
+            "FILTER_OMP":  "$filter_omp",
+            "FILTER_INT":  "$filter_int",
+            "FILTER_OPT":  "$filter_opt"
         },
         "showRefreshButton": true,
         "help": "Choose an acceleration strategy for your input file."
@@ -59,6 +157,7 @@
         "name": "reporttext",
         "label": "Description",
         "isDynamic": true,
+        "condition": "!reportjson.",
         "retriever": "extract_summary.sh",
         "retrieverParams": {
                 "REPORT_JSON": "$reportjson"
@@ -66,5 +165,56 @@
         "showRefreshButton": false,
         "allowHtml": true,
         "help": "Summary for the currently selected acceleration strategy."
+    },
+    "hidden_accelerator_option": {
+        "type": "hidden",
+        "name": "gpu_type",
+        "isDynamic": true,
+        "condition": "!reportjson.",
+        "retriever": "extract_gpu_type.sh",
+        "retrieverParams": {
+                "REPORT_JSON": "$reportjson"
+        }
+    },
+    "GPU_select_pvc": {
+        "type": "select",
+        "name": "gpu_count",
+        "condition": "!reportjson. && gpu_type.pvc",
+        "label": "Requested GPU count",
+        "options": [
+          {
+            "value": "1",
+            "label": "1"
+          },
+          {
+            "value": "2",
+            "label": "2"
+          },
+          {
+            "value": "4",
+            "label": "4"
+          },
+          {
+            "value": "8",
+            "label": "8"
+          }
+          ],
+        "help": "Choose a number of accelerators for your job."
+    },
+    "GPU_select_nv": {
+        "type": "number",
+        "name": "gpu_count",
+        "condition": "!reportjson. && gpu_type.h100",
+        "label": "Requested GPU count",
+        "value": "1",
+        "help": "Choose a number of accelerators for your job."
+    },
+    "CPU_select": {
+        "type": "number",
+        "name": "cpu_count",
+        "condition": "!reportjson. && gpu_type.cpu",
+        "label": "Requested CPU count",
+        "value": "1",
+        "help": "Choose a number of CPUs for your job."
     }
 }
