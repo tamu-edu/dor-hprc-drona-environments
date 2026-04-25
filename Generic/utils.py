@@ -20,12 +20,7 @@ def  retrieve_cluster_info():
    return cluster, cluster_module
 
 
-def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,account,extra,advancedbox):
-
-   # if advancedbox was not set, there will be no value for nodes and cpus, so set to ""
-   if advancedbox != "Yes":
-       nodes=""
-       cpus=""
+def retrieve_tasks_and_other_resources(nodes,tasks,cpus,mem,gpu,numgpu,walltime,account,extra):
 
    # if gpu not set, variable numgpu does not exit. 
    numgpunum=1
