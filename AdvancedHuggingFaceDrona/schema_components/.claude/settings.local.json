@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//var/www/ood/apps/dev/u.ak202494/gateway/dor-hprc-drona-composer/environments/HuggingFaceDrona/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

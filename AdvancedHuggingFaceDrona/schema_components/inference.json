@@ -1,0 +1,119 @@
+{
+  "inferenceContainer": {
+    "type": "rowContainer",
+    "condition": "operation.inference",
+    "elements": {
+      "inferenceHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Inference Parameters</h4></div>",
+        "allowHtml": true
+      }
+    }
+  },
+  "inferenceBasicContainer": {
+    "type": "rowContainer",
+    "condition": "operation.inference",
+    "elements": {
+      "maxSamples": {
+        "type": "number",
+        "label": "Maximum Samples",
+        "name": "max_samples",
+        "help": "Limit the number of samples processed",
+        "value": 10,
+        "min": 1,
+        "max": 10000
+      },
+      "maxLength": {
+        "type": "number",
+        "label": "Max Output Length",
+        "name": "max_length",
+        "help": "Maximum number of tokens to generate",
+        "value": 512,
+        "min": 1,
+        "max": 4096
+      },
+      "showAdvancedInference": {
+        "type": "checkbox",
+        "label": "Show Advanced Generation Parameters",
+        "name": "show_advanced_inference",
+        "value": false,
+        "help": "Configure temperature, top-k, top-p, and batch size"
+      }
+    }
+  },
+  "inferenceAdvancedContainer": {
+    "type": "rowContainer",
+    "condition": "operation.inference && show_advanced_inference.Yes",
+    "elements": {
+      "temperature": {
+        "type": "number",
+        "label": "Temperature",
+        "name": "temperature",
+        "help": "Controls randomness in generation (0.0 = deterministic, 1.0 = random)",
+        "value": 0.7,
+        "min": 0.0,
+        "max": 2.0,
+        "step": 0.1
+      },
+      "topK": {
+        "type": "number",
+        "label": "Top K",
+        "name": "top_k",
+        "help": "Number of highest probability tokens to keep for filtering",
+        "value": 50,
+        "min": 1,
+        "max": 1000
+      },
+      "topP": {
+        "type": "number",
+        "label": "Top P (Nucleus Sampling)",
+        "name": "top_p",
+        "help": "Cumulative probability threshold for nucleus sampling",
+        "value": 0.9,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05
+      },
+      "batchSize": {
+        "type": "number",
+        "label": "Batch Size",
+        "name": "batch_size",
+        "help": "Number of samples processed simultaneously",
+        "value": 1,
+        "min": 1,
+        "max": 128
+      }
+    }
+  },
+  "inferenceCustomParamsContainer": {
+    "type": "rowContainer",
+    "condition": "operation.inference && show_advanced_inference.Yes",
+    "elements": {
+      "customInferenceParams": {
+        "type": "jsonEditor",
+        "label": "Custom Inference Parameters",
+        "name": "custom_inference_params",
+        "help": "Advanced generation parameters in JSON format (e.g., do_sample, repetition_penalty, pad_token_id)",
+        "collapsed": true,
+        "defaultValue": {
+          "learning_rate": 2e-4,
+          "epochs": 3,
+          "batch_size": 4,
+          "weight_decay": 0.01,
+          "warmup_steps": 100,
+          "max_seq_length": 2048,
+          "optimizer": "adamw",
+          "lr_scheduler_type": "cosine",
+          "evaluation_strategy": "steps",
+          "eval_steps": 500,
+          "save_steps": 500,
+          "gradient_accumulation_steps": 1,
+          "logging_steps": 10,
+          "warmup_ratio": 0.1
+        }
+      }
+    }
+  }
+}
+
+

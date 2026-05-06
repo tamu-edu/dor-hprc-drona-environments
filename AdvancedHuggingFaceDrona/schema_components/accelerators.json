@@ -1,0 +1,210 @@
+{
+  "hardwareContainer": {
+    "type": "rowContainer",
+    "condition": "operation.inference || operation.finetune_lora",
+    "elements": {
+      "hardwareSectionHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Hardware Configuration</h4></div>",
+        "allowHtml": true
+      }
+    }
+  },
+  "gpuSelectorContainer": {
+    "type": "rowContainer",
+    "condition": "operation.inference || operation.finetune_lora",
+    "elements": {
+      "acceleratorType": {
+        "type": "select",
+        "label": "Accelerator Type",
+        "name": "accelerator_type",
+        "options": [
+          {"value": "gpu", "label": "NVIDIA GPU"},
+          {"value": "ipu", "label": "Graphcore IPU"},
+          {"value": "cpu", "label": "CPU Only"}
+        ],
+        "value": {"value": "gpu", "label": "NVIDIA GPU"},
+        "help": "Choose the type of accelerator for computation"
+      },
+      "gpuType": {
+        "type": "select",
+        "label": "GPU Type",
+        "name": "gpu_type",
+        "condition": "accelerator_type.gpu",
+        "options": [
+          {"value": "auto", "label": "Auto-select based on model size"},
+          {"value": "h100", "label": "H100 (80GB VRAM)"},
+          {"value": "a100_80", "label": "A100 (80GB VRAM)"},
+          {"value": "a100", "label": "A100 (40GB VRAM)"},
+          {"value": "rtx8000", "label": "RTX 8000 (48GB VRAM)"},
+          {"value": "v100", "label": "V100 (32GB VRAM)"}
+        ],
+        "value": {"value": "auto", "label": "Auto-select based on model size"},
+        "help": "Automatic selection validates VRAM requirements against model size"
+      },
+      "numGpus": {
+        "type": "number",
+        "label": "Number of GPUs",
+        "name": "num_gpus",
+        "condition": "accelerator_type.gpu",
+        "value": 1,
+        "min": 1,
+        "max": 8,
+        "help": "Number of GPUs to use for inference"
+      },
+	  "numIpus": {
+  "type": "number",
+  "label": "Number of IPUs",
+  "name": "num_ipus",
+  "condition": "accelerator_type.ipu",
+  "value": 4,
+  "min": 1,
+  "max": 16,
+  "help": "Number of IPUs to use for inference"
+},
+"ipuGeneration": {
+  "type": "select",
+  "label": "IPU Generation",
+  "name": "ipu_generation",
+  "condition": "accelerator_type.ipu",
+  "options": [
+    {"value": "mk2", "label": "Mk2 (M2000)"},
+    {"value": "bow", "label": "Bow-2000"}
+  ]
+},
+      "ipuUsePipeline": {
+        "type": "checkbox",
+        "label": "Use Pipeline API",
+        "name": "ipu_use_pipeline",
+        "condition": "accelerator_type.ipu",
+        "value": true,
+        "help": "Pipeline API is simpler and automatic. Uncheck for manual control over generation parameters."
+      },
+      "precision": {
+        "type": "select",
+        "label": "Precision",
+        "name": "precision",
+        "condition": "!accelerator_type.cpu",
+        "options": [
+          {"value": "auto", "label": "Auto-select optimal precision"},
+          {"value": "float32", "label": "FP32 (Full Precision)"},
+          {"value": "float16", "label": "FP16 (Half Precision)"},
+          {"value": "bfloat16", "label": "BF16 (Brain Float)"},
+          {"value": "int8", "label": "INT8 (Quantized)"}
+        ],
+        "value": {"value": "auto", "label": "Auto-select optimal precision"},
+        "help": "Lower precision reduces memory usage and enables larger models"
+      }
+    }
+  },
+  "advancedHardwareContainer": {
+
+    "type": "rowContainer",
+
+    "condition": "accelerator_type.gpu",
+
+    "elements": {
+
+      "showAdvancedHardware": {
+
+        "type": "checkbox",
+
+        "label": "Show Advanced Distributed Training Options",
+
+        "name": "show_advanced_hardware",
+
+        "value": false
+
+      }
+
+    }
+
+  },
+  "advancedHardwareDetailsContainer": {
+
+    "type": "rowContainer",
+
+    "condition": "show_advanced_hardware.Yes && accelerator_type.gpu",
+
+    "elements": {
+
+      "distributedType": {
+
+        "type": "select",
+
+        "label": "Distributed Backend",
+
+        "name": "distributed_type",
+
+        "options": [
+
+          {"value": "MULTI_GPU", "label": "Data Parallel (Single Node, Multi-GPU)"},
+
+          {"value": "DDP", "label": "Distributed Data Parallel (Multi-Node)"},
+
+          {"value": "DEEPSPEED", "label": "DeepSpeed (Multi-Node, ZeRO Memory Optimization)"},
+
+          {"value": "FSDP", "label": "Fully Sharded Data Parallel (FSDP, Multi-Node)"}
+
+        ],
+
+        "value": {"value": "DDP", "label": "Distributed Data Parallel (Multi-Node)"}
+
+      },
+
+      "numNodes": {
+
+        "type": "number",
+
+        "label": "Number of Nodes",
+
+        "name": "nodes",
+
+        "condition": "distributed_type.DDP || distributed_type.DEEPSPEED || distributed_type.FSDP",
+
+        "value": 1,
+
+        "min": 1,
+
+        "max": 16
+
+      },
+
+      "ddpBucketSize": {
+
+        "type": "number",
+
+        "label": "DDP Bucket Size (MB)",
+
+        "name": "ddp_bucket_cap_mb",
+
+        "condition": "distributed_type.DDP",  
+
+        "value": 25,
+
+        "min": 1,
+
+        "max": 100,
+
+        "help": "Key DDP performance knob. Controls the size of gradient communication buckets. The default (25) is often optimal."
+
+      },
+
+      "deepspeedConfig": {
+
+        "type": "text",
+
+        "label": "DeepSpeed Config Path",
+
+        "name": "deepspeed_config",
+
+        "condition": "distributed_type.DEEPSPEED",
+
+        "value": "config/ds_config.json"
+
+      }
+
+    }
+
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "finetuneContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "finetuneHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em;'>Fine-tuning Parameters</h4></div>",
+        "allowHtml": true
+      }
+    }
+  },
+  "finetuneBasicContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "useLora": {
+        "type": "checkbox",
+        "label": "Use LoRA (Low-Rank Adaptation)",
+        "name": "use_lora",
+        "value": false,
+        "help": "Enable parameter-efficient fine-tuning with LoRA. Disable for full model fine-tuning (requires more memory)."
+      },
+      "learningRate": {
+        "type": "number",
+        "label": "Learning Rate",
+        "name": "learning_rate",
+        "help": "The initial learning rate for the AdamW optimizer.",
+        "value": 2e-4, "min": 1e-6, "max": 1e-2, "step": 1e-6, "format": "scientific"
+      },
+      "epochs": {
+        "type": "number",
+        "label": "Training Epochs",
+        "name": "num_train_epochs",
+        "help": "Total number of training epochs to perform.",
+        "value": 3, "min": 1, "max": 20
+      },
+      "batchSize": {
+        "type": "number",
+        "label": "Batch Size",
+        "name": "per_device_train_batch_size",
+        "help": "The batch size per GPU/CPU for training.",
+        "value": 4, "min": 1, "max": 128
+      }
+    }
+  },
+  "finetuneAdvancedContainer": {
+    "type": "rowContainer",
+    "condition": "use_lora.Yes",
+    "elements": {
+      "loraHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f3f4f6; padding: 8px; border-radius: 4px; margin: 8px 0; color: #6b7280; font-size: 0.9em; font-weight: 500;'>LoRA Configuration</div>",
+        "allowHtml": true
+      },
+      "lora_r": {
+        "type": "number",
+        "label": "LoRA Rank (r)",
+        "name": "lora_r",
+        "help": "The rank of the LoRA update matrices. A higher rank means more trainable parameters.",
+        "value": 8, "min": 2, "max": 64
+      },
+      "lora_alpha": {
+        "type": "number",
+        "label": "LoRA Alpha",
+        "name": "lora_alpha",
+        "help": "The scaling factor for the LoRA matrices. A common practice is to set this to 2 * r.",
+        "value": 16, "min": 2, "max": 128
+      },
+      "lora_dropout": {
+        "type": "number",
+        "label": "LoRA Dropout",
+        "name": "lora_dropout",
+        "help": "Dropout probability for the LoRA layers.",
+        "value": 0.05, "min": 0.0, "max": 0.5, "step": 0.01
+      },
+    "showAdvancedFinetune": {
+        "type": "checkbox",
+        "label": "Advanced Parameters",
+        "name": "show_advanced_finetune",
+        "value": false,
+        "help": "Specify any other training arguments from the Hugging Face Trainer in JSON format."
+      }
+    }
+  },
+  "finetuneCustomParamsContainer": {
+    "type": "rowContainer",
+    "condition": "operation.finetune_lora && show_advanced_finetune.Yes",
+    "elements": {
+      "customFinetuneParams": {
+        "type": "jsonEditor",
+        "label": "Advanced Parameters",
+        "name": "custom_finetune_params",
+        "help": "Advanced training hyperparameters in JSON format (e.g., weight_decay, lr_scheduler_type, gradient_accumulation_steps).",
+        "collapsed": false,
+        "defaultValue": {
+          "lr_scheduler_type": "cosine",
+          "weight_decay": 0.01,
+          "warmup_ratio": 0.03,
+          "lora_target_modules": [
+            "q_proj",
+            "v_proj"
+          ],
+          "gradient_accumulation_steps": 1
+        }
+      }
+    }
+  }
+}

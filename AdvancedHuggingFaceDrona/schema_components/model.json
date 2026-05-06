@@ -1,0 +1,77 @@
+{
+  "modelContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "modelSectionHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Model Configuration</h4></div>",
+        "allowHtml": true
+      }
+    }
+  },
+  "modelSourceContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "modelSourceType": {
+        "type": "radioGroup",
+        "label": "Model Source",
+        "name": "model_source",
+        "options": [
+          {"value": "hub", "label": "HuggingFace Hub"},
+          {"value": "downloaded", "label": "Downloaded Models"}
+        ],
+        "value": "hub"
+      }
+    }
+  },
+  "modelSelectorContainer": {
+    "type": "rowContainer",
+    "condition": "model_source.hub",
+    "elements": {
+      "modelSelector": {
+        "type": "autocompleteSelect",
+        "label": "HuggingFace Model",
+        "name": "model_id",
+        "help": "Search for models with real-time Hub API integration",
+        "placeholder": "Search for models (e.g., 'microsoft/DialoGPT', 'bert-base')...",
+        "retriever": "scripts/retrievers/list_hf_models"
+      },
+      "hfTokenField": {
+        "type": "text",
+        "label": "HuggingFace Token (Optional)",
+        "name": "hf_token",
+        "help": "Required for gated models and private repositories",
+        "placeholder": "hf_xxxxxxxxxxxxxxxxxxxx"
+      }
+    }
+  },
+  "modelDownloadedContainer": {
+    "type": "rowContainer",
+    "condition": "model_source.downloaded",
+    "elements": {
+      "modelDownloadedSelector": {
+        "type": "dynamicSelect",
+        "label": "Downloaded Model",
+        "name": "model_id",
+        "help": "Select from your previously downloaded models",
+        "retriever": "scripts/retrievers/list_downloaded_models_select"
+      }
+    }
+  },
+  "modelInfoContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "modelInfo": {
+        "type": "staticText",
+        "name": "model_info",
+        "isDynamic": true,
+        "retriever": "scripts/retrievers/get_model_info",
+        "retrieverParams": {
+          "model_id": "$model_id"
+        },
+        "allowHtml": true,
+        "value": "<div style='background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 0; color: #6c757d; font-size: 0.9em;'>Select a model to view size, type, and resource recommendations</div>"
+      }
+    }
+  }
+}

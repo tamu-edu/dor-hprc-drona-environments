@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# If this is not a login shell, re-exec the script as a login shell.
+
+if ! shopt -q login_shell; then
+
+    exec bash -l "$0" "$@"
+
+fi
+
+
+
+# Exit on any error.
+
+set -eo pipefail
+
+
+
+# --- Capture Model ID from the first command-line argument ---
+
+
+
+
+# --- Handle case where no model is provided ---
+
+# If MODEL_ID is empty, the Drona form is empty, so produce no output.
+
+if [ -z "$MODEL_ID" ]; then
+
+    exit 0
+
+fi
+
+
+
+# --- Setup HPC Environment ---
+
+cd /scratch/user/u.ak202494
+
+# Silence stdout from setup commands to ensure they don't corrupt the output.
+
+module load WebProxy GCCcore/12.2.0 Python/3.10.8 >/dev/null
+
+source /scratch/user/u.ak202494/virtual_envs/huggingface/bin/activate >/dev/null
+
+
+
+# --- Execute the Python Logic Script ---
+
+# The output of this python command is the final HTML output of this shell script.
+
+# We robustly find the python script's location relative to this shell script.
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+python "$SCRIPT_DIR/generate_report.py" "$MODEL_ID"
+
+
+
+exit 0

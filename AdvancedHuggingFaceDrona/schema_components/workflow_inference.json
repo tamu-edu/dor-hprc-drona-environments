@@ -1,0 +1,35 @@
+{
+  "inferenceWorkflowContainer": {
+    "type": "rowContainer",
+    "layout": "col",
+    "condition": "operation.inference",
+    "elements": {
+      "inferenceWorkflowHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #e3f2fd; border: 1px solid #90caf9; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h3 style='color: #1565c0; margin: 0; font-size: 1.2em;'>Inference Workflow</h3><p style='margin: 5px 0 0 0; color: #1976d2; font-size: 0.9em;'>Run inference on models with your data</p></div>",
+        "allowHtml": true
+      },
+	  "modelContainer": {"$ref": "model.json#/modelContainer"},
+      "modelSourceContainer": {"$ref": "model.json#/modelSourceContainer"},
+      "modelSelectorContainer": {"$ref": "model.json#/modelSelectorContainer"},
+      "modelDownloadedContainer": {"$ref": "model.json#/modelDownloadedContainer"},
+      "modelInfoContainer": {"$ref": "model.json#/modelInfoContainer"},
+      "datasetContainer": {"$ref": "dataset.json#/datasetContainer"},
+      "datasetSelectorContainer": {"$ref": "dataset.json#/datasetSelectorContainer"},
+      "datasetHubContainer": {"$ref": "dataset.json#/datasetHubContainer"},
+      "datasetDownloadedContainer": {"$ref": "dataset.json#/datasetDownloadedContainer"},
+      "datasetUploadContainer": {"$ref": "dataset.json#/datasetUploadContainer"},
+      "inputTextContainer": {"$ref": "dataset.json#/inputTextContainer"},
+      "hardwareContainer": {"$ref": "accelerators.json#/hardwareContainer"},
+      "gpuSelectorContainer": {"$ref": "accelerators.json#/gpuSelectorContainer"},
+      "advancedHardwareContainer": {"$ref": "accelerators.json#/advancedHardwareContainer"},
+      "advancedHardwareDetailsContainer": {"$ref": "accelerators.json#/advancedHardwareDetailsContainer"},
+      "inferenceContainer": {"$ref": "inference.json#/inferenceContainer"},
+      "inferenceBasicContainer": {"$ref": "inference.json#/inferenceBasicContainer"},
+      "inferenceAdvancedContainer": {"$ref": "inference.json#/inferenceAdvancedContainer"},
+      "inferenceCustomParamsContainer": {"$ref": "inference.json#/inferenceCustomParamsContainer"},
+      "jobSettingsHeader": {"$ref": "headers.json#/jobSettingsHeader"},
+      "slurmSettings": {"$ref": "slurm.json"}
+    }
+  }
+}

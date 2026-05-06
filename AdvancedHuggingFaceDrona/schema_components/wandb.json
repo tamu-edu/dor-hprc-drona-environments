@@ -1,0 +1,62 @@
+{
+  "wandbContainer": {
+    "type": "rowContainer",
+    "condition": "operation.finetune_lora",
+    "elements": {
+      "wandbHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em;'>Experiment Tracking</h4></div>",
+        "allowHtml": true
+      },
+      "enableWandb": {
+        "type": "checkbox",
+        "label": "Enable Weights & Biases (wandb)",
+        "name": "enable_wandb",
+        "value": false,
+        "help": "Track experiments, visualize metrics, and compare runs using Weights & Biases. Requires a wandb account (free at wandb.ai)."
+      }
+    }
+  },
+  "wandbConfigContainer": {
+    "type": "rowContainer",
+    "condition": "operation.finetune_lora && enable_wandb.Yes",
+    "elements": {
+      "wandbApiKey": {
+        "type": "secure_text",
+        "label": "Wandb API Key",
+        "name": "wandb_api_key",
+        "help": "Your Weights & Biases API key. Find it at wandb.ai/authorize. For security, you can also set the WANDB_API_KEY environment variable and leave this blank.",
+        "placeholder": "Your API key or leave blank to use $WANDB_API_KEY"
+      },
+      "wandbProject": {
+        "type": "text",
+        "label": "Project Name",
+        "name": "wandb_project",
+        "value": "hf-finetuning",
+        "help": "Name of the wandb project to log experiments to. Will be created if it doesn't exist.",
+        "required": true
+      },
+      "wandbRunName": {
+        "type": "text",
+        "label": "Run Name (Optional)",
+        "name": "wandb_run_name",
+        "help": "Custom name for this training run. If empty, wandb will auto-generate a name.",
+        "placeholder": "e.g., llama2-7b-lora-v1"
+      },
+      "wandbTags": {
+        "type": "text",
+        "label": "Tags (Optional)",
+        "name": "wandb_tags",
+        "help": "Comma-separated tags for organizing experiments (e.g., 'lora,llama,baseline').",
+        "placeholder": "lora,experiment,baseline"
+      },
+      "wandbNotes": {
+        "type": "text",
+        "label": "Notes (Optional)",
+        "name": "wandb_notes",
+        "help": "Description or notes about this training run.",
+        "placeholder": "Brief description of this experiment"
+      }
+    }
+  }
+}

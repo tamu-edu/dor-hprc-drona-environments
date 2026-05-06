@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Ensure we're running in a login shell to load all environment variables
+if ! shopt -q login_shell; then
+    exec bash -l "$0" "$@"
+fi
+
+# Dataset Preview Wrapper Script
+if [[ ! -d "${SCRATCH}/virtual_envs/huggingface" ]]; then
+   create_venv -d "Hugging Face environment" huggingface
+   source activate_venv huggingface >/dev/null
+   pip install --upgrade huggingface_hub transformers datasets torch accelerate
+else
+   source activate_venv huggingface >/dev/null
+fi
+
+# Get the directory of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Execute the Python script with all passed arguments
+exec python3 "$SCRIPT_DIR/preview_dataset.py" "$@"

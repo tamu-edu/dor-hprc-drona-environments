@@ -1,0 +1,177 @@
+{
+  "datasetManagementContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "datasetManagementHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Dataset Management</h4></div>",
+        "allowHtml": true
+      }
+    }
+  },
+
+  "downloadedDatasetsContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "downloadedDatasetsDisplay": {
+        "type": "staticText",
+        "name": "downloaded_datasets_display",
+        "isDynamic": true,
+        "retriever": "scripts/retrievers/list_downloaded_datasets",
+        "allowHtml": true,
+        "value": "<details style='margin: 10px 0; border: 1px solid #dee2e6; border-radius: 4px;'><summary style='padding: 8px 12px; cursor: pointer; background: #f8f9fa; font-size: 0.9em; color: #495057; user-select: none;'>📁 Downloaded Datasets (Loading...)</summary><div style='padding: 12px; color: #6c757d; font-size: 0.85em; text-align: center;'>Loading your downloaded datasets...</div></details>"
+      }
+    }
+  },
+
+  "datasetSourceContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "datasetSourceType": {
+        "type": "radioGroup",
+        "label": "Dataset Source",
+        "name": "dataset_source",
+        "options": [
+          {"value": "hub", "label": "HuggingFace Hub"},
+          {"value": "upload", "label": "Upload Dataset"}
+        ],
+        "value": "hub"
+      }
+    }
+  },
+
+  "datasetHubContainer": {
+    "type": "rowContainer",
+    "condition": "dataset_source.hub",
+    "elements": {
+      "datasetSelector": {
+        "type": "autocompleteSelect",
+        "label": "HuggingFace Dataset",
+        "name": "dataset_id",
+        "help": "Search for datasets with real-time Hub API integration",
+        "placeholder": "Search for datasets (e.g., 'squad', 'imdb')...",
+        "retriever": "scripts/retrievers/list_hf_datasets"
+      },
+      "hfTokenField": {
+        "type": "text",
+        "label": "HuggingFace Token (Optional)",
+        "name": "hf_token",
+        "help": "Required for gated datasets and private repositories",
+        "placeholder": "hf_xxxxxxxxxxxxxxxxxxxx"
+      },
+      "cacheOptionField": {
+        "type": "radioGroup",
+        "label": "Cache Behavior",
+        "name": "cache_option",
+        "options": [
+          {"value": "use_cache", "label": "Use cached version if available"},
+          {"value": "refresh", "label": "Force re-download"}
+        ],
+        "value": "use_cache",
+        "help": "Choose whether to use a cached dataset or force download"
+      }
+    }
+  },
+
+  "datasetUploadContainer": {
+    "type": "rowContainer",
+    "condition": "dataset_source.upload",
+    "elements": {
+      "datasetUpload": {
+        "type": "uploader",
+        "label": "Dataset File",
+        "name": "dataset_file",
+        "help": "Upload your dataset file (CSV, JSON, JSONL, TXT)",
+        "accept": ".csv,.json,.jsonl,.txt,.parquet",
+        "maxSize": "1GB"
+      },
+      "datasetFormat": {
+        "type": "select",
+        "label": "Format",
+        "name": "dataset_format",
+        "options": [
+          {"value": "auto", "label": "Auto-detect"},
+          {"value": "csv", "label": "CSV"},
+          {"value": "json", "label": "JSON"},
+          {"value": "jsonl", "label": "JSONL"},
+          {"value": "text", "label": "Plain Text"},
+          {"value": "parquet", "label": "Parquet"}
+        ],
+        "value": {"value": "auto", "label": "Auto-detect"}
+      }
+    }
+  },
+
+  "datasetDownloadPathContainer": {
+    "type": "rowContainer",
+    "condition": "dataset_source.hub || dataset_source.upload",
+    "elements": {
+      "datasetDownloadPath": {
+        "type": "picker",
+        "label": "Download Path",
+        "name": "dataset_download_path",
+        "help": "Select the directory where the dataset will be downloaded",
+        "localLabel": "Select Directory",
+        "default": "dataset_cache",
+        "showFiles": false
+      }
+    }
+  },
+
+  "datasetJobSettingsHeader": {
+    "type": "rowContainer",
+    "condition": "dataset_source.hub || dataset_source.upload",
+    "elements": {
+      "jobSettingsHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; margin-top: 20px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Job Settings</h4></div>",
+        "allowHtml": true
+      }
+    }
+  },
+
+  "datasetJobTypeContainer": {
+    "type": "rowContainer",
+    "condition": "dataset_source.hub || dataset_source.upload",
+    "elements": {
+      "datasetJobType": {
+        "type": "radioGroup",
+        "name": "job_type",
+        "label": "Job Submission Method",
+        "options": [
+          {"label": "Interactive Bash", "value": "bash"},
+          {"label": "SLURM Interactive", "value": "slurm_interactive"},
+          {"label": "SLURM Batch", "value": "slurm"}
+        ],
+        "value": "bash"
+      }
+    }
+  },
+
+  "datasetSlurmContainer": {
+    "type": "rowContainer",
+    "condition": "(dataset_source.hub || dataset_source.upload) && (job_type.slurm || job_type.slurm_interactive)",
+    "elements": {
+      "datasetSlurmTime": {
+        "type": "time",
+        "label": "Time Limit",
+        "name": "walltime",
+        "value": "1:00",
+        "help": "Maximum time for the job to run"
+      },
+      "datasetSlurmMemory": {
+        "type": "unit",
+        "label": "Memory",
+        "name": "memory",
+        "value": "8G",
+        "units": [
+          {
+            "label": "GB",
+            "value": "G"
+          }
+        ],
+        "help": "Total memory needed for the job"
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Exit on any error
+set -eo pipefail
+
+# Setup environment - find the python script's location relative to this shell script
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+# Execute the Python script directly - no parameters needed for this retriever
+python3 "$SCRIPT_DIR/list_downloaded_models.py"
+
+exit 0

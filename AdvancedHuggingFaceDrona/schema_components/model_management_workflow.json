@@ -1,0 +1,92 @@
+{
+  "type": "rowContainer",
+  "layout": "col",
+  "condition": "operation.model_management",
+  "elements": {
+
+
+
+    "workflowHeader": {"$ref": "headers.json#/modelManagementWorkflowHeader"},
+
+    "downloadedModelsDisplay": {
+      "type": "staticText",
+      "name": "downloaded_models_display",
+      "isDynamic": true,
+      "retriever": "scripts/retrievers/list_downloaded_models",
+      "allowHtml": true,
+      "value": "<details style='margin: 10px 0; border: 1px solid #dee2e6; border-radius: 4px;'><summary style='padding: 8px 12px; cursor: pointer; background: #f8f9fa; font-size: 0.9em; color: #495057; user-select: none;'>📁 Downloaded Models (Loading...)</summary><div style='padding: 12px; color: #6c757d; font-size: 0.85em; text-align: center;'>Loading your downloaded models...</div></details>"
+    },
+
+    "modelSourceType": {
+      "type": "radioGroup",
+      "label": "Model Source",
+      "name": "model_source",
+      "options": [
+        {"value": "hub", "label": "HuggingFace Hub"},
+        {"value": "upload", "label": "Upload Model"}
+      ],
+      "value": "hub"
+    },
+    "hubContainer": {
+      "type": "rowContainer",
+      "condition": "model_source.hub",
+      "elements": {
+        "modelSelector": {
+          "type": "autocompleteSelect",
+          "label": "HuggingFace Model",
+          "name": "model_id",
+		  "required": true,
+          "help": "Search for models with real-time Hub API integration",
+          "placeholder": "Search for models (e.g., 'microsoft/DialoGPT', 'bert-base')...",
+          "retriever": "scripts/retrievers/list_hf_models"
+        },
+        "hfTokenField": {
+          "type": "text",
+          "label": "HuggingFace Token (Optional)",
+          "name": "hf_token",
+          "help": "Required for gated models and private repositories",
+          "placeholder": "hf_xxxxxxxxxxxxxxxxxxxx"
+        }
+      }
+    },
+    "uploadContainer": {
+      "type": "rowContainer",
+      "condition": "model_source.upload",
+      "elements": {
+        "modelUpload": {
+          "type": "picker",
+          "label": "Model File",
+          "name": "model_file",
+		  "required": true,
+          "help": "Select your model file or archive",
+          "accept": ".pt,.pth,.bin,.safetensors,.tar,.tar.gz,.zip"
+        },
+        "modelFormat": {
+          "type": "select",
+          "label": "Model Format",
+          "name": "model_format",
+          "options": [
+            {"value": "auto", "label": "Auto-detect"},
+            {"value": "pytorch", "label": "PyTorch"},
+            {"value": "safetensors", "label": "SafeTensors"},
+            {"value": "transformers", "label": "Transformers"}
+          ],
+          "value": {"value": "auto", "label": "Auto-detect"}
+        }
+      }
+    },
+     "modelDownloadPath": {
+          "type": "picker",
+          "label": "Download Path",
+          "name": "model_download_path",
+          "help": "Select the directory where the model will be downloaded",
+          "localLabel": "Select Directory",
+          "default": "model_cache",
+          "showFiles": false
+    },
+    "jobSettingsHeader": {"$ref": "headers.json#/jobSettingsHeader"},
+    "slurmSettings": {"$ref": "slurm.json"}
+      
+
+  }
+}

@@ -1,0 +1,245 @@
+{
+  "datasetContainer": {
+    "type": "rowContainer",
+    "condition": "operation.download || operation.inference || operation.finetune_lora",
+    "elements": {
+      "datasetSectionHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Dataset Configuration</h4></div>",
+        "allowHtml": true
+      }
+    }
+  },
+  "datasetSelectorContainer": {
+    "type": "rowContainer",
+    "condition": "operation.download || operation.inference || operation.finetune_lora",
+    "elements": {
+      "datasetSourceType": {
+        "type": "radioGroup",
+        "label": "Dataset Source",
+        "name": "dataset_source",
+        "options": [
+          {"value": "hub", "label": "HuggingFace Hub"},
+          {"value": "downloaded", "label": "Downloaded Datasets"},
+          {"value": "upload", "label": "Upload File"},
+          {"value": "text", "label": "Custom Text"}
+        ],
+        "value": "hub"
+      }
+    }
+  },
+  "datasetHubContainer": {
+    "type": "rowContainer",
+    "condition": "dataset_source.hub && (operation.download || operation.inference || operation.finetune_lora)",
+    "elements": {
+      "datasetSelector": {
+        "type": "autocompleteSelect",
+        "label": "HuggingFace Dataset",
+        "name": "dataset_id",
+        "help": "Search for datasets with real-time Hub API integration",
+        "placeholder": "Search for datasets (e.g., 'squad', 'imdb')...",
+        "retriever": "scripts/retrievers/list_hf_datasets"
+      }
+    }
+  },
+  "datasetDownloadedContainer": {
+    "type": "rowContainer",
+    "condition": "dataset_source.downloaded && (operation.download || operation.inference || operation.finetune_lora)",
+    "elements": {
+      "datasetDownloadedSelector": {
+        "type": "dynamicSelect",
+        "label": "Downloaded Dataset",
+        "name": "dataset_id",
+        "help": "Select from your previously downloaded datasets",
+        "retriever": "scripts/retrievers/list_downloaded_datasets_select"
+      }
+    }
+  },
+  "datasetUploadContainer": {
+    "type": "rowContainer",
+    "condition": "dataset_source.upload && (operation.inference || operation.finetune_lora)",
+    "elements": {
+      "datasetUpload": {
+        "type": "uploader",
+        "label": "Dataset File",
+        "name": "dataset_file",
+        "help": "Upload your dataset file (CSV, JSON, JSONL, TXT)",
+        "accept": ".csv,.json,.jsonl,.txt",
+        "maxSize": "100MB"
+      },
+      "datasetFormat": {
+        "type": "select",
+        "label": "Format",
+        "name": "dataset_format",
+        "options": [
+          {"value": "auto", "label": "Auto-detect"},
+          {"value": "csv", "label": "CSV"},
+          {"value": "json", "label": "JSON"},
+          {"value": "jsonl", "label": "JSONL"},
+          {"value": "text", "label": "Plain Text"}
+        ],
+        "value": {"value": "auto", "label": "Auto-detect"}
+      }
+    }
+  },
+  "inputTextContainer": {
+    "type": "rowContainer",
+    "condition": "dataset_source.text && operation.inference",
+    "elements": {
+      "inputText": {
+        "type": "textarea",
+        "label": "Custom Input Text",
+        "name": "input_text",
+        "help": "Enter text for inference when not using a dataset",
+        "placeholder": "Enter your text here for inference...",
+        "rows": 3
+      }
+    }
+  },
+  "datasetProcessingContainer": {
+    "type": "rowContainer",
+    "condition": "operation.finetune_lora && (dataset_source.hub || dataset_source.upload)",
+    "elements": {
+      "datasetProcessingHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Dataset Processing</h4></div>",
+        "allowHtml": true
+      },
+      "inputColumn": {
+        "type": "text",
+        "label": "Input Column",
+        "name": "input_column",
+        "condition": "!task_type.text_classification",
+        "placeholder": "(e.g., 'text', 'question')",
+        "help": "Specify which column contains the input data for training"
+      },
+      "targetColumn": {
+        "type": "text",
+        "label": "Target Column",
+        "name": "target_column",
+        "condition": "!task_type.text_classification",
+        "placeholder": "(e.g., 'label', 'answer')",
+        "help": "Specify which column contains the target/output data for training"
+      },
+      "textColumn": {
+        "type": "text",
+        "label": "Text Column",
+        "name": "text_column",
+        "condition": "task_type.text_classification",
+        "placeholder": "(e.g., 'text', 'sentence', 'review')",
+        "help": "Column containing the text to classify",
+        "value": "text"
+      },
+      "labelColumn": {
+        "type": "text",
+        "label": "Label Column",
+        "name": "label_column",
+        "condition": "task_type.text_classification",
+        "placeholder": "(e.g., 'label', 'category', 'sentiment')",
+        "help": "Column containing the class labels (must be integers or will be converted)",
+        "value": "label"
+      },
+      "numLabels": {
+        "type": "number",
+        "label": "Number of Classes",
+        "name": "num_labels",
+        "condition": "task_type.text_classification",
+        "help": "Number of unique classes in your dataset. Leave as 2 for binary classification.",
+        "value": 2,
+        "min": 2,
+        "max": 1000
+      },
+      "showDatasetProcessing": {
+        "type": "checkbox",
+        "label": "Advanced Settings",
+        "name": "show_dataset_processing",
+        "value": false,
+        "help": "Enable advanced dataset processing options like validation, preprocessing, and custom formatting"
+      }
+    }
+  },
+  "dataPreview": {
+    "type": "rowContainer",
+    "condition": "operation.finetune_lora && (dataset_source.hub || dataset_source.upload)",
+    "elements": {  "dataPreview": {
+        "type": "staticText",
+        "allowHtml": true,
+        "retriever": "scripts/retrievers/preview_dataset",
+        "isDynamic": true,
+        "retrieverParams": {
+          "dataset_id": "$dataset_id"
+        },
+        "value": "<div style='background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 0; color: #6c757d; font-size: 0.9em;'>Select a dataset to view columns and sample data</div>"
+      }
+	 }
+	 },
+  "dataSplitContainer": {
+    "type": "rowContainer",
+    "condition": "operation.finetune_lora && (dataset_source.hub || dataset_source.upload)",
+    "elements": {
+      "dataSplitHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Data Split Configuration</h4></div>",
+        "allowHtml": true
+      },
+      "showDataSplit": {
+        "type": "checkbox",
+        "label": "Configure Data Splits",
+        "name": "show_data_split",
+        "value": false,
+        "help": "Set up train/validation splits and data filtering"
+      }
+    }
+  },
+  "dataSplitDetailsContainer": {
+    "type": "rowContainer",
+    "condition": "operation.finetune_lora && (dataset_source.hub || dataset_source.upload) && show_data_split.Yes",
+    "elements": {
+      "trainSplitRatio": {
+        "type": "number",
+        "label": "Train Split Ratio",
+        "name": "train_split_ratio",
+        "help": "Percentage of data to use for training (0.0 to 1.0)",
+        "value": 0.9,
+        "min": 0.1,
+        "max": 0.95,
+        "step": 0.05
+      },
+      "validationSplitRatio": {
+        "type": "number",
+        "label": "Validation Split Ratio",
+        "name": "validation_split_ratio",
+        "help": "Percentage of data to use for validation (0.0 to 1.0)",
+        "value": 0.1,
+        "min": 0.05,
+        "max": 0.5,
+        "step": 0.05
+      },
+      "maxSamples": {
+        "type": "number",
+        "label": "Max Samples",
+        "name": "max_train_samples",
+        "help": "Maximum number of samples to use for training (0 = use all)",
+        "value": 0,
+        "min": 0,
+        "max": 100000
+      },
+      "shuffleData": {
+        "type": "checkbox",
+        "label": "Shuffle Data",
+        "name": "shuffle_data",
+        "value": true,
+        "help": "Randomly shuffle the dataset before splitting"
+      },
+      "randomSeed": {
+        "type": "number",
+        "label": "Random Seed",
+        "name": "random_seed",
+        "help": "Seed for reproducible data splitting (0 = random)",
+        "value": 42,
+        "min": 0,
+        "max": 999999
+      }
+    }
+  }
+}

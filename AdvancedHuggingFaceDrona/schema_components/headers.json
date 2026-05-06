@@ -1,0 +1,99 @@
+{
+  "appHeader": {
+    "type": "staticText",
+    "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; border-radius: 8px; margin-bottom: 30px;'><h2 style='margin-top: 0; color: #495057;'><img src='https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/huggingface-color.png' alt='HF logo' style='vertical-align: middle; margin-right: 10px; height: 32px;'> HuggingFace Training & Inference</h2><p style='margin-bottom: 0; color: #6c757d;'>Scalable workflows for model inference and fine-tuning with automated resource optimization</p></div>",
+    "allowHtml": true,
+	"useLabel": false
+  },
+  "inferenceWorkflowHeader": {
+    "type": "staticText",
+    "value": "<div style='background: #e3f2fd; border: 1px solid #90caf9; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h3 style='color: #1565c0; margin: 0; font-size: 1.2em;'>Inference Workflow</h3><p style='margin: 5px 0 0 0; color: #1976d2; font-size: 0.9em;'>Run inference on models with your data</p></div>",
+    "allowHtml": true
+  },
+  "finetuningWorkflowHeader": {
+    "type": "staticText",
+    "value": "<div style='background: #f3e5f5; border: 1px solid #ce93d8; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h3 style='color: #7b1fa2; margin: 0; font-size: 1.2em;'>Fine-tuning Workflow (LoRA)</h3><p style='margin: 5px 0 0 0; color: #8e24aa; font-size: 0.9em;'>Fine-tune models efficiently with Low-Rank Adaptation</p></div>",
+    "allowHtml": true
+  },
+  "modelManagementWorkflowHeader": {
+    "type": "staticText",
+    "value": "<div style='background: #e8f5e8; border: 1px solid #81c784; padding: 12px; border-radius: 6px; margin-bottom: 0px; width: 100%;'><h3 style='color: #2e7d32; margin: 0; font-size: 1.2em;'>Model Management</h3><p style='margin: 5px 0 0 0; color: #388e3c; font-size: 0.9em;'>Download and manage models from HuggingFace Hub or upload your own</p></div>",
+    "allowHtml": true
+  },
+  "datasetManagementWorkflowHeader": {
+    "type": "staticText",
+    "value": "<div style='background: #fff3e0; border: 1px solid #ffcc02; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h3 style='color: #f57c00; margin: 0; font-size: 1.2em;'>Dataset Management</h3><p style='margin: 5px 0 0 0; color: #f57c00; font-size: 0.9em;'>Download and manage datasets from HuggingFace Hub or upload your own</p></div>",
+    "allowHtml": true
+  },
+
+  "modelConfigurationHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "Model Configuration"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  },
+  "modelManagementHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "Model Management"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  },
+  "datasetConfigurationHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "Dataset Configuration"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  },
+  "datasetProcessingHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "Dataset Processing"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  },
+  "dataSplitConfigurationHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "Data Split Configuration"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  },
+  "hardwareConfigurationHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "Hardware Configuration"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  },
+  "inferenceParametersHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "Inference Parameters"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  },
+  "finetuningParametersHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "Fine-tuning Parameters"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  },
+  "jobSettingsHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "Job Settings"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  },
+  "slurmParametersHeader": {
+    "type": "staticText",
+	"isDynamic": true,
+	"retrieverParams": {"HEADER": "SLURM Parameters"},
+	"retriever": "scripts/generate_header.sh",
+    "allowHtml": true
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "DUMMY1": "!setup_hf_operation($operation, $model_id, $dataset_id, $cache_option, $hf_token, $location, $input_text, $max_samples, $gpu_type, $num_gpus, $nodes, $precision, $model_download_path, $job_type, $gpu, $walltime, $memory, $dataset_download_path, $dataset_source, $model_source, $accelerator_type, $ipu_type, $ipu_use_pipeline, $input_column, $target_column, $learning_rate, $num_train_epochs, $per_device_train_batch_size, $lora_r, $lora_alpha, $lora_dropout, $custom_finetune_params, $test_size, $distributed_type, $ddp_bucket_cap_mb, $use_lora, $enable_wandb, $wandb_api_key, $wandb_project, $wandb_run_name, $wandb_tags, $wandb_notes, $task_type, $text_column, $label_column, $num_labels)",
+  "JOBNAME": "$name",
+  "flocation": "$location",
+  "MODULES": "!setup_modules($gpu_type)",
+  "GRES": "!setup_gpu_resources($gpu, $numgpu)",
+  "EXTRA_SLURM": "$extra_slurm",
+  "SLURM_TIME": "$walltime",
+  "SLURM_MEMORY": "$memory",
+  "SLURM_NODES": "!setup_default($nodes, '1')",
+  "SLURM_TASKS_LINE": "!setup_slurm_tasks_line($tasks)",
+  "SLURM_CPUS": "!setup_default($cpus, '4')",
+  "SLURM_ACCOUNT": "!setup_account($account)",
+  "MODEL_JOB_TYPE": "$job_type",
+  "MODELCONFIGCODE": "",
+  "DATASETPROCESSINGCODE": "",
+  "INPUTTEXTPROCESSINGCODE": "",
+  "OUTPUT_DIR": "$location"
+}

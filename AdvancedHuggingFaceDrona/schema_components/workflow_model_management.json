@@ -1,0 +1,23 @@
+{
+  "modelManagementWorkflowContainer": {
+    "type": "rowContainer",
+    "layout": "col",
+    "condition": "operation.model_management",
+    "elements": {
+      "modelManagementWorkflowHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #e8f5e8; border: 1px solid #81c784; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h3 style='color: #2e7d32; margin: 0; font-size: 1.2em;'>Model Management</h3><p style='margin: 5px 0 0 0; color: #388e3c; font-size: 0.9em;'>Download and manage models from HuggingFace Hub or upload your own</p></div>",
+        "allowHtml": true
+      },
+      "modelManagementContainer": {"$ref": "model_management.json#/modelManagementContainer"},
+      "downloadedModelsContainer": {"$ref": "model_management.json#/downloadedModelsContainer"},
+      "modelSourceContainer": {"$ref": "model_management.json#/modelSourceContainer"},
+      "modelHubContainer": {"$ref": "model_management.json#/modelHubContainer"},
+      "modelUploadContainer": {"$ref": "model_management.json#/modelUploadContainer"},
+      "modelDownloadPathContainer": {"$ref": "model_management.json#/modelDownloadPathContainer"},
+      "modelJobSettingsHeader": {"$ref": "model_management.json#/modelJobSettingsHeader"},
+      "modelJobTypeContainer": {"$ref": "model_management.json#/modelJobTypeContainer"},
+      "modelSlurmContainer": {"$ref": "model_management.json#/modelSlurmContainer"}
+    }
+  }
+}

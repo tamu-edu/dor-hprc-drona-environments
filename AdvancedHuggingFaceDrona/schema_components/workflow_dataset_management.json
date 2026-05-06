@@ -1,0 +1,21 @@
+{
+  "datasetManagementWorkflowContainer": {
+    "type": "rowContainer",
+    "layout": "col",
+    "condition": "operation.dataset_management",
+    "elements": {
+      "datasetManagementWorkflowHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #fff3e0; border: 1px solid #ffcc02; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h3 style='color: #f57c00; margin: 0; font-size: 1.2em;'>Dataset Management</h3><p style='margin: 5px 0 0 0; color: #f57c00; font-size: 0.9em;'>Download and manage datasets from HuggingFace Hub or upload your own</p></div>",
+        "allowHtml": true
+      },
+      "downloadedDatasetsContainer": {"$ref": "dataset_management.json#/downloadedDatasetsContainer"},
+      "datasetSourceContainer": {"$ref": "dataset_management.json#/datasetSourceContainer"},
+      "datasetHubContainer": {"$ref": "dataset_management.json#/datasetHubContainer"},
+      "datasetUploadContainer": {"$ref": "dataset_management.json#/datasetUploadContainer"},
+      "datasetDownloadPathContainer": {"$ref": "dataset_management.json#/datasetDownloadPathContainer"},
+      "jobSettingsHeader": {"$ref": "headers.json#/jobSettingsHeader"},
+      "slurmSettings": {"$ref": "slurm.json"}
+    }
+  }
+}

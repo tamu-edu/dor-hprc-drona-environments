@@ -1,0 +1,50 @@
+{
+  "introText": {"$ref": "schema_components/headers.json#/appHeader"},
+
+  "operationSelector": {
+    "type": "radioGroup",
+    "label": "Workflow Type",
+    "name": "operation",
+    "options": [
+      {"value": "inference", "label": "Inference"},
+      {"value": "finetune_lora", "label": "Fine-tuning"},
+      {"value": "model_management", "label": "Model Management"},
+      {"value": "dataset_management", "label": "Dataset Management"}
+    ],
+	"required": true
+  },
+  "taskTypeSelector": {
+
+  "type": "radioGroup",
+
+
+  "label": "Task Type", 
+
+  "name": "task_type", 
+
+  "options": [ 
+
+    {"value": "classification", "label": "Text Classification"}, 
+
+    {"value": "generation", "label": "Text Generation"}, 
+
+    {"value": "question_answering", "label": "Question Answering"} 
+
+  ], 
+
+  "default": "classification", 
+
+  "help": "Select the task you want to perform. This determines the model architecture and training setup.", 
+
+  "required": true 
+
+}, 
+
+
+  "inferenceWorkflowContainer": {"$ref": "schema_components/workflow_inference.json#/inferenceWorkflowContainer"}, 
+  "finetuningWorkflowContainer": {"$ref": "schema_components/workflow_finetuning.json#/finetuningWorkflowContainer"}, 
+  "modelManagementWorkflowContainer": {"$ref": "schema_components/model_management_workflow.json"},
+  "datasetManagementWorkflowContainer": {"$ref": "schema_components/workflow_dataset_management.json#/datasetManagementWorkflowContainer"}
+
+
+}

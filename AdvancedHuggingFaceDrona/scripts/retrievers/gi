@@ -1,0 +1,12 @@
+echo "Loaded"
+cd /scratch/user/u.ak202494
+source /etc/profile.d/modules.sh
+echo "Changed to: $(pwd)"
+module load WebProxy GCCcore/12.2.0 Python/3.10.8 
+source /scratch/user/u.ak202494/virtual_envs/huggingface/bin/activate
+echo "Activated"
+pip freeze | grep "accelerate"
+accelerate estimate-memory HuggingFaceM4/idefics-80b-instruct --library_name transformers
+echo "Finished"
+exit 0
+

@@ -1,0 +1,49 @@
+{
+  "finetuningWorkflowContainer": {
+    "type": "rowContainer",
+    "layout": "col",
+    "condition": "operation.finetune_lora",
+    "elements": {
+	  "taskTypeSelector": {
+  "type": "radioGroup",
+  "labelOnTop": "false",
+  "label": "Task Type",
+  "name": "task_type",
+  "options": [
+    {"value": "classification", "label": "Text Classification"},
+    {"value": "generation", "label": "Text Generation (Causal LM)"},
+    {"value": "question_answering", "label": "Question Answering"}
+  ],
+  "default": "classification",
+  "help": "Select the task you want to perform. This determines the model architecture and training setup.",
+  "required": true
+},
+      "modelContainer": {"$ref": "model.json#/modelContainer"},
+      "modelSourceContainer": {"$ref": "model.json#/modelSourceContainer"},
+      "modelSelectorContainer": {"$ref": "model.json#/modelSelectorContainer"},
+      "modelDownloadedContainer": {"$ref": "model.json#/modelDownloadedContainer"},
+      "modelInfoContainer": {"$ref": "model.json#/modelInfoContainer"},
+      "datasetContainer": {"$ref": "dataset.json#/datasetContainer"},
+      "datasetSelectorContainer": {"$ref": "dataset.json#/datasetSelectorContainer"},
+      "datasetHubContainer": {"$ref": "dataset.json#/datasetHubContainer"},
+      "datasetDownloadedContainer": {"$ref": "dataset.json#/datasetDownloadedContainer"},
+      "datasetUploadContainer": {"$ref": "dataset.json#/datasetUploadContainer"},
+      "datasetProcessingContainer": {"$ref": "dataset.json#/datasetProcessingContainer"},
+      "dataPreview": {"$ref": "dataset.json#/dataPreview"},
+      "dataSplitContainer": {"$ref": "dataset.json#/dataSplitContainer"},
+      "dataSplitDetailsContainer": {"$ref": "dataset.json#/dataSplitDetailsContainer"},
+      "hardwareContainer": {"$ref": "accelerators.json#/hardwareContainer"},
+      "gpuSelectorContainer": {"$ref": "accelerators.json#/gpuSelectorContainer"},
+      "advancedHardwareContainer": {"$ref": "accelerators.json#/advancedHardwareContainer"},
+      "advancedHardwareDetailsContainer": {"$ref": "accelerators.json#/advancedHardwareDetailsContainer"},
+      "finetuneContainer": {"$ref": "finetuning.json#/finetuneContainer"},
+      "finetuneBasicContainer": {"$ref": "finetuning.json#/finetuneBasicContainer"},
+      "finetuneAdvancedContainer": {"$ref": "finetuning.json#/finetuneAdvancedContainer"},
+      "finetuneCustomParamsContainer": {"$ref": "finetuning.json#/finetuneCustomParamsContainer"},
+      "wandbContainer": {"$ref": "wandb.json#/wandbContainer"},
+      "wandbConfigContainer": {"$ref": "wandb.json#/wandbConfigContainer"},
+      "jobSettingsHeader": {"$ref": "headers.json#/jobSettingsHeader"},
+      "slurmSettings": {"$ref": "slurm.json"}
+    }
+  }
+}

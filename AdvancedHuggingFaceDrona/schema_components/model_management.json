@@ -1,0 +1,175 @@
+{
+  "modelManagementContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "modelManagementHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Model Management</h4></div>",
+        "allowHtml": true
+      }
+    }
+  },
+
+  "downloadedModelsContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "downloadedModelsDisplay": {
+        "type": "staticText",
+        "name": "downloaded_models_display",
+        "isDynamic": true,
+        "retriever": "scripts/retrievers/list_downloaded_models",
+        "allowHtml": true,
+        "value": "<details style='margin: 10px 0; border: 1px solid #dee2e6; border-radius: 4px;'><summary style='padding: 8px 12px; cursor: pointer; background: #f8f9fa; font-size: 0.9em; color: #495057; user-select: none;'>📁 Downloaded Models (Loading...)</summary><div style='padding: 12px; color: #6c757d; font-size: 0.85em; text-align: center;'>Loading your downloaded models...</div></details>"
+      }
+    }
+  },
+
+  "modelSourceContainer": {
+    "type": "rowContainer",
+    "elements": {
+      "modelSourceType": {
+        "type": "radioGroup",
+        "label": "Model Source",
+        "name": "model_source",
+        "options": [
+          {"value": "hub", "label": "HuggingFace Hub"},
+          {"value": "upload", "label": "Upload Model"}
+        ],
+        "value": "hub"
+      }
+    }
+  },
+
+  "modelHubContainer": {
+    "type": "rowContainer",
+    "condition": "model_source.hub",
+    "elements": {
+      "modelSelector": {
+        "type": "autocompleteSelect",
+        "label": "HuggingFace Model",
+        "name": "model_id",
+        "help": "Search for models with real-time Hub API integration",
+        "placeholder": "Search for models (e.g., 'microsoft/DialoGPT', 'bert-base')...",
+        "retriever": "scripts/retrievers/list_hf_models"
+      },
+      "hfTokenField": {
+        "type": "text",
+        "label": "HuggingFace Token (Optional)",
+        "name": "hf_token",
+        "help": "Required for gated models and private repositories",
+        "placeholder": "hf_xxxxxxxxxxxxxxxxxxxx"
+      }
+    }
+  },
+
+  "modelUploadContainer": {
+    "type": "rowContainer",
+    "condition": "model_source.upload",
+    "elements": {
+      "modelUpload": {
+        "type": "picker",
+        "label": "Model File",
+        "name": "model_file",
+        "help": "Select your model file or archive",
+        "accept": ".pt,.pth,.bin,.safetensors,.tar,.tar.gz,.zip"
+      },
+      "modelFormat": {
+        "type": "select",
+        "label": "Model Format",
+        "name": "model_format",
+        "options": [
+          {"value": "auto", "label": "Auto-detect"},
+          {"value": "pytorch", "label": "PyTorch"},
+          {"value": "safetensors", "label": "SafeTensors"},
+          {"value": "transformers", "label": "Transformers"}
+        ],
+        "value": {"value": "auto", "label": "Auto-detect"}
+      }
+    }
+  },
+
+  "modelDownloadPathContainer": {
+    "type": "rowContainer",
+    "condition": "model_source.hub || model_source.upload",
+    "elements": {
+      "modelDownloadPath": {
+        "type": "picker",
+        "label": "Download Path",
+        "name": "model_download_path",
+        "help": "Select the directory where the model will be downloaded",
+        "localLabel": "Select Directory",
+        "default": "model_cache",
+        "showFiles": false
+      }
+    }
+  },
+
+  "modelJobSettingsHeader": {
+    "type": "rowContainer",
+    "condition": "model_source.hub || model_source.upload",
+    "elements": {
+      "jobSettingsHeader": {
+        "type": "staticText",
+        "value": "<div style='background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-bottom: 15px; margin-top: 20px; width: 100%;'><h4 style='color: #495057; margin: 0; font-size: 1.1em; display: inline-block; width: 200px;'>Job Settings</h4></div>",
+        "allowHtml": true
+      }
+    }
+  },
+
+  "modelJobTypeContainer": {
+    "type": "rowContainer",
+    "condition": "model_source.hub || model_source.upload",
+    "elements": {
+      "modelJobType": {
+        "type": "radioGroup",
+        "name": "model_job_type",
+        "label": "Job Submission Method",
+        "options": [
+          {"label": "Interactive Bash", "value": "bash"},
+          {"label": "Slurm Job", "value": "slurm"}
+        ],
+        "value": "bash"
+      }
+    }
+  },
+
+  "modelSlurmContainer": {
+    "type": "rowContainer",
+    "condition": "(model_source.hub || model_source.upload) && model_job_type.slurm",
+    "elements": {
+      "modelSlurmPartition": {
+        "type": "select",
+        "label": "Partition",
+        "name": "model_slurm_partition",
+        "options": [
+          {"value": "gpu", "label": "GPU Queue"},
+          {"value": "cpu", "label": "CPU Queue"},
+          {"value": "bigmem", "label": "High Memory Queue"}
+        ],
+        "value": {"value": "cpu", "label": "CPU Queue"}
+      },
+      "modelSlurmTime": {
+        "type": "text",
+        "label": "Time Limit",
+        "name": "model_slurm_time",
+        "value": "01:00:00",
+        "placeholder": "HH:MM:SS"
+      },
+      "modelSlurmMemory": {
+        "type": "text",
+        "label": "Memory",
+        "name": "model_slurm_memory",
+        "value": "8GB",
+        "placeholder": "e.g., 8GB"
+      },
+      "modelSlurmNodes": {
+        "type": "number",
+        "label": "Number of Nodes",
+        "name": "model_slurm_nodes",
+        "value": 1,
+        "min": 1,
+        "max": 10
+      }
+    }
+  }
+}

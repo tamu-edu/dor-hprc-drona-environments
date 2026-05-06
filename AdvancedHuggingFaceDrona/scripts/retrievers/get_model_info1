@@ -1,0 +1,68 @@
+#!/bin/bash
+
+
+
+# If this is not a login shell, re-exec the script as a login shell.
+
+if ! shopt -q login_shell; then
+
+    exec bash -l "$0" "$@"
+
+fi
+
+
+
+# Exit on any error.
+
+set -eo pipefail
+
+
+
+# --- Capture Model ID from the first command-line argument ---
+
+
+
+# --- Handle case where no model is provided ---
+
+if [ -z "$MODEL_ID" ]; then
+
+    cat <<'EOF'
+
+<div class="model-memory-container" style="text-align: center; padding: 40px;">
+
+    <h4 style="margin: 0; color: #6c757d;">Please select a model to see its memory estimation.</h4>
+
+</div>
+
+EOF
+
+    exit 0
+
+fi
+
+
+
+# --- Setup Environment ---
+
+cd /scratch/user/u.ak202494
+
+module load WebProxy GCCcore/12.2.0 Python/3.10.8
+
+source /scratch/user/u.ak202494/virtual_envs/huggingface/bin/activate
+
+
+
+# --- Execute the Python script ---
+
+# The output of the Python script will be directly passed through as the
+
+# output of this shell script.
+
+# We find the script's own directory to make the path to the python script robust.
+
+
+python "./generate_interactive_html.py" "$MODEL_ID"
+
+
+
+exit 0

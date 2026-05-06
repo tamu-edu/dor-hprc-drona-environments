@@ -1,0 +1,204 @@
+#!/bin/bash
+
+
+
+# If this is not a login shell, re-exec the script as a login shell.
+
+# This ensures the 'module' command and its paths are fully configured.
+
+if ! shopt -q login_shell; then
+
+    exec bash -l "$0" "$@"
+
+fi
+
+
+
+# Exit on any error and ensure pipes fail correctly.
+
+# 'set -x' is removed to keep the stdout clean for the final HTML output.
+
+set -eo pipefail
+
+
+
+# --- Run the Commands and Capture Output ---
+
+cd /scratch/user/u.ak202494
+
+
+
+module load WebProxy GCCcore/12.2.0 Python/3.10.8
+
+source /scratch/user/u.ak202494/virtual_envs/huggingface/bin/activate
+
+
+ACCELERATE_OUTPUT=$(accelerate estimate-memory "$MODEL_ID"  --library_name transformers)
+
+
+
+# --- Generate HTML Snippet ---
+
+
+
+# Begin the container div and the scoped style block
+
+cat <<'EOF'
+
+<div class="model-memory-container">
+
+<style>
+
+    .model-memory-container {
+
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+        color: #212529;
+
+        background-color: #ffffff;
+
+        padding: 20px;
+
+        border-radius: 8px;
+
+        border: 1px solid #dee2e6;
+
+        font-size: 14px;
+
+    }
+
+    .model-memory-container h4 {
+
+        margin-top: 0;
+
+        margin-bottom: 15px;
+
+        font-size: 16px;
+
+        color: #495057;
+
+    }
+
+    .model-memory-container table {
+
+        width: 100%;
+
+        border-collapse: collapse;
+
+        white-space: nowrap;
+
+    }
+
+    .model-memory-container th, .model-memory-container td {
+
+        padding: 10px 12px;
+
+        text-align: left;
+
+        border: 1px solid #e9ecef;
+
+    }
+
+    .model-memory-container th {
+
+        background-color: #f8f9fa;
+
+        font-weight: 600;
+
+    }
+
+    .model-memory-container td {
+
+        text-align: right;
+
+    }
+
+    .model-memory-container td:first-child {
+
+        text-align: left;
+
+        font-weight: 500;
+
+    }
+
+    .model-memory-container code {
+
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+
+        background-color: #e9ecef;
+
+        padding: 3px 6px;
+
+        border-radius: 4px;
+
+        font-size: 13px;
+
+    }
+
+</style>
+
+EOF
+
+
+
+# Extract the model name and create a title
+
+MODEL_NAME=$(echo "$ACCELERATE_OUTPUT" | grep "for \`" | sed -n "s/.*\`\(.*\)\`.*/\1/p")
+
+echo "<h4>Memory Estimation for <code>$MODEL_NAME</code></h4>"
+
+
+
+# Start the table
+
+echo "<table>"
+
+
+
+# Process the header row
+
+HEADER_ROW=$(echo "$ACCELERATE_OUTPUT" | grep 'dtype')
+
+echo "<thead><tr>"
+
+# Use sed to replace the box-drawing characters with HTML tags
+
+echo "$HEADER_ROW" | sed -E 's/^│//; s/│$//; s/ *│ */<\/th><th>/g' | sed -E 's/(.*)/<th>\1<\/th>/'
+
+echo "</tr></thead>"
+
+
+
+# Process the data rows
+
+echo "<tbody>"
+
+# Filter for data lines, then loop through them
+
+echo "$ACCELERATE_OUTPUT" | grep '│' | grep -vE 'dtype|├|┌|└' | while IFS= read -r line; do
+
+  echo "<tr>"
+
+  # Use the same sed logic to create the table data cells
+
+  echo "$line" | sed -E 's/^│//; s/│$//; s/ *│ */<\/td><td>/g' | sed -E 's/(.*)/<td>\1<\/td>/'
+
+  echo "</tr>"
+
+done
+
+echo "</tbody>"
+
+
+
+# Close the table and the container div
+
+echo "</table>"
+
+echo "</div>"
+
+
+
+exit 0
+
+
