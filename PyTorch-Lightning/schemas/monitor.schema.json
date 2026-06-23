@@ -1,11 +1,4 @@
 {
-  "pt_workflow_select": {
-    "type": "dynamicSelect",
-    "label": "Select Training Run",
-    "name": "pt_workflow",
-    "retriever": "retrieve_pt_workflows.sh"
-  },
-
   "hidden_jobs_check": {
     "type": "hidden",
     "label": "JOB_IDS",
@@ -138,6 +131,34 @@
             "allowHtml": true
           }
         }
+      }
+    }
+  },
+
+  "tbConnectToggle": {
+    "type": "checkbox",
+    "label": "Connect to TensorBoard server",
+    "name": "tbConnectEnable",
+    "help": "Optional. Enable to enter host and port for an already-running TensorBoard instance."
+  },
+
+  "tb_connect_section": {
+    "type": "rowContainer",
+    "label": "TensorBoard — Connect to Server",
+    "condition": "tbConnectEnable.Yes",
+    "elements": {
+      "tbHost": {
+        "type": "text",
+        "label": "TensorBoard host",
+        "name": "tbHost",
+        "help": "Hostname or IP of a running TensorBoard server (e.g. compute node or localhost with port forwarding).",
+        "value": "localhost"
+      },
+      "tbPort": {
+        "type": "number",
+        "label": "TensorBoard port",
+        "name": "tbPort",
+        "value": "6006"
       }
     }
   },

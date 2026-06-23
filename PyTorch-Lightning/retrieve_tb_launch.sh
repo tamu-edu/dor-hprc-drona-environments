@@ -19,7 +19,7 @@ if not os.path.isdir(logdir):
 else:
     note = f"<p>Log directory: <code>{html.escape(logdir)}</code></p>"
 
-cmd = f"module load WebProxy && tensorboard --logdir={logdir} --host=0.0.0.0 --port={port}"
+cmd = "module load WebProxy && module load GCC/12.3.0 OpenMPI/4.1.5 PyTorch-Lightning/2.2.1-CUDA-12.1.1 && tensorboard --logdir={logdir} --host=0.0.0.0 --port={port}"
 
 print(note)
 print("<p><strong>Interactive / login node command:</strong></p>")

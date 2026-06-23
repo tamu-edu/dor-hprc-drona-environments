@@ -15,6 +15,14 @@
       }
     }
   },
+  "pt_workflow_select": {
+    "type": "dynamicSelect",
+    "label": "Select Training Run",
+    "name": "pt_workflow",
+    "help": "Lists training runs submitted through this environment via Drona Composer (from the workflow database, not all Slurm jobs).",
+    "condition": "mode.monitor",
+    "retriever": "retrieve_pt_workflows.sh"
+  },
   "RunContainer": {
     "type": "container",
     "elements": {

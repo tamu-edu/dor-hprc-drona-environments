@@ -2,21 +2,13 @@
   "runDestinationFinal": {
     "type": "jobNameLocation",
     "label": "Job Name and Location",
-    "help": "Optional. Leave blank to use defaults. If empty, the engine will assign a job ID and staging path automatically.",
+    "help": "Optional. Leave blank to use defaults. If empty, the engine will assign a job ID and staging path automatically. Spaces in the job name are converted to underscores.",
     "customJobName": "",
     "pickerLabel": "Location",
     "showName": true,
     "showLocation": true,
     "disableJobNameChange": false,
     "disableJobLocationChange": false
-  },
-
-  "currentEnvDropdown": {
-    "type": "dynamicSelect",
-    "label": "Python Environment",
-    "name": "currentEnvDropdown",
-    "help": "Select a private virtual env with pytorch, lightning, and torchvision installed.",
-    "retriever": "get_current_env.sh"
   },
 
   "ContainerDataset": {
@@ -28,24 +20,30 @@
         "name": "datasetType",
         "label": "Dataset source",
         "options": [
-          { "label": "Built-in (torchvision)", "value": "builtin" },
-          { "label": "Custom directory", "value": "custom" }
+          { "label": "Built-in", "value": "builtin" },
+          { "label": "Import", "value": "custom" }
         ],
         "value": "builtin"
       },
-      "builtinDataset": {
-        "type": "select",
-        "label": "Built-in dataset",
-        "name": "builtinDataset",
-        "help": "Torchvision datasets are downloaded automatically on first use.",
+      "builtinDatasetRow": {
+        "type": "rowContainer",
+        "label": "",
         "condition": "datasetType.builtin",
-        "options": [
-          { "value": "MNIST", "label": "MNIST" },
-          { "value": "FashionMNIST", "label": "Fashion-MNIST" },
-          { "value": "CIFAR10", "label": "CIFAR-10" },
-          { "value": "CIFAR100", "label": "CIFAR-100" }
-        ],
-        "value": "MNIST"
+        "elements": {
+          "builtinDataset": {
+            "type": "select",
+            "label": "Built-in dataset",
+            "name": "builtinDataset",
+            "value": "MNIST",
+            "help": "Datasets are downloaded automatically on the submit node when you click Submit (compute nodes have no internet).",
+            "options": [
+              { "value": "MNIST", "label": "MNIST" },
+              { "value": "FashionMNIST", "label": "Fashion-MNIST" },
+              { "value": "CIFAR10", "label": "CIFAR-10" },
+              { "value": "CIFAR100", "label": "CIFAR-100" }
+            ]
+          }
+        }
       },
       "customDataPath": {
         "type": "picker",
@@ -54,7 +52,7 @@
         "remoteLabel": "local",
         "localLabel": "cluster",
         "showFiles": "False",
-        "help": "Path to dataset root with train/ and val/ subdirectories (ImageFolder layout: class-named subfolders inside each split).",
+        "help": "Path to dataset root with train/ and val/ subdirectories. Each class is a subfolder containing .pt tensor files ([C,H,W] or dict with x/y keys).",
         "condition": "datasetType.custom",
         "files": "False"
       }
@@ -81,24 +79,23 @@
         "type": "text",
         "label": "Learning rate",
         "name": "learningRate",
-        "value": "1e-3"
+        "value": "1e-3",
+        "placeholder": "e.g. 0.001 or 1e-3",
+        "help": "Decimal or scientific notation only (e.g. 0.001, 1e-3). Invalid values are rejected when the job script is generated."
       },
       "numWorkers": {
         "type": "number",
         "label": "DataLoader workers",
         "name": "numWorkers",
-        "value": "4"
+        "value": "0",
+        "help": "Number of DataLoader subprocesses. Use 0 on single-CPU allocations to avoid worker overhead."
       },
-      "accelerator": {
-        "type": "select",
-        "label": "Accelerator",
-        "name": "accelerator",
-        "options": [
-          { "value": "auto", "label": "Auto" },
-          { "value": "cpu", "label": "CPU" },
-          { "value": "gpu", "label": "GPU" }
-        ],
-        "value": "auto"
+      "seed": {
+        "type": "number",
+        "label": "Random seed",
+        "name": "seed",
+        "value": "42",
+        "help": "Seed for PyTorch Lightning and dataset randomness. Default is 42."
       }
     }
   },
@@ -108,10 +105,19 @@
     "label": "Logging",
     "elements": {
       "logDir": {
-        "type": "text",
+        "type": "picker",
         "label": "Log directory",
         "name": "logDir",
-        "value": "./lightning_logs"
+        "localLabel": "Location",
+        "showFiles": "False",
+        "files": "False",
+        "defaultLocation": "./lightning_logs",
+        "defaultPaths": {
+          "HOME": "$HOME",
+          "SCRATCH": "/scratch/user/$USER"
+        },
+        "useHPCDefaultPaths": "False",
+        "help": "Directory where Lightning TensorBoard/CSV logs and checkpoints are written. Defaults to ./lightning_logs relative to the job staging directory."
       },
       "logEveryNSteps": {
         "type": "number",

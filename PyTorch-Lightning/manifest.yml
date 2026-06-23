@@ -1,5 +1,5 @@
 name: "PyTorch-Lightning"
-description: "PyTorch Lightning training environment with dataset selection, logging, and TensorBoard monitoring"
+description: "PyTorch Lightning training using cluster module PyTorch-Lightning/2.2.1-CUDA-12.1.1"
 category: "ML"
 version: "1.0.0"
 author: ""

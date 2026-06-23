@@ -1,5 +1,9 @@
 import math
 
+pytorch_lightning_modules = (
+    "module load GCC/12.3.0 OpenMPI/4.1.5 PyTorch-Lightning/2.2.1-CUDA-12.1.1"
+)
+
 
 # default clusster check. There is not checking, it jsut creates placeholders for provide 
 # values by user  in the  form
