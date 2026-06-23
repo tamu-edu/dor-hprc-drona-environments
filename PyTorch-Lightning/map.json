@@ -1,0 +1,7 @@
+{
+  "JOBNAME": "$name",
+  "DUMMY": "!retrieve_tasks_and_other_resources($nodes,$tasks,$cpus,$memory,$gpu,$numgpu,$walltime,$account,$extra_slurm,$slurmbox)",
+  "flocation": "$location",
+  "setupEnv": "!setup_python_env($versionSelect, $pythonVersionDropdown, $createEnvName, $currentEnvDropdown, $sharedEnvDropdown)",
+  "DUMMY_SCRIPT": "!generate_lightning_script($name, $datasetType, $builtinDataset, $customDataPath, $dataDir, $epochs, $batchSize, $learningRate, $numWorkers, $accelerator, $devices, $precision, $maxSteps, $modelType, $logDir, $experimentName, $logEveryNSteps, $enableTensorBoard, $enableCSV, $checkpointEnable)"
+}

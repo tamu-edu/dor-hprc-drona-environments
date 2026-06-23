@@ -1,0 +1,5 @@
+name: "PyTorch-Lightning"
+description: "PyTorch Lightning training environment with dataset selection, logging, and TensorBoard monitoring"
+category: "ML"
+version: "1.0.0"
+author: ""

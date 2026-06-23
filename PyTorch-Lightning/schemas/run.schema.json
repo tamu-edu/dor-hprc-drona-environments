@@ -1,0 +1,320 @@
+{
+  "runDestinationFinal": {
+    "type": "jobNameLocation",
+    "label": "Job Name and Location",
+    "help": "Optional. Leave blank to use defaults. If empty, the engine will assign a job ID and staging path automatically.",
+    "customJobName": "",
+    "pickerLabel": "Location",
+    "showName": true,
+    "showLocation": true,
+    "disableJobNameChange": false,
+    "disableJobLocationChange": false
+  },
+
+  "ContainerVersion": {
+    "type": "rowContainer",
+    "label": "Python Environment",
+    "elements": {
+      "versionSelect": {
+        "type": "select",
+        "label": "Python Environment",
+        "name": "versionSelect",
+        "help": "Select a Python environment with pytorch, lightning, and torchvision installed. Create or select a private virtual env if needed.",
+        "options": [
+          { "value": "private", "label": "Private virtual env" },
+          { "value": "create", "label": "Create new private virtual env" },
+          { "value": "shared", "label": "Shared virtual env" },
+          { "value": "module", "label": "Module (latest)" }
+        ]
+      },
+      "createEnvName": {
+        "type": "text",
+        "label": "Name of virtual env",
+        "name": "createEnvName",
+        "help": "Enter a unique name for your new environment. Use only letters, numbers, hyphens, or underscores.",
+        "value": "",
+        "condition": "versionSelect.create"
+      },
+      "pythonVersionDropdown": {
+        "type": "select",
+        "label": "Python Version",
+        "name": "pythonVersionDropdown",
+        "help": "Choose a Python version for the new virtual environment.",
+        "condition": "versionSelect.create",
+        "options": [
+          { "value": "module load GCCcore/13.3.0 Python/3.12.3", "label": "Python 3.12.3" },
+          { "value": "module load GCCcore/13.2.0 Python/3.11.5", "label": "Python 3.11.5" },
+          { "value": "module load GCCcore/11.3.0 Python/3.10.4", "label": "Python 3.10.4" },
+          { "value": "module load GCCcore/11.2.0 Python/3.9.6", "label": "Python 3.9.6" }
+        ]
+      },
+      "currentEnvDropdown": {
+        "type": "dynamicSelect",
+        "label": "My environments",
+        "name": "currentEnvDropdown",
+        "help": "Choose from your existing private virtual environments.",
+        "condition": "versionSelect.private",
+        "retriever": "get_current_env.sh"
+      },
+      "sharedEnvDropdown": {
+        "type": "dynamicSelect",
+        "label": "Select Shared Environments",
+        "name": "sharedEnvDropdown",
+        "help": "Shared environments on the cluster.",
+        "condition": "versionSelect.shared",
+        "retriever": "get_python_versions.sh"
+      }
+    }
+  },
+
+  "ContainerDataset": {
+    "type": "rowContainer",
+    "label": "Dataset",
+    "elements": {
+      "datasetType": {
+        "type": "radioGroup",
+        "name": "datasetType",
+        "label": "Dataset source",
+        "options": [
+          { "label": "Built-in (torchvision)", "value": "builtin" },
+          { "label": "Custom directory", "value": "custom" }
+        ],
+        "value": "builtin"
+      },
+      "builtinDataset": {
+        "type": "select",
+        "label": "Built-in dataset",
+        "name": "builtinDataset",
+        "help": "Torchvision datasets are downloaded automatically on first use.",
+        "condition": "datasetType.builtin",
+        "options": [
+          { "value": "MNIST", "label": "MNIST" },
+          { "value": "FashionMNIST", "label": "Fashion-MNIST" },
+          { "value": "CIFAR10", "label": "CIFAR-10" },
+          { "value": "CIFAR100", "label": "CIFAR-100" }
+        ],
+        "value": "MNIST"
+      },
+      "customDataPath": {
+        "type": "picker",
+        "label": "Custom data directory",
+        "name": "customDataPath",
+        "remoteLabel": "local",
+        "localLabel": "cluster",
+        "showFiles": "False",
+        "help": "Path to dataset root with train/ and val/ subdirectories (ImageFolder layout: class-named subfolders inside each split).",
+        "condition": "datasetType.custom",
+        "files": "False"
+      },
+      "dataDir": {
+        "type": "text",
+        "label": "Data cache directory",
+        "name": "dataDir",
+        "help": "Optional. Directory for torchvision download/cache. Leave blank to use ./data.",
+        "value": ""
+      }
+    }
+  },
+
+  "ContainerHyperparams": {
+    "type": "rowContainer",
+    "label": "Training",
+    "elements": {
+      "epochs": {
+        "type": "number",
+        "label": "Epochs",
+        "name": "epochs",
+        "value": "10"
+      },
+      "batchSize": {
+        "type": "number",
+        "label": "Batch size",
+        "name": "batchSize",
+        "value": "32"
+      },
+      "learningRate": {
+        "type": "text",
+        "label": "Learning rate",
+        "name": "learningRate",
+        "value": "1e-3"
+      },
+      "numWorkers": {
+        "type": "number",
+        "label": "DataLoader workers",
+        "name": "numWorkers",
+        "value": "4"
+      },
+      "accelerator": {
+        "type": "select",
+        "label": "Accelerator",
+        "name": "accelerator",
+        "options": [
+          { "value": "auto", "label": "Auto" },
+          { "value": "cpu", "label": "CPU" },
+          { "value": "gpu", "label": "GPU" }
+        ],
+        "value": "auto"
+      },
+      "devices": {
+        "type": "number",
+        "label": "Devices",
+        "name": "devices",
+        "help": "Number of GPUs (when accelerator is GPU or auto with GPU available).",
+        "value": "1",
+        "condition": "accelerator.gpu || accelerator.auto"
+      },
+      "precision": {
+        "type": "select",
+        "label": "Precision",
+        "name": "precision",
+        "options": [
+          { "value": "32", "label": "32-bit" },
+          { "value": "16-mixed", "label": "16-bit mixed" },
+          { "value": "bf16-mixed", "label": "bfloat16 mixed" }
+        ],
+        "value": "32"
+      },
+      "maxSteps": {
+        "type": "text",
+        "label": "Max steps (optional)",
+        "name": "maxSteps",
+        "help": "Leave blank to train for the full number of epochs.",
+        "value": ""
+      },
+      "modelType": {
+        "type": "select",
+        "label": "Model architecture",
+        "name": "modelType",
+        "options": [
+          { "value": "simple_mlp", "label": "Simple MLP (grayscale datasets)" },
+          { "value": "simple_cnn", "label": "Simple CNN" }
+        ],
+        "value": "simple_mlp"
+      }
+    }
+  },
+
+  "ContainerLogging": {
+    "type": "rowContainer",
+    "label": "Logging",
+    "elements": {
+      "logDir": {
+        "type": "text",
+        "label": "Log directory",
+        "name": "logDir",
+        "value": "./lightning_logs"
+      },
+      "experimentName": {
+        "type": "text",
+        "label": "Experiment name",
+        "name": "experimentName",
+        "help": "TensorBoard/CSV logger experiment name. Leave blank to use the job name.",
+        "value": ""
+      },
+      "logEveryNSteps": {
+        "type": "number",
+        "label": "Log every N steps",
+        "name": "logEveryNSteps",
+        "value": "50"
+      },
+      "enableTensorBoard": {
+        "type": "checkbox",
+        "label": "Enable TensorBoard logger",
+        "name": "enableTensorBoard",
+        "value": "Yes"
+      },
+      "enableCSV": {
+        "type": "checkbox",
+        "label": "Enable CSV logger",
+        "name": "enableCSV",
+        "value": ""
+      },
+      "checkpointEnable": {
+        "type": "checkbox",
+        "label": "Enable model checkpointing",
+        "name": "checkpointEnable",
+        "value": "Yes"
+      }
+    }
+  },
+
+  "SlurmCheckbox": {
+    "type": "checkbox",
+    "label": "Set Job requirements",
+    "name": "slurmbox",
+    "help": "Check this box if you want to set Slurm options.",
+    "value": "Yes"
+  },
+
+  "ContainerTasks": {
+    "type": "rowContainer",
+    "label": "GPU",
+    "condition": "slurmbox.Yes)",
+    "elements": {
+      "tasks": {
+        "type": "number",
+        "label": "#tasks",
+        "name": "tasks",
+        "value": "1"
+      },
+      "nodes": {
+        "type": "text",
+        "label": "#nodes",
+        "name": "nodes",
+        "value": ""
+      },
+      "cpus": {
+        "type": "number",
+        "label": "#CPUs/task",
+        "name": "cpus",
+        "value": "1",
+        "max": "96"
+      },
+      "gpuDropdown": {
+        "type": "dynamicSelect",
+        "label": "Use Accelerator",
+        "name": "gpu",
+        "retriever": "retrieve_gpus"
+      },
+      "numgpus": {
+        "type": "number",
+        "label": "#GPUs",
+        "name": "numgpu",
+        "value": "1",
+        "condition": " !gpu.none && !gpu. "
+      }
+    }
+  },
+
+  "ContainerAdditionals": {
+    "type": "rowContainer",
+    "label": "Slurm Options",
+    "condition": "slurmbox.Yes",
+    "elements": {
+      "memory": {
+        "type": "unit",
+        "label": "Memory",
+        "name": "memory",
+        "units": [{ "label": "GB", "value": "G" }]
+      },
+      "Walltime": {
+        "type": "time",
+        "label": "Expected run time",
+        "name": "walltime",
+        "value": ""
+      },
+      "account": {
+        "type": "dynamicSelect",
+        "label": "Project Account",
+        "name": "account",
+        "retriever": "list_accounts"
+      },
+      "extraText": {
+        "type": "text",
+        "label": "Additional Slurm parameters",
+        "name": "extra_slurm",
+        "value": ""
+      }
+    }
+  }
+}

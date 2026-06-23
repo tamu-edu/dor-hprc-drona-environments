@@ -1,0 +1,32 @@
+{
+  "ModeRow": {
+    "type": "rowContainer",
+    "label": "",
+    "elements": {
+      "ModeRadio": {
+        "type": "radioGroup",
+        "name": "mode",
+        "label": "Mode",
+        "options": [
+          { "label": "Run", "value": "run" },
+          { "label": "Monitor", "value": "monitor" }
+        ],
+        "value": "run"
+      }
+    }
+  },
+  "RunContainer": {
+    "type": "container",
+    "elements": {
+      "$ref": "schemas/run.schema.json"
+    },
+    "condition": "mode.run"
+  },
+  "MonitorContainer": {
+    "type": "container",
+    "elements": {
+      "$ref": "schemas/monitor.schema.json"
+    },
+    "condition": "mode.monitor"
+  }
+}

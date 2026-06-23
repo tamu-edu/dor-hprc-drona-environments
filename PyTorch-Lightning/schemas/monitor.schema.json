@@ -1,0 +1,216 @@
+{
+  "pt_workflow_select": {
+    "type": "dynamicSelect",
+    "label": "Select Training Run",
+    "name": "pt_workflow",
+    "retriever": "retrieve_pt_workflows.sh"
+  },
+
+  "hidden_jobs_check": {
+    "type": "hidden",
+    "label": "JOB_IDS",
+    "name": "jobs",
+    "refreshInterval": "21",
+    "isDynamic": true,
+    "condition": "mode.monitor && !pt_workflow.",
+    "retrieverParams": {
+      "WORKFLOW_ID": "$pt_workflow"
+    },
+    "retriever": "drona_info_jobs.sh"
+  },
+
+  "hidden_status_check": {
+    "type": "hidden",
+    "name": "status",
+    "label": "Status",
+    "isDynamic": true,
+    "condition": "mode.monitor && !jobs.",
+    "refreshInterval": "27",
+    "retrieverParams": {
+      "JOBID": "$jobs"
+    },
+    "retriever": "drona_info_slurmstatus.sh"
+  },
+
+  "hidden_jobdir_path": {
+    "type": "hidden",
+    "name": "job_dir",
+    "label": "Job Directory Path",
+    "isDynamic": true,
+    "condition": "mode.monitor && !jobs.",
+    "retrieverParams": {
+      "WORKFLOW_ID": "$pt_workflow"
+    },
+    "retriever": "drona_info_jobdir.sh"
+  },
+
+  "hidden_logdir": {
+    "type": "hidden",
+    "name": "resolved_logdir",
+    "isDynamic": true,
+    "condition": "mode.monitor && !pt_workflow.",
+    "retrieverParams": {
+      "WORKFLOW_ID": "$pt_workflow",
+      "JOB_DIR": "$job_dir"
+    },
+    "retriever": "retrieve_pt_logdir.sh"
+  },
+
+  "workingDirectory": {
+    "type": "rowContainer",
+    "label": "Workflow Directory",
+    "condition": "mode.monitor && !jobs.",
+    "elements": {
+      "jobDirLabel": {
+        "type": "staticText",
+        "label": "Workflow Directory",
+        "name": "job_dir_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "condition": "!job_dir.",
+        "retrieverParams": {
+          "JOB_DIR": "$job_dir"
+        },
+        "retriever": "drona_info_jobdir_html.sh"
+      }
+    }
+  },
+
+  "slurmrow": {
+    "type": "rowContainer",
+    "condition": "mode.monitor && !jobs.",
+    "elements": {
+      "slurm_summary": {
+        "type": "staticText",
+        "label": "Slurm Jobs",
+        "name": "slurm",
+        "isDynamic": true,
+        "allowHtml": true,
+        "showRefreshButton": true,
+        "retrieverParams": {
+          "JOBS": "$jobs"
+        },
+        "retriever": "drona_slurm_jobs.sh"
+      }
+    }
+  },
+
+  "job_summary_section": {
+    "type": "rowContainer",
+    "condition": "mode.monitor && !pt_workflow. && !status. && status.DONE && !jobs.",
+    "label": "Job Summary",
+    "elements": {
+      "seff_summary": {
+        "type": "staticText",
+        "name": "seffsummary",
+        "label": "Job Summary",
+        "isDynamic": true,
+        "retrieverParams": {
+          "JOBIDS": "$jobs"
+        },
+        "retriever": "drona_slurm_seff.sh",
+        "showRefreshButton": false,
+        "allowHtml": true
+      }
+    }
+  },
+
+  "logCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "Output/Error logs",
+    "condition": "mode.monitor && !jobs.",
+    "default_state": "collapsed",
+    "elements": {
+      "row_section": {
+        "type": "rowContainer",
+        "elements": {
+          "log_tabs": {
+            "type": "staticText",
+            "name": "logname",
+            "label": "",
+            "isDynamic": true,
+            "retrieverParams": {
+              "WORKFLOW_ID": "$pt_workflow"
+            },
+            "retriever": "drona_slurm_logs.sh",
+            "refreshInterval": "70",
+            "showRefreshButton": true,
+            "allowHtml": true
+          }
+        }
+      }
+    }
+  },
+
+  "tb_connect_section": {
+    "type": "rowContainer",
+    "label": "TensorBoard — Connect to Server",
+    "elements": {
+      "tbHost": {
+        "type": "text",
+        "label": "TensorBoard host",
+        "name": "tbHost",
+        "help": "Hostname or IP of a running TensorBoard server (e.g. compute node or localhost with port forwarding).",
+        "value": "localhost"
+      },
+      "tbPort": {
+        "type": "number",
+        "label": "TensorBoard port",
+        "name": "tbPort",
+        "value": "6006"
+      },
+      "tbConnectStatus": {
+        "type": "staticText",
+        "name": "tb_connect_html",
+        "label": "Connection status",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "30",
+        "retrieverParams": {
+          "TB_HOST": "$tbHost",
+          "TB_PORT": "$tbPort"
+        },
+        "retriever": "retrieve_tb_status.sh"
+      }
+    }
+  },
+
+  "tb_launch_section": {
+    "type": "rowContainer",
+    "label": "TensorBoard — Launch from Run Logs",
+    "condition": "mode.monitor && !pt_workflow.",
+    "elements": {
+      "tbLogDir": {
+        "type": "text",
+        "label": "Log directory",
+        "name": "tbLogDir",
+        "help": "Auto-filled from selected run when available. Override if logs are elsewhere.",
+        "value": ""
+      },
+      "tbLaunchMode": {
+        "type": "radioGroup",
+        "name": "tbLaunchMode",
+        "label": "Launch mode",
+        "options": [
+          { "label": "Show command only", "value": "command_only" },
+          { "label": "Generate helper script", "value": "submit_helper" }
+        ],
+        "value": "command_only"
+      },
+      "tbLaunchStatus": {
+        "type": "staticText",
+        "name": "tb_launch_html",
+        "label": "Launch instructions",
+        "isDynamic": true,
+        "allowHtml": true,
+        "retrieverParams": {
+          "LOGDIR": "$tbLogDir",
+          "RESOLVED_LOGDIR": "$resolved_logdir",
+          "TB_LAUNCH_MODE": "$tbLaunchMode",
+          "TB_PORT": "$tbPort"
+        },
+        "retriever": "retrieve_tb_launch.sh"
+      }
+    }
+  }
+}

@@ -94,6 +94,17 @@
     "version": "1.0.0",
     "author": "",
     "last_updated": "2025-02-03"
+  },
+
+  "PyTorch-Lightning": {
+    "name": "PyTorch-Lightning",
+    "description": "Generate and submit PyTorch Lightning training jobs with built-in or custom datasets, TensorBoard/CSV logging, and Slurm resource options. Monitor runs and connect to TensorBoard from the workflow UI.",
+    "category": "ML",
+    "cluster": "",
+    "organization": "TAMU",
+    "version": "1.0.0",
+    "author": "",
+    "last_updated": "2026-06-22"
   }
   
 }
