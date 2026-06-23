@@ -142,61 +142,11 @@
     }
   },
 
-  "tb_connect_section": {
-    "type": "rowContainer",
-    "label": "TensorBoard — Connect to Server",
-    "elements": {
-      "tbHost": {
-        "type": "text",
-        "label": "TensorBoard host",
-        "name": "tbHost",
-        "help": "Hostname or IP of a running TensorBoard server (e.g. compute node or localhost with port forwarding).",
-        "value": "localhost"
-      },
-      "tbPort": {
-        "type": "number",
-        "label": "TensorBoard port",
-        "name": "tbPort",
-        "value": "6006"
-      },
-      "tbConnectStatus": {
-        "type": "staticText",
-        "name": "tb_connect_html",
-        "label": "Connection status",
-        "isDynamic": true,
-        "allowHtml": true,
-        "refreshInterval": "30",
-        "retrieverParams": {
-          "TB_HOST": "$tbHost",
-          "TB_PORT": "$tbPort"
-        },
-        "retriever": "retrieve_tb_status.sh"
-      }
-    }
-  },
-
   "tb_launch_section": {
     "type": "rowContainer",
     "label": "TensorBoard — Launch from Run Logs",
     "condition": "mode.monitor && !pt_workflow.",
     "elements": {
-      "tbLogDir": {
-        "type": "text",
-        "label": "Log directory",
-        "name": "tbLogDir",
-        "help": "Auto-filled from selected run when available. Override if logs are elsewhere.",
-        "value": ""
-      },
-      "tbLaunchMode": {
-        "type": "radioGroup",
-        "name": "tbLaunchMode",
-        "label": "Launch mode",
-        "options": [
-          { "label": "Show command only", "value": "command_only" },
-          { "label": "Generate helper script", "value": "submit_helper" }
-        ],
-        "value": "command_only"
-      },
       "tbLaunchStatus": {
         "type": "staticText",
         "name": "tb_launch_html",
@@ -204,10 +154,7 @@
         "isDynamic": true,
         "allowHtml": true,
         "retrieverParams": {
-          "LOGDIR": "$tbLogDir",
-          "RESOLVED_LOGDIR": "$resolved_logdir",
-          "TB_LAUNCH_MODE": "$tbLaunchMode",
-          "TB_PORT": "$tbPort"
+          "RESOLVED_LOGDIR": "$resolved_logdir"
         },
         "retriever": "retrieve_tb_launch.sh"
       }

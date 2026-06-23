@@ -78,22 +78,23 @@ def _checkbox_on(value):
 
 
 def generate_lightning_script(
-    name, datasetType, builtinDataset, customDataPath, dataDir,
+    name, datasetType, builtinDataset, customDataPath,
     epochs, batchSize, learningRate, numWorkers,
-    accelerator, devices, precision, maxSteps, modelType,
-    logDir, experimentName, logEveryNSteps,
-    enableTensorBoard, enableCSV, checkpointEnable,
+    accelerator, logDir, logEveryNSteps,
+    enableTensorBoard, checkpointEnable,
 ):
-    exp_name = experimentName.strip() if experimentName and experimentName.strip() else (name or "lightning_run")
-    cache_dir = dataDir.strip() if dataDir and dataDir.strip() else "./data"
+    exp_name = name or "lightning_run"
+    cache_dir = "./data"
     ds_type = datasetType or "builtin"
     builtin = builtinDataset or "MNIST"
     custom_path = customDataPath or ""
-    model = modelType or "simple_mlp"
+    if ds_type == "custom" or builtin in ("CIFAR10", "CIFAR100"):
+        model = "simple_cnn"
+    else:
+        model = "simple_mlp"
     acc = accelerator or "auto"
-    dev = devices if devices not in ("", None) else "1"
-    prec = precision or "32"
-    max_steps_val = maxSteps.strip() if maxSteps and str(maxSteps).strip() else ""
+    dev = "1"
+    prec = "32"
     lr = learningRate or "1e-3"
     ep = int(epochs) if epochs else 10
     bs = int(batchSize) if batchSize else 32
@@ -102,26 +103,18 @@ def generate_lightning_script(
     log_dir = logDir or "./lightning_logs"
 
     tb_on = _checkbox_on(enableTensorBoard)
-    csv_on = _checkbox_on(enableCSV)
     ckpt_on = _checkbox_on(checkpointEnable)
 
     if ds_type == "custom" and not custom_path:
         drona_add_message("Custom dataset path is required when using a custom dataset.", "error")
 
-    if ds_type == "builtin" and builtin in ("MNIST", "FashionMNIST") and model == "simple_cnn":
-        drona_add_message("Simple CNN is recommended for CIFAR datasets; MLP works well for MNIST/Fashion-MNIST.", "warning")
-
-    trainer_max_epochs = "None" if max_steps_val else str(ep)
-    trainer_max_steps = max_steps_val if max_steps_val else "None"
+    trainer_max_epochs = str(ep)
+    trainer_max_steps = "None"
 
     logger_lines = []
     if tb_on:
         logger_lines.append(
             f'    TensorBoardLogger(save_dir="{_py_str(log_dir)}", name="{_py_str(exp_name)}"),'
-        )
-    if csv_on:
-        logger_lines.append(
-            f'    CSVLogger(save_dir="{_py_str(log_dir)}", name="{_py_str(exp_name)}"),'
         )
     if not logger_lines:
         logger_lines.append("    False,")
@@ -299,7 +292,7 @@ from torch.utils.data import DataLoader
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import lightning as L
-from lightning.pytorch.loggers import TensorBoardLogger, CSVLogger
+from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.callbacks import ModelCheckpoint
 
 DATA_DIR = "{_py_str(cache_dir)}"
