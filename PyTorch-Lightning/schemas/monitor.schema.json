@@ -1,9 +1,62 @@
 {
+  "monitor_help_banner": {
+    "type": "rowContainer",
+    "label": "",
+    "condition": "mode.monitor",
+    "elements": {
+      "monitorHelp": {
+        "type": "staticText",
+        "label": "",
+        "name": "monitor_help",
+        "allowHtml": true,
+        "value": "<div style='background:#e7f5ff;padding:10px 12px;border-radius:6px;font-size:0.95em;border-left:4px solid #339af0'><strong>Monitor mode</strong> — Select a training run below. The <strong>dashboard</strong> auto-refreshes every 15 seconds; use the single <strong>Refresh</strong> button (5 second cooldown) to update Slurm status and logs immediately. Click <strong>Preview</strong> for a snapshot tab. Submit does not launch a new training job.</div>"
+      }
+    }
+  },
+
+  "pt_location_link_row": {
+    "type": "rowContainer",
+    "label": "",
+    "condition": "mode.monitor && !pt_workflow. && !pt_location.",
+    "elements": {
+      "pt_location_link": {
+        "type": "staticText",
+        "name": "pt_location_link_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "retrieverParams": {
+          "JOB_DIR": "$pt_location"
+        },
+        "retriever": "drona_info_jobdir_html.sh"
+      }
+    }
+  },
+
+  "pt_monitor_dashboard_row": {
+    "type": "rowContainer",
+    "label": "Dashboard",
+    "condition": "mode.monitor && !pt_workflow. && !pt_location.",
+    "elements": {
+      "pt_monitor_dashboard": {
+        "type": "staticText",
+        "name": "pt_monitor_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "15",
+        "showRefreshButton": true,
+        "retrieverParams": {
+          "LOCATION": "$pt_location"
+        },
+        "retriever": "retrieve_pt_monitor_dashboard.sh"
+      }
+    }
+  },
+
   "hidden_jobs_check": {
     "type": "hidden",
     "label": "JOB_IDS",
     "name": "jobs",
-    "refreshInterval": "21",
+    "refreshInterval": "15",
     "isDynamic": true,
     "condition": "mode.monitor && !pt_workflow.",
     "retrieverParams": {
@@ -18,23 +71,11 @@
     "label": "Status",
     "isDynamic": true,
     "condition": "mode.monitor && !jobs.",
-    "refreshInterval": "27",
+    "refreshInterval": "15",
     "retrieverParams": {
       "JOBID": "$jobs"
     },
     "retriever": "drona_info_slurmstatus.sh"
-  },
-
-  "hidden_jobdir_path": {
-    "type": "hidden",
-    "name": "job_dir",
-    "label": "Job Directory Path",
-    "isDynamic": true,
-    "condition": "mode.monitor && !jobs.",
-    "retrieverParams": {
-      "WORKFLOW_ID": "$pt_workflow"
-    },
-    "retriever": "drona_info_jobdir.sh"
   },
 
   "hidden_logdir": {
@@ -44,48 +85,9 @@
     "condition": "mode.monitor && !pt_workflow.",
     "retrieverParams": {
       "WORKFLOW_ID": "$pt_workflow",
-      "JOB_DIR": "$job_dir"
+      "JOB_DIR": "$pt_location"
     },
     "retriever": "retrieve_pt_logdir.sh"
-  },
-
-  "workingDirectory": {
-    "type": "rowContainer",
-    "label": "Workflow Directory",
-    "condition": "mode.monitor && !jobs.",
-    "elements": {
-      "jobDirLabel": {
-        "type": "staticText",
-        "label": "Workflow Directory",
-        "name": "job_dir_html",
-        "isDynamic": true,
-        "allowHtml": true,
-        "condition": "!job_dir.",
-        "retrieverParams": {
-          "JOB_DIR": "$job_dir"
-        },
-        "retriever": "drona_info_jobdir_html.sh"
-      }
-    }
-  },
-
-  "slurmrow": {
-    "type": "rowContainer",
-    "condition": "mode.monitor && !jobs.",
-    "elements": {
-      "slurm_summary": {
-        "type": "staticText",
-        "label": "Slurm Jobs",
-        "name": "slurm",
-        "isDynamic": true,
-        "allowHtml": true,
-        "showRefreshButton": true,
-        "retrieverParams": {
-          "JOBS": "$jobs"
-        },
-        "retriever": "drona_slurm_jobs.sh"
-      }
-    }
   },
 
   "job_summary_section": {
@@ -104,33 +106,6 @@
         "retriever": "drona_slurm_seff.sh",
         "showRefreshButton": false,
         "allowHtml": true
-      }
-    }
-  },
-
-  "logCollapse": {
-    "type": "collapsibleRowContainer",
-    "title": "Output/Error logs",
-    "condition": "mode.monitor && !jobs.",
-    "default_state": "collapsed",
-    "elements": {
-      "row_section": {
-        "type": "rowContainer",
-        "elements": {
-          "log_tabs": {
-            "type": "staticText",
-            "name": "logname",
-            "label": "",
-            "isDynamic": true,
-            "retrieverParams": {
-              "WORKFLOW_ID": "$pt_workflow"
-            },
-            "retriever": "drona_slurm_logs.sh",
-            "refreshInterval": "70",
-            "showRefreshButton": true,
-            "allowHtml": true
-          }
-        }
       }
     }
   },

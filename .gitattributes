@@ -1,0 +1,9 @@
+* text=auto
+*.sh text eol=lf
+**/drivers/*.sh text eol=lf
+**/list_accounts text eol=lf
+**/retrieve_gpus text eol=lf
+**/retrieve_pt_*.sh text eol=lf
+**/retrieve_*.sh text eol=lf
+**/drona_*.sh text eol=lf
+template.txt text eol=lf

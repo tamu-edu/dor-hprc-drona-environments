@@ -1,9 +1,35 @@
 import importlib
+import json
 import math
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+
+def _normalize_select_value(value):
+    """Extract .value from dynamicSelect JSON; pass through plain strings."""
+    if value is None:
+        return ""
+    if isinstance(value, str) and value.startswith("$"):
+        return value
+    if isinstance(value, dict):
+        return str(value.get("value", "")).strip()
+    try:
+        parsed = json.loads(value)
+        if isinstance(parsed, dict):
+            return str(parsed.get("value", value)).strip()
+    except (json.JSONDecodeError, TypeError, AttributeError):
+        pass
+    return str(value).strip()
+
+
+def _wants_gpu(gpu, slurm_box):
+    if not _checkbox_on(slurm_box):
+        return False
+    gpu = _normalize_select_value(gpu)
+    return gpu not in ("", "none")
 
 
 def retrieve_cluster_info():
@@ -54,7 +80,205 @@ def setup_python_env(penv, pythonVersionDropdown, createEnvName, currentEnvDropd
     return ""
 
 
-def retrieve_tasks_and_other_resources(nodes, tasks, cpus, mem, gpu, numgpu, walltime, account, extra, slurmBox):
+def retrieve_driver_contents(mode):
+    base = Path(__file__).resolve().parent
+
+    if mode == "monitor":
+        file_path = base / "drivers" / "driver-monitor.sh"
+    else:
+        file_path = base / "drivers" / "driver-run.sh"
+
+    with open(file_path, "r", encoding="utf-8") as file:
+        return file.read()
+
+
+def setup_pytorch_modules_if_run(mode):
+    if mode == "monitor":
+        return "# monitor mode — no training job"
+    return setup_pytorch_modules()
+
+
+def _get_db_retriever_path():
+    runtime_dir = ""
+    try:
+        from views.utils import get_runtime_dir
+        runtime_dir = get_runtime_dir()
+    except Exception:
+        runtime_dir = os.environ.get("DRONA_RUNTIME_DIR", "")
+    if not runtime_dir:
+        return ""
+    return os.path.join(runtime_dir, "db_access", "drona_db_retriever.py")
+
+
+def _normalize_job_dir(job_dir):
+    match = re.search(r">(/[^<]+)<", job_dir or "")
+    return (match.group(1) if match else (job_dir or "").strip())
+
+
+def _normalize_location(location):
+    loc = _normalize_job_dir(location)
+    if not loc or loc.startswith("$"):
+        return ""
+    return loc
+
+
+def _write_staged_file(env_dir, job_location, filename, content):
+    """Write a generated file into the environment dir and copy to the job folder."""
+    path = Path(env_dir) / filename
+    path.write_text(content, encoding="utf-8")
+    drona_add_additional_file(filename, filename)
+    loc = _normalize_location(job_location)
+    if loc:
+        dest = Path(loc) / filename
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(content, encoding="utf-8")
+        except OSError as exc:
+            drona_add_message(
+                f"Could not write {filename} to job directory ({loc}): {exc}",
+                "warning",
+            )
+
+
+def _lookup_workflow_location(workflow_id):
+    if not workflow_id or str(workflow_id).startswith("$"):
+        return ""
+    db = _get_db_retriever_path()
+    if not db or not os.path.isfile(db):
+        return ""
+    try:
+        import json
+        out = subprocess.check_output(
+            [sys.executable, db, "-i", str(workflow_id)],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        record = json.loads(out.strip()) if out.strip() else {}
+        return (record.get("location") or "").strip()
+    except Exception:
+        return ""
+
+
+def resolve_monitor_dir(mode, pt_workflow, job_dir):
+    if mode != "monitor":
+        return ""
+    path = _normalize_job_dir(job_dir)
+    if path:
+        return path
+    return _lookup_workflow_location(pt_workflow)
+
+
+def configure_monitor_mode(mode, pt_workflow, job_dir):
+    if mode != "monitor":
+        return ""
+    drona_add_mapping("JOBNAME", "monitor-session")
+    drona_add_mapping("TIME", "00:01")
+    drona_add_mapping("MEM", "1G")
+    drona_add_mapping("TASKS", "1")
+    drona_add_mapping("NODES", "1")
+    drona_add_mapping("CPUS", "1")
+    drona_add_mapping("PARTITION", "")
+    drona_add_mapping("EXTRA", "")
+    monitor_dir = resolve_monitor_dir(mode, pt_workflow, job_dir)
+    if monitor_dir:
+        drona_add_mapping("MONITOR_DIR", monitor_dir)
+    elif not pt_workflow or str(pt_workflow).startswith("$"):
+        drona_add_message(
+            "Select a training run — Slurm status and logs will appear on the form and in the Preview Monitor tab.",
+            "note",
+        )
+    else:
+        drona_add_message(
+            f"Could not resolve workflow directory for {pt_workflow}.",
+            "warning",
+        )
+    return ""
+
+
+def build_monitor_preview_html(mode, pt_workflow, job_dir):
+    if mode != "monitor":
+        return ""
+    if not pt_workflow or str(pt_workflow).startswith("$"):
+        return ""
+
+    location = resolve_monitor_dir(mode, pt_workflow, job_dir)
+    if not location:
+        return ""
+
+    env_dir = Path(__file__).resolve().parent
+    run_env = os.environ.copy()
+    run_env["LOCATION"] = location
+
+    sections = []
+    script_name = "retrieve_pt_monitor_dashboard.sh"
+    script_path = env_dir / script_name
+    if script_path.is_file():
+        try:
+            out = subprocess.check_output(
+                ["bash", str(script_path)],
+                env=run_env,
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+            sections.append(out.strip())
+        except subprocess.CalledProcessError:
+            sections.append(f"<p><em>Could not load {script_name}</em></p>")
+
+    body = "\n<hr/>\n".join(sections) if sections else "<p><em>No monitor data available.</em></p>"
+    html = (
+        "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">"
+        "<title>PyTorch-Lightning Monitor</title></head><body>\n"
+        f"<h3>Training run monitor</h3>\n"
+        f"<p>Workflow: <code>{location}</code></p>\n"
+        f"{body}\n"
+        "</body></html>\n"
+    )
+
+    preview_path = env_dir / "monitor_dashboard.html"
+    preview_path.write_text(html, encoding="utf-8")
+    drona_add_additional_file("monitor_dashboard.html", "Monitor", 0)
+    return ""
+
+
+def retrieve_monitor_action(mode, pt_workflow, jobs, job_dir):
+    if mode != "monitor":
+        return ""
+
+    db = _get_db_retriever_path()
+    cleanup = (
+        f"python3 {db} --delete -i $DRONA_WF_ID 2>/dev/null; "
+        "echo 'Monitor session record cleaned up.'"
+        if db
+        else "echo 'Monitor session finished.'"
+    )
+    staging_cleanup = 'rm -rf "$STAGING_DIR" 2>/dev/null || true'
+
+    monitor_dir = resolve_monitor_dir(mode, pt_workflow, job_dir)
+    if not pt_workflow or str(pt_workflow).startswith("$") or not monitor_dir:
+        return (
+            "STAGING_DIR=\"$(pwd)\"\n"
+            "echo 'Monitor mode: select a training run to view the dashboard on the form.'\n"
+            f"{cleanup}\n"
+            f"{staging_cleanup}"
+        )
+
+    safe_dir = monitor_dir.replace('"', '\\"')
+    return f"""STAGING_DIR="$(pwd)"
+echo "=== PyTorch-Lightning Monitor (no new job submitted) ==="
+echo "Viewing: {safe_dir}"
+echo "Slurm status and logs are shown on the form dashboard and Preview Monitor tab."
+{cleanup}
+{staging_cleanup}
+exit 0"""
+
+
+def retrieve_tasks_and_other_resources(mode, nodes, tasks, cpus, mem, gpu, numgpu, walltime, account, extra, slurmBox):
+    if mode == "monitor":
+        return ""
+
+    gpu = _normalize_select_value(gpu)
+    account = _normalize_select_value(account)
+
     if slurmBox != "Yes":
         tasks = "1"
         nodes = "1"
@@ -386,11 +610,34 @@ except ImportError:
 '''
 
 
+def generate_lightning_script_if_run(
+    mode,
+    name, datasetType, builtinDataset, customDataPath,
+    epochs, batchSize, learningRate, numWorkers, seed, gpu,
+    logDir, logEveryNSteps,
+    enableTensorBoard, checkpointEnable,
+    job_location="",
+    slurmBox="Yes",
+):
+    if mode == "monitor":
+        return ""
+    return generate_lightning_script(
+        name, datasetType, builtinDataset, customDataPath,
+        epochs, batchSize, learningRate, numWorkers, seed, gpu,
+        logDir, logEveryNSteps,
+        enableTensorBoard, checkpointEnable,
+        job_location,
+        slurmBox,
+    )
+
+
 def generate_lightning_script(
     name, datasetType, builtinDataset, customDataPath,
     epochs, batchSize, learningRate, numWorkers, seed, gpu,
     logDir, logEveryNSteps,
     enableTensorBoard, checkpointEnable,
+    job_location="",
+    slurmBox="Yes",
 ):
     name = sanitize_job_name(name)
     exp_name = name or "lightning_run"
@@ -402,7 +649,7 @@ def generate_lightning_script(
         model = "simple_cnn"
     else:
         model = "simple_mlp"
-    acc = "gpu" if gpu not in ("", "none", None) else "cpu"
+    acc = "gpu" if _wants_gpu(gpu, slurmBox) else "cpu"
     dev = "1"
     prec = "32"
     lr, lr_error = _parse_learning_rate(learningRate)
@@ -424,6 +671,7 @@ def generate_lightning_script(
 
     if ds_type == "custom" and not custom_path:
         drona_add_message("Custom dataset path is required when using a custom dataset.", "error")
+        return ""
 
     trainer_max_epochs = str(ep)
 
@@ -628,14 +876,25 @@ def build_loggers():
 
 def main():
     L.seed_everything(SEED, workers=True)
+    accelerator = ACCELERATOR
+    devices = DEVICES
+    if accelerator == "gpu" and not torch.cuda.is_available():
+        import os
+        slurm_gpus = os.environ.get("SLURM_JOB_GPUS", "unset")
+        cuda_visible = os.environ.get("CUDA_VISIBLE_DEVICES", "unset")
+        raise RuntimeError(
+            "GPU training was requested but CUDA is not available on this node. "
+            "Check that the SLURM script includes --partition=gpu and --gres=gpu:... "
+            f"(SLURM_JOB_GPUS={{slurm_gpus}}, CUDA_VISIBLE_DEVICES={{cuda_visible}})"
+        )
     datamodule = LitDataModule()
     {model_init}
     loggers = build_loggers()
     {callback_block}
     trainer = L.Trainer(
         max_epochs=MAX_EPOCHS,
-        accelerator=ACCELERATOR,
-        devices=DEVICES,
+        accelerator=accelerator,
+        devices=devices,
         precision=PRECISION,
         log_every_n_steps=LOG_EVERY_N_STEPS,
         logger=loggers if loggers else None,
@@ -648,10 +907,7 @@ if __name__ == "__main__":
 '''
 
     env_dir = Path(__file__).resolve().parent
-    train_path = env_dir / "train.py"
-    train_path.write_text(script, encoding="utf-8")
-
-    drona_add_additional_file("train.py", "train.py")
+    _write_staged_file(env_dir, job_location, "train.py", script)
 
     if ds_type == "builtin":
         prefetch_script = f'''#!/usr/bin/env python3
@@ -674,8 +930,6 @@ def main():
 if __name__ == "__main__":
     main()
 '''
-        prefetch_path = env_dir / "prefetch_data.py"
-        prefetch_path.write_text(prefetch_script, encoding="utf-8")
-        drona_add_additional_file("prefetch_data.py", "prefetch_data.py")
+        _write_staged_file(env_dir, job_location, "prefetch_data.py", prefetch_script)
 
     return ""

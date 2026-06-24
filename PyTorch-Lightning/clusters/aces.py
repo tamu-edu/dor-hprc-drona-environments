@@ -66,6 +66,9 @@ def cluster_slurm_checks(nodenum,tasknum,cpunum,totalmemnum,gpu,numgpunum,timest
          drona_add_message("Max limit of 32 PVCs, you requested "+str(numgpunum) + ". Setting number of PVCs to 32.", "warning")
          numgpunum=32
       sbatchgpustring=" --gres=gpu:"+gpu+":"+str(numgpunum)
+   elif gpu != "" and gpu != "none":
+      partition="gpu"
+      sbatchgpustring=" --gres=gpu:"+gpu+":"+str(numgpunum)
    else:
         partition="cpu"
         if nodenum > 64:

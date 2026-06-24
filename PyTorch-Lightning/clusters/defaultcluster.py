@@ -11,15 +11,15 @@ def cluster_slurm_checks(nodenum,tasknum,cpunum,totalmemnum,gpu,numgpunum,timest
         extra,drona_add_mapping,drona_add_message):
 
    drona_add_message("No matching cluster module. Cannot verify input, using researcher provided values","note")
-   partition="" 
+   partition=""
    if gpu != "" and gpu != "none":
-       partition="--gres=gpu:"+gpu+":"+str(numgpunum)
+       partition = f"--partition=gpu --gres=gpu:{gpu}:{numgpunum}"
    drona_add_mapping("TASKS",str(tasknum))
    drona_add_mapping("NODES",str(nodenum))
    drona_add_mapping("CPUS",str(cpunum))
    drona_add_mapping("MEM",str(totalmemnum)+"G")
    drona_add_mapping("TIME",f""+timestring+":00")
-   drona_add_mapping("PARTITION",f""+partition)
+   drona_add_mapping("PARTITION", f"#SBATCH {partition}" if partition else "")
 
    # combine the extra parameters with partition info and account
    if account != "":

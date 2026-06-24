@@ -1,7 +1,12 @@
 {
   "JOBNAME": "!sanitize_job_name($name)",
-  "DUMMY": "!retrieve_tasks_and_other_resources('','1',$cpus,$memory,$gpu,$numgpu,$walltime,$account,$extra_slurm,$slurmbox)",
+  "DRIVER": "!retrieve_driver_contents($mode)",
+  "DUMMY": "!retrieve_tasks_and_other_resources($mode,'','1',$cpus,$memory,$gpu,$numgpu,$walltime,$account,$extra_slurm,$slurmbox)",
   "flocation": "$location",
-  "setupEnv": "!setup_pytorch_modules()",
-  "DUMMY_SCRIPT": "!generate_lightning_script($name, $datasetType, $builtinDataset, $customDataPath, $epochs, $batchSize, $learningRate, $numWorkers, $seed, $gpu, $logDir, $logEveryNSteps, $enableTensorBoard, $checkpointEnable)"
+  "MONITOR_DIR": "!resolve_monitor_dir($mode, $pt_workflow, $job_dir)",
+  "setupEnv": "!setup_pytorch_modules_if_run($mode)",
+  "MONITOR": "!retrieve_monitor_action($mode, $pt_workflow, $jobs, $job_dir)",
+  "DUMMY_MONITOR": "!configure_monitor_mode($mode, $pt_workflow, $job_dir)",
+  "DUMMY_PREVIEW": "!build_monitor_preview_html($mode, $pt_workflow, $job_dir)",
+  "additional_filesv2": "!generate_lightning_script_if_run($mode, $name, $datasetType, $builtinDataset, $customDataPath, $epochs, $batchSize, $learningRate, $numWorkers, $seed, $gpu, $logDir, $logEveryNSteps, $enableTensorBoard, $checkpointEnable, $location, $slurmbox)"
 }

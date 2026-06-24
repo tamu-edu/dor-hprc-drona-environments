@@ -15,5 +15,5 @@ case $cluster in
        echo "[ { \"value\": \"none\", \"label\": \"NONE\" },  { \"value\": \"a30\", \"label\": \"A30\" } ]"
 	;;       
     *)
-        echo "[]"
+        echo "[ { \"value\": \"none\", \"label\": \"NONE\" } ]"
 esac

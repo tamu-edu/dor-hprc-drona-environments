@@ -151,7 +151,7 @@
   "ContainerTasks": {
     "type": "rowContainer",
     "label": "GPU",
-    "condition": "slurmbox.Yes)",
+    "condition": "slurmbox.Yes",
     "elements": {
       "cpus": {
         "type": "number",
@@ -164,6 +164,8 @@
         "type": "dynamicSelect",
         "label": "Use Accelerator",
         "name": "gpu",
+        "value": "none",
+        "help": "Optional. Defaults to CPU (no accelerator). Select a GPU only if your training will use it.",
         "retriever": "retrieve_gpus"
       },
       "numgpus": {
