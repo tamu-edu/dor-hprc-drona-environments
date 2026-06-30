@@ -1,14 +1,14 @@
 #!/bin/bash
-# Emit TensorBoard launch instructions for a training run log directory.
+# Emit TensorBoard log directory and Checkpoint file location link.
 
 RESOLVED_LOGDIR="${RESOLVED_LOGDIR:-}"
 
 python3 <<EOF
 import html
 import os
+import glob
 
 logdir = """${RESOLVED_LOGDIR}""".strip()
-port = "6006"
 
 if not logdir:
     print("<p><em>Select a training run above to resolve the log directory.</em></p>")
@@ -16,13 +16,52 @@ if not logdir:
 
 if not os.path.isdir(logdir):
     note = f"<p style='color:#b8860b;'>Directory not found yet: <code>{html.escape(logdir)}</code>. It may appear after training starts writing logs.</p>"
+    ckpt_dir = logdir
 else:
     note = f"<p>Log directory: <code>{html.escape(logdir)}</code></p>"
-
-cmd = "module load WebProxy && module load GCC/12.3.0 OpenMPI/4.1.5 PyTorch-Lightning/2.2.1-CUDA-12.1.1 && tensorboard --logdir={logdir} --host=0.0.0.0 --port={port}"
+    
+    # Try to find a checkpoints directory or any saved .ckpt files
+    ckpt_dirs = glob.glob(os.path.join(logdir, "**", "checkpoints"), recursive=True)
+    if ckpt_dirs:
+        # Get the most recently modified one if there are multiple
+        ckpt_dir = sorted(ckpt_dirs, key=os.path.getmtime, reverse=True)[0]
+    else:
+        # Check for any .ckpt files
+        ckpt_files = glob.glob(os.path.join(logdir, "**", "*.ckpt"), recursive=True)
+        if ckpt_files:
+            ckpt_dir = os.path.dirname(ckpt_files[0])
+        else:
+            ckpt_dir = logdir
 
 print(note)
-print("<p><strong>Interactive / login node command:</strong></p>")
-print(f"<pre style='background:#f5f5f5;padding:10px;border-radius:4px;'>{html.escape(cmd)}</pre>")
-print("<p style='font-size:0.9em;color:#555;'>Use an OOD desktop session or port forwarding to open TensorBoard in your browser.</p>")
+
+# Generate Open OnDemand Files app link
+style = """
+<style>
+  .ckpt-box {
+    display: inline-block;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-family: monospace;
+    margin-top: 5px;
+  }
+  .ckpt-box a {
+    color: #003c71;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .ckpt-box a:hover {
+    text-decoration: underline;
+  }
+</style>
+"""
+
+escaped_dir = html.escape(ckpt_dir)
+link = f'<a href="/pun/sys/dashboard/files/fs{escaped_dir}" target="_blank">Open Checkpoint Directory ({escaped_dir})</a>'
+
+print(style)
+print("<p><strong>Model Checkpoints:</strong></p>")
+print(f'<div class="ckpt-box">{link}</div>')
 EOF

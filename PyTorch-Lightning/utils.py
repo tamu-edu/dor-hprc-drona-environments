@@ -8,12 +8,14 @@ import sys
 from pathlib import Path
 
 
+# ── Utility helpers ────────────────────────────────────────────────────────────
+
 def _normalize_select_value(value):
     """Extract .value from dynamicSelect JSON; pass through plain strings."""
     if value is None:
         return ""
     if isinstance(value, str) and value.startswith("$"):
-        return value
+        return ""
     if isinstance(value, dict):
         return str(value.get("value", "")).strip()
     try:
@@ -31,6 +33,80 @@ def _wants_gpu(gpu, slurm_box):
     gpu = _normalize_select_value(gpu)
     return gpu not in ("", "none")
 
+
+def _is_drona_var(val):
+    if not val:
+        return False
+    return str(val).strip().startswith("$")
+
+
+def _resolve_val(val, default):
+    if not val or _is_drona_var(val):
+        return default
+    return str(val).strip()
+
+
+def _resolve_int(val, default):
+    if not val or _is_drona_var(val):
+        return default
+    try:
+        return int(str(val).strip())
+    except ValueError:
+        return default
+
+
+def _py_str(value):
+    if value is None:
+        return ""
+    return str(value).replace("\\", "\\\\").replace('"', '\\"')
+
+
+def sanitize_job_name(name):
+    if not name:
+        return name
+    return str(name).strip().replace(" ", "_")
+
+
+def _checkbox_on(value):
+    return value == "Yes" or value is True or value == "true"
+
+
+_LR_FORMAT = re.compile(r"^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$")
+
+
+def _parse_learning_rate(value):
+    if value is None:
+        return "1e-3", None
+    text = str(value).strip()
+    if not text or text.startswith("$"):
+        return "1e-3", None
+    if not _LR_FORMAT.match(text):
+        return None, (
+            "Learning rate must be a number in decimal or scientific notation "
+            "(e.g. 0.001 or 1e-3)."
+        )
+    num = float(text)
+    if not math.isfinite(num) or num <= 0:
+        return None, "Learning rate must be a positive number."
+    return text, None
+
+
+def _parse_seed(value):
+    if value is None:
+        return 42, None
+    text = str(value).strip()
+    if not text or text.startswith("$"):
+        return 42, None
+    try:
+        seed = int(text)
+    except (TypeError, ValueError):
+        return None, "Random seed must be an integer."
+    if seed < 0:
+        return None, "Random seed must be zero or greater."
+    return seed, None
+
+
+# ── Cluster / module setup ─────────────────────────────────────────────────────
 
 def retrieve_cluster_info():
     cluster_module = None
@@ -50,14 +126,43 @@ DEFAULT_PT_MODULES = (
     "module load GCC/12.3.0 OpenMPI/4.1.5 PyTorch-Lightning/2.2.1-CUDA-12.1.1"
 )
 
+# GNN requires a separate stack: PyG 2.1.0 was built against PyTorch 1.12 + CUDA 11.7
+DEFAULT_GNN_MODULES = (
+    "module load GCC/11.3.0 OpenMPI/4.1.4 PyTorch-Lightning/1.8.4-CUDA-11.7.0\n"
+    "module load PyTorch-Geometric/2.1.0-PyTorch-1.12.0-CUDA-11.7.0"
+)
 
-def setup_pytorch_modules():
+
+def setup_pytorch_modules(model_category="computer_vision"):
+    """Return module load commands for the given model category."""
     cluster, cluster_module = retrieve_cluster_info()
-    if hasattr(cluster_module, "pytorch_lightning_modules"):
-        modules = cluster_module.pytorch_lightning_modules
-    else:
-        modules = DEFAULT_PT_MODULES
-    return f"# Load cluster PyTorch Lightning stack (includes PyTorch)\n{modules}"
+    
+    module_use_cmd = "module use /sw/eb/mods/all/Core\n"
+
+    if model_category == "gnn":
+        gnn_mods = getattr(cluster_module, "gnn_modules", DEFAULT_GNN_MODULES)
+        return (
+            "# Load cluster modules for Graph Neural Network training\n"
+            "# NOTE: PyTorch-Geometric/2.1.0 requires PyTorch 1.12 + CUDA 11.7\n"
+            f"{module_use_cmd}{gnn_mods}"
+        )
+
+    base = getattr(cluster_module, "pytorch_lightning_modules", DEFAULT_PT_MODULES)
+
+    if model_category == "computer_vision":
+        return (
+            "# Load cluster PyTorch Lightning stack and optional datasets\n"
+            f"{module_use_cmd}{base}\n"
+            "module load DATASETS/IMAGENET-PYTORCH 2>/dev/null || true"
+        )
+
+    return f"# Load cluster PyTorch Lightning stack\n{module_use_cmd}{base}"
+
+
+def setup_pytorch_modules_if_run(mode, model_category="computer_vision"):
+    if mode == "monitor":
+        return "# monitor mode — no training job"
+    return setup_pytorch_modules(model_category)
 
 
 def setup_python_env(penv, pythonVersionDropdown, createEnvName, currentEnvDropdown, sharedEnvDropdown):
@@ -82,21 +187,15 @@ def setup_python_env(penv, pythonVersionDropdown, createEnvName, currentEnvDropd
 
 def retrieve_driver_contents(mode):
     base = Path(__file__).resolve().parent
-
     if mode == "monitor":
         file_path = base / "drivers" / "driver-monitor.sh"
     else:
         file_path = base / "drivers" / "driver-run.sh"
-
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
 
-def setup_pytorch_modules_if_run(mode):
-    if mode == "monitor":
-        return "# monitor mode — no training job"
-    return setup_pytorch_modules()
-
+# ── Drona internal helpers ─────────────────────────────────────────────────────
 
 def _get_db_retriever_path():
     runtime_dir = ""
@@ -147,7 +246,6 @@ def _lookup_workflow_location(workflow_id):
     if not db or not os.path.isfile(db):
         return ""
     try:
-        import json
         out = subprocess.check_output(
             [sys.executable, db, "-i", str(workflow_id)],
             stderr=subprocess.DEVNULL,
@@ -200,15 +298,12 @@ def build_monitor_preview_html(mode, pt_workflow, job_dir):
         return ""
     if not pt_workflow or str(pt_workflow).startswith("$"):
         return ""
-
     location = resolve_monitor_dir(mode, pt_workflow, job_dir)
     if not location:
         return ""
-
     env_dir = Path(__file__).resolve().parent
     run_env = os.environ.copy()
     run_env["LOCATION"] = location
-
     sections = []
     script_name = "retrieve_pt_monitor_dashboard.sh"
     script_path = env_dir / script_name
@@ -223,7 +318,6 @@ def build_monitor_preview_html(mode, pt_workflow, job_dir):
             sections.append(out.strip())
         except subprocess.CalledProcessError:
             sections.append(f"<p><em>Could not load {script_name}</em></p>")
-
     body = "\n<hr/>\n".join(sections) if sections else "<p><em>No monitor data available.</em></p>"
     html = (
         "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">"
@@ -233,7 +327,6 @@ def build_monitor_preview_html(mode, pt_workflow, job_dir):
         f"{body}\n"
         "</body></html>\n"
     )
-
     preview_path = env_dir / "monitor_dashboard.html"
     preview_path.write_text(html, encoding="utf-8")
     drona_add_additional_file("monitor_dashboard.html", "Monitor", 0)
@@ -243,7 +336,6 @@ def build_monitor_preview_html(mode, pt_workflow, job_dir):
 def retrieve_monitor_action(mode, pt_workflow, jobs, job_dir):
     if mode != "monitor":
         return ""
-
     db = _get_db_retriever_path()
     cleanup = (
         f"python3 {db} --delete -i $DRONA_WF_ID 2>/dev/null; "
@@ -252,7 +344,6 @@ def retrieve_monitor_action(mode, pt_workflow, jobs, job_dir):
         else "echo 'Monitor session finished.'"
     )
     staging_cleanup = 'rm -rf "$STAGING_DIR" 2>/dev/null || true'
-
     monitor_dir = resolve_monitor_dir(mode, pt_workflow, job_dir)
     if not pt_workflow or str(pt_workflow).startswith("$") or not monitor_dir:
         return (
@@ -261,7 +352,6 @@ def retrieve_monitor_action(mode, pt_workflow, jobs, job_dir):
             f"{cleanup}\n"
             f"{staging_cleanup}"
         )
-
     safe_dir = monitor_dir.replace('"', '\\"')
     return f"""STAGING_DIR="$(pwd)"
 echo "=== PyTorch-Lightning Monitor (no new job submitted) ==="
@@ -275,10 +365,8 @@ exit 0"""
 def retrieve_tasks_and_other_resources(mode, nodes, tasks, cpus, mem, gpu, numgpu, walltime, account, extra, slurmBox):
     if mode == "monitor":
         return ""
-
     gpu = _normalize_select_value(gpu)
     account = _normalize_select_value(account)
-
     if slurmBox != "Yes":
         tasks = "1"
         nodes = "1"
@@ -288,17 +376,14 @@ def retrieve_tasks_and_other_resources(mode, nodes, tasks, cpus, mem, gpu, numgp
         walltime = ""
         account = ""
         extra = ""
-
     numgpunum = 1
     if gpu != "" and gpu != "none":
         numgpunum = 1 if numgpu == "" else int(numgpu)
-
     tasknum = int(tasks)
     nodenum = 0 if nodes == "" else int(nodes)
     cpunum = 1 if cpus == "" else int(cpus)
     totalmemnum = 0 if mem == "" else int(mem[:-1])
     timestring = "02:00" if walltime == "" else walltime
-
     cluster, cluster_module = retrieve_cluster_info()
     cluster_module.cluster_slurm_checks(
         nodenum, tasknum, cpunum, totalmemnum, gpu, numgpunum,
@@ -307,53 +392,7 @@ def retrieve_tasks_and_other_resources(mode, nodes, tasks, cpus, mem, gpu, numgp
     return ""
 
 
-def _py_str(value):
-    if value is None:
-        return ""
-    return str(value).replace("\\", "\\\\").replace('"', '\\"')
-
-
-def sanitize_job_name(name):
-    if not name:
-        return name
-    return str(name).strip().replace(" ", "_")
-
-
-def _checkbox_on(value):
-    return value == "Yes" or value is True or value == "true"
-
-
-_LR_FORMAT = re.compile(r"^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$")
-
-
-def _parse_learning_rate(value):
-    if value is None:
-        return "1e-3", None
-    text = str(value).strip()
-    if not text:
-        return "1e-3", None
-    if not _LR_FORMAT.match(text):
-        return None, (
-            "Learning rate must be a number in decimal or scientific notation "
-            "(e.g. 0.001 or 1e-3)."
-        )
-    num = float(text)
-    if not math.isfinite(num) or num <= 0:
-        return None, "Learning rate must be a positive number."
-    return text, None
-
-
-def _parse_seed(value):
-    if value is None or str(value).strip() == "":
-        return 42, None
-    try:
-        seed = int(value)
-    except (TypeError, ValueError):
-        return None, "Random seed must be an integer."
-    if seed < 0:
-        return None, "Random seed must be zero or greater."
-    return seed, None
-
+# ── Shared template blocks embedded in generated scripts ──────────────────────
 
 _DOWNLOAD_ONLY_BLOCK = '''
 import gzip
@@ -377,6 +416,19 @@ class _NoProxy:
         os.environ.update(self._saved)
 
 
+def _retrieve(url, dest):
+    import ssl
+    context = ssl._create_unverified_context()
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, context=context) as response:
+        with open(dest, "wb") as f:
+            while True:
+                chunk = response.read(8192)
+                if not chunk:
+                    break
+                f.write(chunk)
+
+
 def _download(url, dest, mirrors=()):
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -388,10 +440,10 @@ def _download(url, dest, mirrors=()):
         for use_proxy in (True, False):
             try:
                 if use_proxy:
-                    urllib.request.urlretrieve(candidate, tmp)
+                    _retrieve(candidate, tmp)
                 else:
                     with _NoProxy():
-                        urllib.request.urlretrieve(candidate, tmp)
+                        _retrieve(candidate, tmp)
                 tmp.rename(dest)
                 return
             except Exception as err:
@@ -445,18 +497,40 @@ def _ensure_cifar_dataset_files(root, name):
     if name == "CIFAR10":
         archive = "cifar-10-python.tar.gz"
         folder = "cifar-10-batches-py"
-        urls = ("https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",)
+        urls = (
+            "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
+            "https://data.brainchip.com/dataset-mirror/cifar10/cifar-10-python.tar.gz",
+            "https://huggingface.co/datasets/uoft-cs/cifar10/resolve/main/cifar-10-python.tar.gz",
+        )
     else:
         archive = "cifar-100-python.tar.gz"
         folder = "cifar-100-python"
-        urls = ("https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz",)
+        urls = (
+            "https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz",
+            "https://data.brainchip.com/dataset-mirror/cifar100/cifar-100-python.tar.gz",
+            "https://huggingface.co/datasets/uoft-cs/cifar100/resolve/main/cifar-100-python.tar.gz",
+        )
     root = Path(root) / name
-    archive_path = root / archive
-    _download(urls[0], archive_path, mirrors=urls[1:])
     extract_dir = root / folder
+    if extract_dir.exists():
+        return
+    archive_path = root / archive
+    try:
+        _download(urls[0], archive_path, mirrors=urls[1:])
+    except Exception as e:
+        if archive_path.exists():
+            archive_path.unlink(missing_ok=True)
+        raise e
     if not extract_dir.exists():
-        with tarfile.open(archive_path, "r:gz") as tar:
-            tar.extractall(path=root)
+        try:
+            with tarfile.open(archive_path, "r:gz") as tar:
+                tar.extractall(path=root)
+        except Exception as e:
+            if archive_path.exists():
+                archive_path.unlink(missing_ok=True)
+            _download(urls[0], archive_path, mirrors=urls[1:])
+            with tarfile.open(archive_path, "r:gz") as tar:
+                tar.extractall(path=root)
 '''
 
 
@@ -524,14 +598,13 @@ def _load_cifar_dataset(root, name, train):
         test_batch = "test_batch"
     else:
         folder = "cifar-100-python"
-        train_batches = [f"train{i}" for i in range(1, 6)]
+        train_batches = ["train"]
         test_batch = "test"
     root = Path(root) / name
     extract_dir = root / folder
     batches = train_batches if train else [test_batch]
-    images = []
-    labels = []
-    label_key = "labels" if name == "CIFAR10" else "fine_labels"
+    images, labels = [], []
+    label_key = b"labels" if name == "CIFAR10" else b"fine_labels"
     for batch in batches:
         with open(extract_dir / batch, "rb") as f:
             entry = pickle.load(f, encoding="bytes")
@@ -610,91 +683,76 @@ except ImportError:
 '''
 
 
-def generate_lightning_script_if_run(
-    mode,
-    name, datasetType, builtinDataset, customDataPath,
-    epochs, batchSize, learningRate, numWorkers, seed, gpu,
-    logDir, logEveryNSteps,
-    enableTensorBoard, checkpointEnable,
-    job_location="",
-    slurmBox="Yes",
-):
-    if mode == "monitor":
-        return ""
-    return generate_lightning_script(
-        name, datasetType, builtinDataset, customDataPath,
-        epochs, batchSize, learningRate, numWorkers, seed, gpu,
-        logDir, logEveryNSteps,
-        enableTensorBoard, checkpointEnable,
-        job_location,
-        slurmBox,
+# ── Helper: shared trainer main() block ───────────────────────────────────────
+
+def _trainer_main_block(acc, dev, prec, log_n, model_init, callback_block, logger_lines):
+    return f'''
+def build_loggers():
+    loggers = [
+{chr(10).join(logger_lines)}
+    ]
+    return [lg for lg in loggers if lg is not False]
+
+def main():
+    L.seed_everything(SEED, workers=True)
+    accelerator = ACCELERATOR
+    devices = DEVICES
+    if accelerator == "gpu" and not torch.cuda.is_available():
+        slurm_gpus = os.environ.get("SLURM_JOB_GPUS", "unset")
+        cuda_visible = os.environ.get("CUDA_VISIBLE_DEVICES", "unset")
+        raise RuntimeError(
+            "GPU training was requested but CUDA is not available on this node. "
+            "Check that the SLURM script includes --partition=gpu and --gres=gpu:... "
+            f"(SLURM_JOB_GPUS={{slurm_gpus}}, CUDA_VISIBLE_DEVICES={{cuda_visible}})"
+        )
+    datamodule = LitDataModule()
+    datamodule.setup()
+    {model_init}
+    loggers = build_loggers()
+    {callback_block}
+    trainer = L.Trainer(
+        max_epochs=MAX_EPOCHS,
+        accelerator=accelerator,
+        devices=devices,
+        precision=PRECISION,
+        log_every_n_steps=LOG_EVERY_N_STEPS,
+        logger=loggers if loggers else None,
+        callbacks=callbacks,
     )
+    trainer.fit(model, datamodule=datamodule)
+
+    # Save a .pt file side-by-side with the best checkpoint .ckpt file
+    if trainer.checkpoint_callback and trainer.checkpoint_callback.best_model_path:
+        best_ckpt = trainer.checkpoint_callback.best_model_path
+        best_pt = os.path.splitext(best_ckpt)[0] + ".pt"
+        try:
+            ckpt = torch.load(best_ckpt, map_location="cpu")
+            if "state_dict" in ckpt:
+                torch.save(ckpt["state_dict"], best_pt)
+            else:
+                torch.save(ckpt, best_pt)
+            print(f"Saved PyTorch weights side-by-side at: {{best_pt}}")
+        except Exception as e:
+            print(f"Could not save side-by-side .pt file: {{e}}")
+
+if __name__ == "__main__":
+    main()
+
+'''
 
 
-def generate_lightning_script(
-    name, datasetType, builtinDataset, customDataPath,
-    epochs, batchSize, learningRate, numWorkers, seed, gpu,
-    logDir, logEveryNSteps,
-    enableTensorBoard, checkpointEnable,
-    job_location="",
-    slurmBox="Yes",
+# ── Category generators ────────────────────────────────────────────────────────
+
+def _gen_computer_vision_script(
+    exp_name, ds_type, builtin, custom_path,
+    ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+    logger_lines, callback_block,
 ):
-    name = sanitize_job_name(name)
-    exp_name = name or "lightning_run"
+    """Returns (train_script, prefetch_script_or_None)."""
     cache_dir = "./data"
-    ds_type = datasetType or "builtin"
-    builtin = builtinDataset or "MNIST"
-    custom_path = customDataPath or ""
-    if ds_type == "custom" or builtin in ("CIFAR10", "CIFAR100"):
-        model = "simple_cnn"
-    else:
-        model = "simple_mlp"
-    acc = "gpu" if _wants_gpu(gpu, slurmBox) else "cpu"
-    dev = "1"
-    prec = "32"
-    lr, lr_error = _parse_learning_rate(learningRate)
-    if lr_error:
-        drona_add_message(lr_error, "error")
-        return ""
-    seed_val, seed_error = _parse_seed(seed)
-    if seed_error:
-        drona_add_message(seed_error, "error")
-        return ""
-    ep = int(epochs) if epochs else 10
-    bs = int(batchSize) if batchSize else 32
-    nw = 0 if numWorkers in (None, "") else int(numWorkers)
-    log_n = int(logEveryNSteps) if logEveryNSteps else 50
-    log_dir = logDir or "./lightning_logs"
-
-    tb_on = _checkbox_on(enableTensorBoard)
-    ckpt_on = _checkbox_on(checkpointEnable)
-
-    if ds_type == "custom" and not custom_path:
-        drona_add_message("Custom dataset path is required when using a custom dataset.", "error")
-        return ""
-
-    trainer_max_epochs = str(ep)
-
-    logger_lines = []
-    if tb_on:
-        logger_lines.append(
-            f'    TensorBoardLogger(save_dir="{_py_str(log_dir)}", name="{_py_str(exp_name)}"),'
-        )
-    if not logger_lines:
-        logger_lines.append("    False,")
-
-    callback_lines = []
-    if ckpt_on:
-        callback_lines.append(
-            '        ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=1),'
-        )
-    if callback_lines:
-        callback_block = "callbacks = [\n" + "\n".join(callback_lines) + "\n    ]"
-    else:
-        callback_block = "callbacks = None"
 
     if ds_type == "builtin":
-        datamodule_block = f'''class LitDataModule(L.LightningDataModule):
+        dm = f'''class LitDataModule(L.LightningDataModule):
     def __init__(self, data_dir="{_py_str(cache_dir)}", batch_size={bs}, num_workers={nw}):
         super().__init__()
         self.data_dir = data_dir
@@ -713,15 +771,14 @@ def generate_lightning_script(
         return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers)
 '''
         if builtin in ("MNIST", "FashionMNIST"):
-            input_channels = 1
-            num_classes = 10
-            image_size = 28
+            ch, nc, sz, arch = 1, 10, 28, "mlp"
         else:
-            input_channels = 3
-            num_classes = 100 if builtin == "CIFAR100" else 10
-            image_size = 32
+            ch = 3
+            nc = 100 if builtin == "CIFAR100" else 10
+            sz = 32
+            arch = "cnn"
     else:
-        datamodule_block = f'''class LitDataModule(L.LightningDataModule):
+        dm = f'''class LitDataModule(L.LightningDataModule):
     def __init__(self, data_root="{_py_str(custom_path)}", batch_size={bs}, num_workers={nw}):
         super().__init__()
         self.data_root = data_root
@@ -729,10 +786,8 @@ def generate_lightning_script(
         self.num_workers = num_workers
 
     def setup(self, stage=None):
-        train_dir = os.path.join(self.data_root, "train")
-        val_dir = os.path.join(self.data_root, "val")
-        self.train_ds = TensorFolderDataset(train_dir, image_size=224)
-        self.val_ds = TensorFolderDataset(val_dir, image_size=224)
+        self.train_ds = TensorFolderDataset(os.path.join(self.data_root, "train"), image_size=224)
+        self.val_ds = TensorFolderDataset(os.path.join(self.data_root, "val"), image_size=224)
         self.num_classes = self.train_ds.num_classes
 
     def train_dataloader(self):
@@ -741,26 +796,20 @@ def generate_lightning_script(
     def val_dataloader(self):
         return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers)
 '''
-        input_channels = 3
-        num_classes = "self.hparams.num_classes"
-        image_size = 224
+        ch, nc, sz, arch = 3, "num_classes", 224, "cnn"
 
-    if model == "simple_cnn":
+    if arch == "cnn":
+        nc_arg = nc if ds_type == "builtin" else "num_classes"
         model_block = f'''class LitModel(L.LightningModule):
-    def __init__(self, lr={lr}, num_classes={num_classes if ds_type == "builtin" else "num_classes"}, in_channels={input_channels}):
+    def __init__(self, lr={lr}, num_classes={nc_arg}, in_channels={ch}):
         super().__init__()
         self.save_hyperparameters()
         self.model = nn.Sequential(
-            nn.Conv2d(in_channels, 32, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(32, 64, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+            nn.Conv2d(in_channels, 32, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Conv2d(32, 64, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
             nn.Flatten(),
-            nn.Linear(64 * ({image_size} // 4) * ({image_size} // 4), 128),
-            nn.ReLU(),
-            nn.Linear(128, num_classes),
+            nn.Linear(64 * ({sz} // 4) * ({sz} // 4), 256), nn.ReLU(),
+            nn.Linear(256, num_classes),
         )
         self.loss_fn = nn.CrossEntropyLoss()
 
@@ -787,27 +836,21 @@ def generate_lightning_script(
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
 '''
-        if ds_type == "custom":
-            model_init = "num_classes = datamodule.num_classes\n    model = LitModel(lr=LR, num_classes=num_classes)"
-        else:
-            model_init = f"model = LitModel(lr=LR, num_classes={num_classes})"
+        model_init = (
+            "num_classes = datamodule.num_classes\n    model = LitModel(lr=LR, num_classes=num_classes)"
+            if ds_type == "custom"
+            else f"model = LitModel(lr=LR, num_classes={nc})"
+        )
     else:
-        if ds_type == "builtin" and builtin in ("MNIST", "FashionMNIST"):
-            flat_size = image_size * image_size
-        elif ds_type == "builtin":
-            flat_size = image_size * image_size * input_channels
-        else:
-            flat_size = 224 * 224 * 3
+        flat = sz * sz
         model_block = f'''class LitModel(L.LightningModule):
-    def __init__(self, lr={lr}, num_classes={num_classes if ds_type == "builtin" else "num_classes"}, input_size={flat_size}):
+    def __init__(self, lr={lr}, num_classes={nc}, input_size={flat}):
         super().__init__()
         self.save_hyperparameters()
         self.model = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(input_size, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
+            nn.Linear(input_size, 256), nn.ReLU(),
+            nn.Linear(256, 128), nn.ReLU(),
             nn.Linear(128, num_classes),
         )
         self.loss_fn = nn.CrossEntropyLoss()
@@ -835,13 +878,12 @@ def generate_lightning_script(
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
 '''
-        if ds_type == "custom":
-            model_init = "num_classes = datamodule.num_classes\n    model = LitModel(lr=LR, num_classes=num_classes, input_size=224 * 224)"
-        else:
-            model_init = f"model = LitModel(lr=LR, num_classes={num_classes})"
+        model_init = f"model = LitModel(lr=LR, num_classes={nc})"
 
-    script = f'''#!/usr/bin/env python3
-"""Generated PyTorch Lightning training script."""
+    main_block = _trainer_main_block(acc, dev, prec, log_n, model_init, callback_block, logger_lines)
+
+    train_script = f'''#!/usr/bin/env python3
+"""Generated PyTorch Lightning training script — Computer Vision."""
 
 import os
 import torch
@@ -855,63 +897,25 @@ EXPERIMENT_NAME = "{_py_str(exp_name)}"
 LR = {lr}
 BATCH_SIZE = {bs}
 NUM_WORKERS = {nw}
-MAX_EPOCHS = {trainer_max_epochs}
+MAX_EPOCHS = {ep}
 ACCELERATOR = "{_py_str(acc)}"
 DEVICES = {dev}
-PRECISION = "{_py_str(prec)}"
+PRECISION = {prec if str(prec).isdigit() else f'"{_py_str(prec)}"'}
 LOG_EVERY_N_STEPS = {log_n}
 SEED = {seed_val}
 
 {_DATA_HELPERS_BLOCK}
 
-{datamodule_block}
+{dm}
 
 {model_block}
-
-def build_loggers():
-    loggers = [
-{chr(10).join(logger_lines)}
-    ]
-    return [lg for lg in loggers if lg is not False]
-
-def main():
-    L.seed_everything(SEED, workers=True)
-    accelerator = ACCELERATOR
-    devices = DEVICES
-    if accelerator == "gpu" and not torch.cuda.is_available():
-        import os
-        slurm_gpus = os.environ.get("SLURM_JOB_GPUS", "unset")
-        cuda_visible = os.environ.get("CUDA_VISIBLE_DEVICES", "unset")
-        raise RuntimeError(
-            "GPU training was requested but CUDA is not available on this node. "
-            "Check that the SLURM script includes --partition=gpu and --gres=gpu:... "
-            f"(SLURM_JOB_GPUS={{slurm_gpus}}, CUDA_VISIBLE_DEVICES={{cuda_visible}})"
-        )
-    datamodule = LitDataModule()
-    {model_init}
-    loggers = build_loggers()
-    {callback_block}
-    trainer = L.Trainer(
-        max_epochs=MAX_EPOCHS,
-        accelerator=accelerator,
-        devices=devices,
-        precision=PRECISION,
-        log_every_n_steps=LOG_EVERY_N_STEPS,
-        logger=loggers if loggers else None,
-        callbacks=callbacks,
-    )
-    trainer.fit(model, datamodule=datamodule)
-
-if __name__ == "__main__":
-    main()
+{main_block}
 '''
 
-    env_dir = Path(__file__).resolve().parent
-    _write_staged_file(env_dir, job_location, "train.py", script)
-
+    prefetch_script = None
     if ds_type == "builtin":
         prefetch_script = f'''#!/usr/bin/env python3
-"""Pre-download built-in datasets on the submit node (compute nodes have no internet)."""
+"""Pre-download built-in image datasets on the submit node (compute nodes have no internet)."""
 
 DATASET = "{_py_str(builtin)}"
 DATA_DIR = "{_py_str(cache_dir)}"
@@ -930,6 +934,1271 @@ def main():
 if __name__ == "__main__":
     main()
 '''
+
+    return train_script, prefetch_script
+
+
+def _gen_llm_transformer_script(
+    exp_name, hf_model_name, num_labels, max_seq_len,
+    text_dataset_type, hf_dataset_name, custom_text_path, text_col, label_col,
+    ep, bs, lr, nw, seed_val, acc, dev, log_n, log_dir,
+    logger_lines, callback_block,
+):
+    """Returns (train_script, prefetch_script)."""
+    cache_dir = "./hf_cache"
+
+    # Custom CSV/JSON branch
+    if text_dataset_type == "custom_text":
+        if not custom_text_path:
+            drona_add_message("Custom text dataset path is required.", "error")
+            return None, None
+        dm = f'''class LitDataModule(L.LightningDataModule):
+    def __init__(self, batch_size={bs}, num_workers={nw}):
+        super().__init__()
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def setup(self, stage=None):
+        import pandas as pd
+        path = "{_py_str(custom_text_path)}"
+        df = pd.read_csv(path) if path.endswith(".csv") else pd.read_json(path, lines=True)
+        texts = df["{_py_str(text_col)}"].tolist()
+        labels = df["{_py_str(label_col)}"].tolist()
+
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+
+        class _DS(Dataset):
+            def __init__(self, txt, lab, tok, max_len):
+                self.txt = txt
+                self.lab = lab
+                self.tok = tok
+                self.max_len = max_len
+            def __len__(self):
+                return len(self.lab)
+            def __getitem__(self, idx):
+                t = str(self.txt[idx])
+                enc = self.tok(
+                    t, truncation=True, padding="max_length", max_length=self.max_len, return_tensors="pt"
+                )
+                item = {{k: v.squeeze(0) for k, v in enc.items()}}
+                item["labels"] = torch.tensor(self.lab[idx], dtype=torch.long)
+                return item
+
+        n = len(texts)
+        split = int(n * 0.8)
+        self.train_ds = _DS(texts[:split], labels[:split], tokenizer, MAX_SEQ_LEN)
+        self.val_ds = _DS(texts[split:], labels[split:], tokenizer, MAX_SEQ_LEN)
+
+    @property
+    def num_classes(self):
+        if hasattr(self, "train_ds") and hasattr(self.train_ds, "lab"):
+            try:
+                return len(set(self.train_ds.lab))
+            except Exception:
+                pass
+        return None
+
+    def train_dataloader(self):
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers)
+'''
+        prefetch_script = None  # no prefetch needed for custom CSV
+    else:
+        dm = f'''class LitDataModule(L.LightningDataModule):
+    def __init__(self, batch_size={bs}, num_workers={nw}):
+        super().__init__()
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def setup(self, stage=None):
+        from datasets import load_dataset
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        from transformers import DataCollatorWithPadding
+        self.collate_fn = DataCollatorWithPadding(tokenizer=tokenizer)
+
+        try:
+            ds = load_dataset(HF_DATASET_NAME)
+        except ValueError as e:
+            if "Available configs in the cache" in str(e):
+                parts = str(e).split("Available configs in the cache: ")
+                if len(parts) > 1:
+                    config_str = parts[1].replace("[", "").replace("]", "").replace("'", "").replace('"', "")
+                    config_name = config_str.split(",")[0].strip()
+                    if config_name:
+                        ds = load_dataset(HF_DATASET_NAME, config_name)
+                    else:
+                        raise e
+                else:
+                    raise e
+            else:
+                raise e
+        train_split = "train"
+        val_split = "test" if "test" in ds else "validation"
+
+        def _tokenize(batch):
+            return tokenizer(
+                batch["text"], truncation=True, max_length=MAX_SEQ_LEN
+            )
+
+        self.train_ds = ds[train_split].map(_tokenize, batched=True)
+        self.val_ds = ds[val_split].map(_tokenize, batched=True)
+
+        # Rename "label" -> "labels" if needed (HF models expect "labels")
+        if "label" in self.train_ds.column_names and "labels" not in self.train_ds.column_names:
+            self.train_ds = self.train_ds.rename_column("label", "labels")
+        if "label" in self.val_ds.column_names and "labels" not in self.val_ds.column_names:
+            self.val_ds = self.val_ds.rename_column("label", "labels")
+
+        keep = ["input_ids", "attention_mask", "labels"]
+        self.train_ds.set_format("torch", columns=[c for c in keep if c in self.train_ds.column_names])
+        self.val_ds.set_format("torch", columns=[c for c in keep if c in self.val_ds.column_names])
+
+    @property
+    def num_classes(self):
+        if hasattr(self, "train_ds"):
+            if hasattr(self.train_ds, "features") and "labels" in self.train_ds.features:
+                feat = self.train_ds.features["labels"]
+                if hasattr(feat, "num_classes"):
+                    return feat.num_classes
+            try:
+                labels = self.train_ds["labels"]
+                if hasattr(labels, "unique"):
+                    return int(labels.unique().numel())
+                else:
+                    return len(set(labels))
+            except Exception:
+                pass
+        return None
+
+    def train_dataloader(self):
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, collate_fn=self.collate_fn)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers, collate_fn=self.collate_fn)
+'''
+        prefetch_script = f'''#!/usr/bin/env python3
+"""
+Pre-download HuggingFace model weights, tokenizer, and dataset on the submit node.
+Compute nodes have no internet access — all assets must be cached here first.
+"""
+import os
+import urllib.request
+
+os.environ["HF_HOME"] = "{_py_str(cache_dir)}"
+
+def check_connectivity(url="https://huggingface.co", timeout=3):
+    try:
+        urllib.request.urlopen(url, timeout=timeout)
+        return True
+    except Exception:
+        return False
+
+if not check_connectivity():
+    print("Hugging Face Hub is not reachable. Enabling offline mode.")
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    os.environ["HF_DATASETS_OFFLINE"] = "1"
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
+else:
+    print("Hugging Face Hub is reachable. Online mode enabled.")
+
+MODEL_NAME = "{_py_str(hf_model_name)}"
+NUM_LABELS = {num_labels}
+HF_DATASET_NAME = "{_py_str(hf_dataset_name)}"
+
+print(f"Caching tokenizer: {{MODEL_NAME}}")
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+print(f"Caching model weights: {{MODEL_NAME}} ({{NUM_LABELS}} labels)")
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=NUM_LABELS)
+print("Model and tokenizer cached successfully.")
+
+if HF_DATASET_NAME:
+    print(f"Caching dataset: {{HF_DATASET_NAME}}")
+    from datasets import load_dataset
+    dataset = load_dataset(HF_DATASET_NAME)
+    print(f"Dataset cached: {{dataset}}")
+
+print("Prefetch complete. All assets are ready for offline compute nodes.")
+'''
+
+
+    model_block = f'''class LitTransformer(L.LightningModule):
+    """Fine-tune a HuggingFace sequence classification model with PyTorch Lightning."""
+
+    def __init__(self, model_name=MODEL_NAME, num_labels=NUM_LABELS, lr=LR):
+        super().__init__()
+        self.save_hyperparameters()
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            model_name, num_labels=num_labels
+        )
+
+    def forward(self, input_ids, attention_mask, labels=None):
+        return self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+
+    def _shared_step(self, batch, stage):
+        labels = batch.get("labels", batch.get("label"))
+        outputs = self(batch["input_ids"], batch["attention_mask"], labels=labels)
+        loss = outputs.loss
+        acc = (outputs.logits.argmax(dim=-1) == labels).float().mean()
+        self.log(f"{{stage}}_loss", loss, prog_bar=True)
+        self.log(f"{{stage}}_acc", acc, prog_bar=True)
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        return self._shared_step(batch, "train")
+
+    def validation_step(self, batch, batch_idx):
+        self._shared_step(batch, "val")
+
+    def configure_optimizers(self):
+        from torch.optim import AdamW
+        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=0.01)
+        scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=1.0, end_factor=0.1, total_iters=MAX_EPOCHS
+        )
+        return [optimizer], [scheduler]
+'''
+
+    model_init = '''num_labels = getattr(datamodule, "num_classes", None) or NUM_LABELS
+    model = LitTransformer(model_name=MODEL_NAME, num_labels=num_labels, lr=LR)'''
+    main_block = _trainer_main_block(acc, dev, "bf16-mixed", log_n, model_init, callback_block, logger_lines)
+
+    train_script = f'''#!/usr/bin/env python3
+"""Generated PyTorch Lightning training script — LLM / Transformer Fine-tuning."""
+
+import os
+# Force offline mode on compute nodes (all assets cached by prefetch_data.py)
+os.environ.setdefault("HF_HOME", "{_py_str(cache_dir)}")
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_DATASETS_OFFLINE"] = "1"
+
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
+{_LIGHTNING_IMPORT_BLOCK}
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+MODEL_NAME = "{_py_str(hf_model_name)}"
+HF_DATASET_NAME = "{_py_str(hf_dataset_name)}"
+NUM_LABELS = {num_labels}
+MAX_SEQ_LEN = {max_seq_len}
+
+LOG_DIR = "{_py_str(log_dir)}"
+EXPERIMENT_NAME = "{_py_str(exp_name)}"
+LR = {lr}
+BATCH_SIZE = {bs}
+NUM_WORKERS = {nw}
+MAX_EPOCHS = {ep}
+ACCELERATOR = "{_py_str(acc)}"
+DEVICES = {dev}
+PRECISION = "bf16-mixed"   # recommended for Transformer fine-tuning
+LOG_EVERY_N_STEPS = {log_n}
+SEED = {seed_val}
+
+
+{dm}
+
+{model_block}
+{main_block}
+'''
+
+    return train_script, prefetch_script
+
+
+def _gen_sequential_script(
+    exp_name, ts_data_path, target_col, seq_task_type,
+    seq_len, pred_len, hidden_size, num_lstm_layers,
+    ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+    logger_lines, callback_block,
+    seq_dataset_type="builtin", seq_builtin_dataset="sine",
+):
+    """Returns (train_script, None) — sequential uses synthetic generator or CSV."""
+    is_clf = (seq_task_type == "classification")
+    loss_line = (
+        "loss = F.cross_entropy(y_hat, y.long().squeeze(-1))"
+        if is_clf else
+        "loss = F.mse_loss(y_hat, y)"
+    )
+    metric_lines = (
+        '''        acc = (y_hat.argmax(dim=-1) == y.long().squeeze(-1)).float().mean()
+        self.log(f"{stage}_acc", acc, prog_bar=True)'''
+        if is_clf else
+        '        self.log(f"{stage}_rmse", loss.sqrt(), prog_bar=True)'
+    )
+    out_size = f"num_classes" if is_clf else f"{pred_len}"
+    out_size_arg = "num_classes=10" if is_clf else f"output_size={pred_len}"
+    out_size_init = "2" if is_clf else str(pred_len)   # default 2 classes for synthetic classification
+
+    # Configure dataset loading / creation in script
+    if seq_dataset_type == "custom":
+        if not ts_data_path:
+            drona_add_message("A CSV dataset path is required for custom Sequential / Time-Series training.", "error")
+            return None, None
+        dataset_init_block = f'''
+        import pandas as pd
+        df = pd.read_csv("{_py_str(ts_data_path)}")
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        feature_cols = [c for c in numeric_cols if c != "{_py_str(target_col)}"]
+
+        features = df[feature_cols].values.astype(np.float32)
+        target = df["{_py_str(target_col)}"].values.astype(np.float32)
+        
+        # Normalize features
+        self.feat_mean = features.mean(axis=0)
+        self.feat_std = features.std(axis=0) + 1e-8
+        features = (features - self.feat_mean) / self.feat_std
+
+        n = len(target)
+        split = int(n * train_frac)
+        self.features = features[:split] if train else features[split:]
+        self.target = target[:split] if train else target[split:]
+        self.num_features = len(feature_cols)
+'''
+    else:
+        # Synthetic generator branch
+        if seq_builtin_dataset == "sine":
+            dataset_init_block = f'''
+        # Generate synthetic sine wave
+        t = np.arange(0, 1500, 0.1)
+        signal = np.sin(t / 10.0) + np.cos(t / 5.0)
+        
+        # Predict next step or classify positive/negative trend
+        features = signal[:-{pred_len}].reshape(-1, 1).astype(np.float32)
+        if TASK_TYPE == "classification":
+            # Classify whether next sequence value increases (1) or decreases (0)
+            diff = np.diff(signal)
+            labels = (diff > 0).astype(np.int64)
+            target = labels[seq_len - 1 : len(features) - {pred_len}]
+            features = features[:len(target) + seq_len]
+        else:
+            target = signal[{pred_len}:].astype(np.float32)
+        
+        n = len(target)
+        split = int(n * train_frac)
+        
+        self.features = features[:split] if train else features[split:]
+        self.target = target[:split] if train else target[split:]
+        self.num_features = 1
+'''
+        else: # weather
+            dataset_init_block = f'''
+        # Generate synthetic weather/temperature series with seasonal & daily cycles
+        np.random.seed(SEED)
+        t = np.arange(0, 5000)
+        temp = 20 + 10 * np.sin(2 * np.pi * t / 365) + 5 * np.sin(2 * np.pi * t / 24) + np.random.normal(0, 1.5, len(t))
+        humidity = 50 + 20 * np.cos(2 * np.pi * t / 365) + np.random.normal(0, 4, len(t))
+        
+        features = np.stack([temp, humidity], axis=1).astype(np.float32)
+        
+        if TASK_TYPE == "classification":
+            # Classify whether next temperature step is higher than average (1) or lower (0)
+            target = (temp > 20).astype(np.int64)
+        else:
+            target = temp.astype(np.float32)
+            
+        n = len(target)
+        split = int(n * train_frac)
+        
+        # Normalize features
+        self.feat_mean = features.mean(axis=0)
+        self.feat_std = features.std(axis=0) + 1e-8
+        features = (features - self.feat_mean) / self.feat_std
+        
+        self.features = features[:split] if train else features[split:]
+        self.target = target[:split] if train else target[split:]
+        self.num_features = 2
+'''
+
+    train_script = f'''#!/usr/bin/env python3
+"""Generated PyTorch Lightning training script — Sequential / Time-Series (LSTM)."""
+
+import os
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+from torch.utils.data import DataLoader, Dataset
+{_LIGHTNING_IMPORT_BLOCK}
+
+CSV_PATH = "{_py_str(ts_data_path)}"
+TARGET_COLUMN = "{_py_str(target_col)}"
+TASK_TYPE = "{seq_task_type}"   # "regression" or "classification"
+SEQ_LEN = {seq_len}
+PRED_LEN = {pred_len}
+HIDDEN_SIZE = {hidden_size}
+NUM_LSTM_LAYERS = {num_lstm_layers}
+
+LOG_DIR = "{_py_str(log_dir)}"
+EXPERIMENT_NAME = "{_py_str(exp_name)}"
+LR = {lr}
+BATCH_SIZE = {bs}
+NUM_WORKERS = {nw}
+MAX_EPOCHS = {ep}
+ACCELERATOR = "{_py_str(acc)}"
+DEVICES = {dev}
+PRECISION = {prec if str(prec).isdigit() else f'"{_py_str(prec)}"'}
+LOG_EVERY_N_STEPS = {log_n}
+SEED = {seed_val}
+
+
+class TimeSeriesDataset(Dataset):
+    """Dataset with sliding window indexing for sequence modeling."""
+
+    def __init__(self, train=True, train_frac=0.8):
+        seq_len = SEQ_LEN
+        pred_len = PRED_LEN
+        {dataset_init_block}
+        
+        self.seq_len = seq_len
+        self.pred_len = pred_len
+
+    def __len__(self):
+        return max(0, len(self.target) - self.seq_len - self.pred_len + 1)
+
+    def __getitem__(self, idx):
+        x = self.features[idx : idx + self.seq_len]                  # (seq_len, num_features)
+        y = self.target[idx + self.seq_len : idx + self.seq_len + self.pred_len]  # (pred_len,)
+        return torch.tensor(x), torch.tensor(y)
+
+
+class LitDataModule(L.LightningDataModule):
+    def __init__(self, batch_size={bs}, num_workers={nw}):
+        super().__init__()
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def setup(self, stage=None):
+        self.train_ds = TimeSeriesDataset(train=True)
+        self.val_ds   = TimeSeriesDataset(train=False)
+        self.num_features = self.train_ds.num_features
+
+    def train_dataloader(self):
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers)
+
+
+class LitLSTM(L.LightningModule):
+    """Stacked LSTM for time-series regression or classification."""
+
+    def __init__(self, input_size, hidden_size=HIDDEN_SIZE, num_layers=NUM_LSTM_LAYERS,
+                 output_size={pred_len}, lr=LR, task_type=TASK_TYPE):
+        super().__init__()
+        self.save_hyperparameters()
+        self.lstm = nn.LSTM(
+            input_size, hidden_size, num_layers,
+            batch_first=True, dropout=0.2 if num_layers > 1 else 0.0
+        )
+        self.fc = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.fc(out[:, -1, :])  # use last time-step hidden state
+
+    def _shared_step(self, batch, stage):
+        x, y = batch
+        y_hat = self(x)
+        {loss_line}
+        self.log(f"{{stage}}_loss", loss, prog_bar=True)
+{metric_lines}
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        return self._shared_step(batch, "train")
+
+    def validation_step(self, batch, batch_idx):
+        self._shared_step(batch, "val")
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.5)
+        return {{
+            "optimizer": optimizer,
+            "lr_scheduler": {{"scheduler": scheduler, "monitor": "val_loss"}},
+        }}
+
+
+def build_loggers():
+    loggers = [
+{chr(10).join(logger_lines)}
+    ]
+    return [lg for lg in loggers if lg is not False]
+
+def main():
+    L.seed_everything(SEED, workers=True)
+    datamodule = LitDataModule()
+    datamodule.setup()
+    model = LitLSTM(
+        input_size=datamodule.num_features,
+        hidden_size=HIDDEN_SIZE,
+        num_layers=NUM_LSTM_LAYERS,
+        output_size={out_size_init},
+        lr=LR,
+        task_type=TASK_TYPE,
+    )
+    loggers = build_loggers()
+    {callback_block}
+    trainer = L.Trainer(
+        max_epochs=MAX_EPOCHS,
+        accelerator=ACCELERATOR,
+        devices=DEVICES,
+        precision=PRECISION,
+        log_every_n_steps=LOG_EVERY_N_STEPS,
+        logger=loggers if loggers else None,
+        callbacks=callbacks,
+    )
+    trainer.fit(model, datamodule=datamodule)
+
+if __name__ == "__main__":
+    main()
+'''
+    return train_script, None
+
+
+def _gen_gnn_script(
+    exp_name, graph_dataset_type, graph_data_path, gnn_hidden_dim, gnn_num_layers,
+    ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+    logger_lines, callback_block,
+):
+    """Returns (train_script, prefetch_script_or_None)."""
+    use_builtin = graph_dataset_type in ("cora", "citeseer", "pubmed")
+    
+    # Formalize built-in dataset names
+    if graph_dataset_type == "cora":
+        pyg_name = "Cora"
+    elif graph_dataset_type == "citeseer":
+        pyg_name = "CiteSeer"
+    else:
+        pyg_name = "PubMed"
+        
+    data_dir = "./data"
+
+    if not use_builtin and not graph_data_path:
+        drona_add_message("Custom graph dataset path is required.", "error")
+        return None, None
+
+    if use_builtin:
+        dataset_setup = f'''
+        from torch_geometric.datasets import Planetoid
+        import torch_geometric.transforms as T
+        dataset = Planetoid(root="{_py_str(data_dir)}", name="{pyg_name}", transform=T.NormalizeFeatures())
+        self.data = dataset[0]
+        self.num_features = dataset.num_features
+        self.num_classes = dataset.num_classes'''
+        prefetch_script = f'''#!/usr/bin/env python3
+"""Pre-download PyTorch Geometric built-in dataset on the submit node."""
+
+DATASET_NAME = "{pyg_name}"
+DATA_DIR = "{_py_str(data_dir)}"
+
+print(f"Downloading PyG dataset: {{DATASET_NAME}}")
+from torch_geometric.datasets import Planetoid
+import torch_geometric.transforms as T
+
+dataset = Planetoid(root=DATA_DIR, name=DATASET_NAME, transform=T.NormalizeFeatures())
+data = dataset[0]
+print(f"Cached {{DATASET_NAME}}: {{data.num_nodes}} nodes, {{data.num_edges}} edges, "
+      f"{{dataset.num_features}} features, {{dataset.num_classes}} classes.")
+print("Prefetch complete.")
+'''
+    else:
+        dataset_setup = f'''
+        data_path = "{_py_str(graph_data_path)}"
+        self.data = torch.load(os.path.join(data_path, "data.pt"))
+        self.num_features = self.data.num_node_features
+        self.num_classes = int(self.data.y.max().item()) + 1'''
+        prefetch_script = None
+
+    train_script = f'''#!/usr/bin/env python3
+"""
+Generated PyTorch Lightning training script — Graph Neural Network (GCN).
+
+NOTE: This script uses PyTorch-Geometric/2.1.0 which requires the PyTorch 1.12 +
+CUDA 11.7 module stack (PyTorch-Lightning/1.8.4). See the generated SBATCH script
+for the correct module load commands.
+"""
+
+import os
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+{_LIGHTNING_IMPORT_BLOCK}
+from torch_geometric.nn import GCNConv
+
+DATA_DIR = "{_py_str(data_dir)}"
+LOG_DIR = "{_py_str(log_dir)}"
+EXPERIMENT_NAME = "{_py_str(exp_name)}"
+LR = {lr}
+BATCH_SIZE = 1          # GNN batching: one full graph per step
+NUM_WORKERS = {nw}
+MAX_EPOCHS = {ep}
+ACCELERATOR = "{_py_str(acc)}"
+DEVICES = {dev}
+PRECISION = {prec if str(prec).isdigit() else f'"{_py_str(prec)}"'}
+LOG_EVERY_N_STEPS = {log_n}
+SEED = {seed_val}
+GNN_HIDDEN_DIM = {gnn_hidden_dim}
+GNN_NUM_LAYERS = {gnn_num_layers}
+
+
+class LitDataModule(L.LightningDataModule):
+    def setup(self, stage=None):{dataset_setup}
+
+    def train_dataloader(self):
+        from torch_geometric.loader import DataLoader as PyGDataLoader
+        return PyGDataLoader([self.data], batch_size=1)
+
+    def val_dataloader(self):
+        from torch_geometric.loader import DataLoader as PyGDataLoader
+        return PyGDataLoader([self.data], batch_size=1)
+
+
+class LitGCN(L.LightningModule):
+    """Multi-layer GCN for node classification."""
+
+    def __init__(self, in_channels, hidden_channels=GNN_HIDDEN_DIM,
+                 out_channels=10, num_layers=GNN_NUM_LAYERS, lr=LR):
+        super().__init__()
+        self.save_hyperparameters()
+        self.convs = nn.ModuleList()
+        self.convs.append(GCNConv(in_channels, hidden_channels))
+        for _ in range(max(0, num_layers - 2)):
+            self.convs.append(GCNConv(hidden_channels, hidden_channels))
+        self.convs.append(GCNConv(hidden_channels, out_channels))
+
+    def forward(self, x, edge_index):
+        for conv in self.convs[:-1]:
+            x = conv(x, edge_index).relu()
+            x = F.dropout(x, p=0.5, training=self.training)
+        return self.convs[-1](x, edge_index)
+
+    def _shared_step(self, batch, stage):
+        out = self(batch.x, batch.edge_index)
+        mask = batch.train_mask if stage == "train" else batch.val_mask
+        loss = F.cross_entropy(out[mask], batch.y[mask])
+        acc = (out[mask].argmax(dim=-1) == batch.y[mask]).float().mean()
+        self.log(f"{{stage}}_loss", loss, prog_bar=True)
+        self.log(f"{{stage}}_acc", acc, prog_bar=True)
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        return self._shared_step(batch, "train")
+
+    def validation_step(self, batch, batch_idx):
+        self._shared_step(batch, "val")
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.hparams.lr, weight_decay=5e-4)
+
+
+def build_loggers():
+    loggers = [
+{chr(10).join(logger_lines)}
+    ]
+    return [lg for lg in loggers if lg is not False]
+
+def main():
+    L.seed_everything(SEED, workers=True)
+    datamodule = LitDataModule()
+    datamodule.setup()
+    model = LitGCN(
+        in_channels=datamodule.num_features,
+        hidden_channels=GNN_HIDDEN_DIM,
+        out_channels=datamodule.num_classes,
+        num_layers=GNN_NUM_LAYERS,
+        lr=LR,
+    )
+    loggers = build_loggers()
+    {callback_block}
+    trainer = L.Trainer(
+        max_epochs=MAX_EPOCHS,
+        accelerator=ACCELERATOR,
+        devices=DEVICES,
+        precision=PRECISION,
+        log_every_n_steps=LOG_EVERY_N_STEPS,
+        logger=loggers if loggers else None,
+        callbacks=callbacks,
+    )
+    trainer.fit(model, datamodule=datamodule)
+
+if __name__ == "__main__":
+    main()
+'''
+    return train_script, prefetch_script
+
+
+def _gen_generative_script(
+    exp_name, gen_dataset_type, gen_custom_path, latent_dim,
+    ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+    logger_lines, callback_block,
+):
+    """Returns (train_script, prefetch_script_or_None)."""
+    cache_dir = "./data"
+    use_builtin = gen_dataset_type != "custom"
+
+    if use_builtin:
+        if gen_dataset_type == "MNIST":
+            in_ch, img_sz = 1, 28
+        else:  # CIFAR10
+            in_ch, img_sz = 3, 32
+        dm = f'''class LitDataModule(L.LightningDataModule):
+    def __init__(self, data_dir="{_py_str(cache_dir)}", batch_size={bs}, num_workers={nw}):
+        super().__init__()
+        self.data_dir = data_dir
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.dataset_name = "{_py_str(gen_dataset_type)}"
+
+    def setup(self, stage=None):
+        self.train_ds = load_builtin_dataset(self.dataset_name, self.data_dir, train=True)
+        self.val_ds = load_builtin_dataset(self.dataset_name, self.data_dir, train=False)
+
+    def train_dataloader(self):
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers)
+'''
+        prefetch_script = f'''#!/usr/bin/env python3
+"""Pre-download built-in dataset for VAE training."""
+
+DATASET = "{_py_str(gen_dataset_type)}"
+DATA_DIR = "{_py_str(cache_dir)}"
+
+{_DOWNLOAD_ONLY_BLOCK}
+
+def main():
+    if DATASET in ("MNIST", "FashionMNIST"):
+        _ensure_idx_dataset_files(DATA_DIR, DATASET)
+    elif DATASET in ("CIFAR10", "CIFAR100"):
+        _ensure_cifar_dataset_files(DATA_DIR, DATASET)
+    print(f"Prefetched {{DATASET}} under {{DATA_DIR}}")
+
+if __name__ == "__main__":
+    main()
+'''
+    else:
+        if not gen_custom_path:
+            drona_add_message("Custom image folder path is required for Generative model.", "error")
+            return None, None
+        in_ch, img_sz = 3, 64   # sensible default for custom folders
+        dm = f'''class LitDataModule(L.LightningDataModule):
+    def __init__(self, data_root="{_py_str(gen_custom_path)}", batch_size={bs}, num_workers={nw}):
+        super().__init__()
+        self.data_root = data_root
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def setup(self, stage=None):
+        self.train_ds = TensorFolderDataset(os.path.join(self.data_root, "train"), image_size={img_sz})
+        self.val_ds = TensorFolderDataset(os.path.join(self.data_root, "val"), image_size={img_sz})
+
+    def train_dataloader(self):
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers)
+'''
+        prefetch_script = None
+
+    flat_size = in_ch * img_sz * img_sz
+
+    train_script = f'''#!/usr/bin/env python3
+"""Generated PyTorch Lightning training script — Variational Autoencoder (VAE)."""
+
+import os
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+{_LIGHTNING_IMPORT_BLOCK}
+
+DATA_DIR = "{_py_str(cache_dir)}"
+LOG_DIR = "{_py_str(log_dir)}"
+EXPERIMENT_NAME = "{_py_str(exp_name)}"
+LR = {lr}
+BATCH_SIZE = {bs}
+NUM_WORKERS = {nw}
+MAX_EPOCHS = {ep}
+ACCELERATOR = "{_py_str(acc)}"
+DEVICES = {dev}
+PRECISION = {prec if str(prec).isdigit() else f'"{_py_str(prec)}"'}
+LOG_EVERY_N_STEPS = {log_n}
+SEED = {seed_val}
+
+IN_CHANNELS = {in_ch}
+IMAGE_SIZE = {img_sz}
+LATENT_DIM = {latent_dim}
+FLAT_SIZE = {flat_size}   # IN_CHANNELS * IMAGE_SIZE * IMAGE_SIZE
+
+{_DATA_HELPERS_BLOCK}
+
+{dm}
+
+class LitVAE(L.LightningModule):
+    """
+    Variational Autoencoder with fully-connected encoder/decoder.
+    Optimises the Evidence Lower Bound (ELBO): reconstruction loss + KL divergence.
+    """
+
+    def __init__(self, flat_size=FLAT_SIZE, latent_dim=LATENT_DIM, lr=LR):
+        super().__init__()
+        self.save_hyperparameters()
+
+        # Encoder: image → (mu, log_var)
+        self.encoder = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(flat_size, 512), nn.ReLU(),
+            nn.Linear(512, 256), nn.ReLU(),
+        )
+        self.fc_mu = nn.Linear(256, latent_dim)
+        self.fc_log_var = nn.Linear(256, latent_dim)
+
+        # Decoder: z → reconstructed image
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 256), nn.ReLU(),
+            nn.Linear(256, 512), nn.ReLU(),
+            nn.Linear(512, flat_size),
+            nn.Sigmoid(),   # pixel values in [0, 1]
+        )
+
+    def encode(self, x):
+        h = self.encoder(x)
+        return self.fc_mu(h), self.fc_log_var(h)
+
+    def reparameterize(self, mu, log_var):
+        std = torch.exp(0.5 * log_var)
+        return mu + torch.randn_like(std) * std
+
+    def decode(self, z):
+        return self.decoder(z)
+
+    def forward(self, x):
+        mu, log_var = self.encode(x)
+        z = self.reparameterize(mu, log_var)
+        return self.decode(z), mu, log_var
+
+    def _elbo_loss(self, x, x_hat, mu, log_var):
+        x_flat = x.view(x.size(0), -1)
+        recon = F.binary_cross_entropy(x_hat, x_flat, reduction="sum") / x.size(0)
+        kl = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp()) / x.size(0)
+        return recon + kl, recon, kl
+
+    def _shared_step(self, batch, stage):
+        x, _ = batch
+        x_hat, mu, log_var = self(x)
+        loss, recon, kl = self._elbo_loss(x, x_hat, mu, log_var)
+        self.log(f"{{stage}}_loss", loss, prog_bar=True)
+        self.log(f"{{stage}}_recon", recon)
+        self.log(f"{{stage}}_kl", kl)
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        return self._shared_step(batch, "train")
+
+    def validation_step(self, batch, batch_idx):
+        self._shared_step(batch, "val")
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+
+
+def build_loggers():
+    loggers = [
+{chr(10).join(logger_lines)}
+    ]
+    return [lg for lg in loggers if lg is not False]
+
+def main():
+    L.seed_everything(SEED, workers=True)
+    datamodule = LitDataModule()
+    datamodule.setup()
+    model = LitVAE(flat_size=FLAT_SIZE, latent_dim=LATENT_DIM, lr=LR)
+    loggers = build_loggers()
+    {callback_block}
+    trainer = L.Trainer(
+        max_epochs=MAX_EPOCHS,
+        accelerator=ACCELERATOR,
+        devices=DEVICES,
+        precision=PRECISION,
+        log_every_n_steps=LOG_EVERY_N_STEPS,
+        logger=loggers if loggers else None,
+        callbacks=callbacks,
+    )
+    trainer.fit(model, datamodule=datamodule)
+
+if __name__ == "__main__":
+    main()
+'''
+    return train_script, prefetch_script
+
+
+def _gen_custom_script(
+    exp_name, ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+    logger_lines, callback_block,
+    custom_dataset_path="",
+):
+    """Returns (train_script, None) — bare-bones stub for the user to complete."""
+    train_script = f'''#!/usr/bin/env python3
+"""
+Generated PyTorch Lightning training script — Custom (Bare-bones).
+
+Complete every section marked TODO to implement your model.
+The structure follows PyTorch Lightning best practices.
+"""
+
+import os
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import DataLoader, Dataset
+{_LIGHTNING_IMPORT_BLOCK}
+
+DATA_PATH = "{_py_str(custom_dataset_path)}"
+
+# ── Hyperparameters ────────────────────────────────────────────────────────────
+LOG_DIR = "{_py_str(log_dir)}"
+EXPERIMENT_NAME = "{_py_str(exp_name)}"
+LR = {lr}
+BATCH_SIZE = {bs}
+NUM_WORKERS = {nw}
+MAX_EPOCHS = {ep}
+ACCELERATOR = "{_py_str(acc)}"
+DEVICES = {dev}
+PRECISION = {prec if str(prec).isdigit() else f'"{_py_str(prec)}"'}
+LOG_EVERY_N_STEPS = {log_n}
+SEED = {seed_val}
+
+
+# ── Dataset ────────────────────────────────────────────────────────────────────
+
+class MyDataset(Dataset):
+    """
+    TODO: Replace this stub with your actual dataset.
+    The custom dataset path you selected is pre-filled as DATA_PATH.
+
+    Options:
+      - Load from CSV:   pd.read_csv(data_path)
+      - Load from HDF5:  h5py.File(data_path)
+      - Load .pt files:  torch.load(data_path)
+      - Use torchvision: torchvision.datasets.ImageFolder(data_path)
+    """
+
+    def __init__(self, data_path=DATA_PATH, train=True):
+        self.data_path = data_path
+        # TODO: load your data split here
+        self.length = 100  # placeholder
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        # TODO: return a single (input_tensor, label) pair
+        x = torch.zeros(10)   # placeholder — replace with real features
+        y = torch.tensor(0)   # placeholder — replace with real label
+        return x, y
+
+
+class LitDataModule(L.LightningDataModule):
+    """
+    TODO: Wire up your dataset splits here.
+    """
+
+    def __init__(self, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
+        super().__init__()
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def setup(self, stage=None):
+        self.train_ds = MyDataset(train=True)
+        self.val_ds = MyDataset(train=False)
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_ds, batch_size=self.batch_size,
+            shuffle=True, num_workers=self.num_workers
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val_ds, batch_size=self.batch_size,
+            num_workers=self.num_workers
+        )
+
+
+# ── Model ──────────────────────────────────────────────────────────────────────
+
+class LitModel(L.LightningModule):
+    """
+    TODO: Define your model architecture and training logic.
+
+    Common patterns:
+      - Image classification: nn.Conv2d + nn.Linear
+      - Text:                 nn.Embedding + nn.LSTM / Transformer
+      - Regression:           nn.Linear layers + MSE loss
+      - Custom task:          any nn.Module subclass
+    """
+
+    def __init__(self, lr=LR):
+        super().__init__()
+        self.save_hyperparameters()
+
+        # TODO: define your layers, e.g.:
+        # self.net = nn.Sequential(nn.Linear(10, 64), nn.ReLU(), nn.Linear(64, 2))
+        # self.loss_fn = nn.CrossEntropyLoss()
+
+    def forward(self, x):
+        # TODO: implement the forward pass, e.g.:
+        # return self.net(x)
+        raise NotImplementedError("Implement forward() in LitModel.")
+
+    def training_step(self, batch, batch_idx):
+        # TODO: compute loss and log metrics, e.g.:
+        # x, y = batch
+        # logits = self(x)
+        # loss = self.loss_fn(logits, y)
+        # acc = (logits.argmax(dim=1) == y).float().mean()
+        # self.log("train_loss", loss, prog_bar=True)
+        # self.log("train_acc",  acc,  prog_bar=True)
+        # return loss
+        raise NotImplementedError("Implement training_step() in LitModel.")
+
+    def validation_step(self, batch, batch_idx):
+        # TODO: mirror training_step without the return, e.g.:
+        # x, y = batch
+        # logits = self(x)
+        # loss = self.loss_fn(logits, y)
+        # self.log("val_loss", loss, prog_bar=True)
+        pass
+
+    def configure_optimizers(self):
+        # TODO: customise optimiser / scheduler if needed
+        # Example with cosine annealing:
+        # optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=MAX_EPOCHS)
+        # return [optimizer], [scheduler]
+        return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+
+
+# ── Loggers & callbacks ────────────────────────────────────────────────────────
+
+def build_loggers():
+    loggers = [
+{chr(10).join(logger_lines)}
+    ]
+    return [lg for lg in loggers if lg is not False]
+
+
+# ── Main ───────────────────────────────────────────────────────────────────────
+
+def main():
+    L.seed_everything(SEED, workers=True)
+    datamodule = LitDataModule()
+    model = LitModel(lr=LR)
+    loggers = build_loggers()
+    {callback_block}
+    trainer = L.Trainer(
+        max_epochs=MAX_EPOCHS,
+        accelerator=ACCELERATOR,
+        devices=DEVICES,
+        precision=PRECISION,
+        log_every_n_steps=LOG_EVERY_N_STEPS,
+        logger=loggers if loggers else None,
+        callbacks=callbacks,
+    )
+    trainer.fit(model, datamodule=datamodule)
+
+
+if __name__ == "__main__":
+    main()
+'''
+    return train_script, None
+
+
+# ── Main dispatcher ────────────────────────────────────────────────────────────
+
+def generate_lightning_script_if_run(
+    mode,
+    modelCategory,
+    name, datasetType, builtinDataset, customDataPath,
+    epochs, batchSize, learningRate, numWorkers, seed, gpu,
+    logDir, logEveryNSteps,
+    enableTensorBoard, checkpointEnable,
+    hfModelName, hfDatasetName, textDatasetType, textColumn, labelColumn, customTextPath, maxSeqLen, numLabels,
+    seqDatasetType, seqBuiltinDataset, tsDataPath, seqLen, predLen, targetColumn, hiddenSize, numLstmLayers, seqTaskType,
+    graphDatasetType, graphBuiltinDataset, graphDataPath, gnnHiddenDim, gnnNumLayers,
+    genDatasetType, genBuiltinDataset, genCustomPath, latentDim,
+    customDatasetPath,
+    job_location="",
+    slurmBox="Yes",
+    precision="32",
+):
+    if mode == "monitor":
+        return ""
+    return generate_lightning_script(
+        modelCategory,
+        name, datasetType, builtinDataset, customDataPath,
+        epochs, batchSize, learningRate, numWorkers, seed, gpu,
+        logDir, logEveryNSteps,
+        enableTensorBoard, checkpointEnable,
+        hfModelName, hfDatasetName, textDatasetType, textColumn, labelColumn, customTextPath, maxSeqLen, numLabels,
+        seqDatasetType, seqBuiltinDataset, tsDataPath, seqLen, predLen, targetColumn, hiddenSize, numLstmLayers, seqTaskType,
+        graphDatasetType, graphBuiltinDataset, graphDataPath, gnnHiddenDim, gnnNumLayers,
+        genDatasetType, genBuiltinDataset, genCustomPath, latentDim,
+        customDatasetPath,
+        job_location,
+        slurmBox,
+        precision,
+    )
+
+
+def generate_lightning_script(
+    modelCategory,
+    name, datasetType, builtinDataset, customDataPath,
+    epochs, batchSize, learningRate, numWorkers, seed, gpu,
+    logDir, logEveryNSteps,
+    enableTensorBoard, checkpointEnable,
+    hfModelName, hfDatasetName, textDatasetType, textColumn, labelColumn, customTextPath, maxSeqLen, numLabels,
+    seqDatasetType, seqBuiltinDataset, tsDataPath, seqLen, predLen, targetColumn, hiddenSize, numLstmLayers, seqTaskType,
+    graphDatasetType, graphBuiltinDataset, graphDataPath, gnnHiddenDim, gnnNumLayers,
+    genDatasetType, genBuiltinDataset, genCustomPath, latentDim,
+    customDatasetPath,
+    job_location="",
+    slurmBox="Yes",
+    precision="32",
+):
+    # ── Parse & validate shared params ────────────────────────────────────────
+    category = (modelCategory or "computer_vision").strip()
+    exp_name = sanitize_job_name(name) or "lightning_run"
+
+    lr, lr_err = _parse_learning_rate(learningRate)
+    if lr_err:
+        drona_add_message(lr_err, "error")
+        return ""
+
+    seed_val, seed_err = _parse_seed(seed)
+    if seed_err:
+        drona_add_message(seed_err, "error")
+        return ""
+
+    ep  = _resolve_int(epochs, 10)
+    bs  = _resolve_int(batchSize, 32)
+    nw  = _resolve_int(numWorkers, 0)
+    log_n = _resolve_int(logEveryNSteps, 50)
+    log_dir = _resolve_val(logDir, "./lightning_logs")
+
+    acc = "gpu" if _wants_gpu(gpu, slurmBox) else "cpu"
+    dev = "1"
+    prec = _resolve_val(precision, "32")
+
+    tb_on   = _checkbox_on(enableTensorBoard)
+    ckpt_on = _checkbox_on(checkpointEnable)
+
+    logger_lines = []
+    if tb_on:
+        logger_lines.append(
+            f'    TensorBoardLogger(save_dir="{_py_str(log_dir)}", name="{_py_str(exp_name)}"),'
+        )
+    if not logger_lines:
+        logger_lines.append("    False,")
+
+    callback_lines = []
+    if ckpt_on:
+        callback_lines.append(
+            '        ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=1),'
+        )
+    callback_block = (
+        "callbacks = [\n" + "\n".join(callback_lines) + "\n    ]"
+        if callback_lines
+        else "callbacks = None"
+    )
+
+    env_dir = Path(__file__).resolve().parent
+
+    # ── Dispatch to category generator ────────────────────────────────────────
+    train_script = prefetch_script = None
+
+    if category == "computer_vision":
+        ds_type = datasetType or "builtin"
+        builtin = builtinDataset or "MNIST"
+        custom_path = customDataPath or ""
+        if ds_type == "custom" and not custom_path:
+            drona_add_message("Custom dataset path is required.", "error")
+            return ""
+        train_script, prefetch_script = _gen_computer_vision_script(
+            exp_name, ds_type, builtin, custom_path,
+            ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+            logger_lines, callback_block,
+        )
+
+    elif category == "sequential":
+        seq_ds_type = (seqDatasetType or "builtin").strip()
+        seq_blt     = (seqBuiltinDataset or "sine").strip()
+        ts_path     = (tsDataPath or "").strip()
+        tgt_col     = (targetColumn or "target").strip()
+        task_type   = (seqTaskType or "regression").strip()
+        s_len       = int(seqLen)      if seqLen      else 50
+        p_len       = int(predLen)     if predLen     else 1
+        h_size      = int(hiddenSize)  if hiddenSize  else 128
+        n_layers    = int(numLstmLayers) if numLstmLayers else 2
+        
+        train_script, prefetch_script = _gen_sequential_script(
+            exp_name, ts_path, tgt_col, task_type,
+            s_len, p_len, h_size, n_layers,
+            ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+            logger_lines, callback_block,
+            seq_dataset_type=seq_ds_type,
+            seq_builtin_dataset=seq_blt,
+        )
+
+    elif category == "gnn":
+        gnn_ds_type = (graphDatasetType or "builtin").strip()
+        gnn_blt     = (graphBuiltinDataset or "cora").strip()
+        g_type      = gnn_blt if gnn_ds_type == "builtin" else "custom_graph"
+        g_path      = (graphDataPath or "").strip()
+        g_hdim      = int(gnnHiddenDim)  if gnnHiddenDim  else 64
+        g_nlay      = int(gnnNumLayers)  if gnnNumLayers  else 2
+        
+        train_script, prefetch_script = _gen_gnn_script(
+            exp_name, g_type, g_path, g_hdim, g_nlay,
+            ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+            logger_lines, callback_block,
+        )
+
+    elif category == "generative":
+        gen_ds_type = (genDatasetType or "builtin").strip()
+        gen_blt     = (genBuiltinDataset or "MNIST").strip()
+        gen_type    = gen_blt if gen_ds_type == "builtin" else "custom"
+        gen_path    = (genCustomPath or "").strip()
+        lat_dim     = int(latentDim) if latentDim else 128
+        
+        train_script, prefetch_script = _gen_generative_script(
+            exp_name, gen_type, gen_path, lat_dim,
+            ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+            logger_lines, callback_block,
+        )
+
+    elif category == "custom":
+        train_script, prefetch_script = _gen_custom_script(
+            exp_name, ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
+            logger_lines, callback_block,
+            custom_dataset_path=customDatasetPath,
+        )
+
+    else:
+        drona_add_message(f"Unknown model category: {category}", "error")
+        return ""
+
+    if train_script is None:
+        return ""  # error already added by sub-generator
+
+    # ── Write generated files ─────────────────────────────────────────────────
+    _write_staged_file(env_dir, job_location, "train.py", train_script)
+    if prefetch_script:
         _write_staged_file(env_dir, job_location, "prefetch_data.py", prefetch_script)
 
     return ""
