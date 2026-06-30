@@ -145,6 +145,10 @@ cat << 'SCRIPT'
       d.addEventListener('toggle', function () {
         var arrow = d.querySelector('.pt-log-arrow');
         if (arrow) arrow.textContent = d.open ? '\u25BC' : '\u25B6';
+        if (d.open) {
+          var vp = d.querySelector('.pt-log-viewport');
+          if (vp) vp.scrollTop = vp.scrollHeight;
+        }
       });
     });
   }
@@ -221,11 +225,20 @@ cat << 'SCRIPT'
     }, true);
   }
 
+  function scrollToBottom(root) {
+    root.querySelectorAll('.pt-logs-root details[open] .pt-log-viewport').forEach(function (vp) {
+      if (vp.dataset.ptScrolledOnce) return;
+      vp.dataset.ptScrolledOnce = '1';
+      vp.scrollTop = vp.scrollHeight;
+    });
+  }
+
   function init() {
     var root = document.getElementById('pt-monitor-dashboard');
     if (!root) return;
     bindLogArrows(root);
     bindRefreshCooldown();
+    scrollToBottom(root);
   }
 
   if (document.readyState === 'loading') {

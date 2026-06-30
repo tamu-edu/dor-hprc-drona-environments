@@ -29,8 +29,15 @@ echo "<div class='pt-logs-root' style='font-size:0.82em'>"
 for LOG_FILE in "${LOG_FILES[@]}"; do
     BASENAME=$(basename "$LOG_FILE")
     LINE_COUNT=$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)
-    CONTENT=$(cat "$LOG_FILE" 2>/dev/null | escape_html)
+    FILE_SIZE=$(du -sh "$LOG_FILE" 2>/dev/null | awk '{print $1}')
+    CONTENT=$(tail -n 1000 "$LOG_FILE" 2>/dev/null | escape_html)
     [ -z "$CONTENT" ] && CONTENT="(empty)"
+
+    if [ -n "$FILE_SIZE" ]; then
+        SIZE_TEXT=", $FILE_SIZE"
+    else
+        SIZE_TEXT=""
+    fi
 
     echo "<details style='margin-bottom:10px' open>"
     echo "  <summary style='cursor:pointer;user-select:none;padding:5px 8px;"
@@ -38,11 +45,20 @@ for LOG_FILE in "${LOG_FILES[@]}"; do
     echo "     list-style:none;display:flex;align-items:center;gap:8px'>"
     echo "    <span class='pt-log-arrow'>&#9660;</span>"
     echo "    <span>$BASENAME</span>"
-    echo "    <span style='font-weight:400;color:#868e96;font-size:0.9em'>($LINE_COUNT lines, newest at bottom)</span>"
+    echo "    <span style='font-weight:400;color:#868e96;font-size:0.9em'>($LINE_COUNT lines${SIZE_TEXT})</span>"
     echo "  </summary>"
+    if [ "$LINE_COUNT" -gt 1000 ]; then
+        SHOWN_LINES=1000
+    else
+        SHOWN_LINES=$LINE_COUNT
+    fi
+
+    echo "  <div style='font-size:0.85em;color:#adb5bd;background:#2d2d2d;padding:4px 10px;border-bottom:1px solid #3c3c3c;font-family:var(--bs-font-sans-serif, sans-serif)'>"
+    echo "    Showing the latest $SHOWN_LINES lines"
+    echo "  </div>"
     echo "  <div class='pt-log-viewport' style='max-height:400px;overflow:auto;"
-    echo "       transform:scaleY(-1);background:#1e1e1e;border-radius:0 0 4px 4px'>"
-    echo "    <pre class='pt-log-pre' style='margin:0;padding:10px;transform:scaleY(-1);"
+    echo "       background:#1e1e1e;border-radius:0 0 4px 4px'>"
+    echo "    <pre class='pt-log-pre' style='margin:0;padding:10px;"
     echo "         white-space:pre-wrap;word-break:break-word;color:#d4d4d4;"
     echo "         font-size:0.9em'>${CONTENT}</pre>"
     echo "  </div>"

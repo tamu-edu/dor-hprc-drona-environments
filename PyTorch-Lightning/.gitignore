@@ -1,5 +1,3 @@
-train.py
-prefetch_data.py
 datasets/
 /TestRun/
 TestRun/

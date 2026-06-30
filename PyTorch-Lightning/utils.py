@@ -133,7 +133,18 @@ DEFAULT_GNN_MODULES = (
 )
 
 
-def setup_pytorch_modules(model_category="computer_vision"):
+def _get_torchvision_module(base_modules_str):
+    if "CUDA-12.1.1" in base_modules_str:
+        return "torchvision/0.16.0-CUDA-12.1.1"
+    elif "CUDA-11.7.0" in base_modules_str:
+        return "torchvision/0.13.1-CUDA-11.7.0"
+    elif "CUDA-11.3.1" in base_modules_str:
+        return "torchvision/0.11.1-CUDA-11.3.1"
+    else:
+        return "torchvision/0.16.0-CUDA-12.1.1"
+
+
+def setup_pytorch_modules(model_category="computer_vision", dataset_type="builtin", builtin_dataset="MNIST"):
     """Return module load commands for the given model category."""
     cluster, cluster_module = retrieve_cluster_info()
     
@@ -150,19 +161,26 @@ def setup_pytorch_modules(model_category="computer_vision"):
     base = getattr(cluster_module, "pytorch_lightning_modules", DEFAULT_PT_MODULES)
 
     if model_category == "computer_vision":
+        torchvision_cmd = ""
+        ds_t = (dataset_type or "builtin").strip()
+        bi_ds = (builtin_dataset or "").strip()
+        if ds_t == "builtin" and bi_ds in ("CIFAR10", "CIFAR100", "ImageNet"):
+            tv_mod = _get_torchvision_module(base)
+            torchvision_cmd = f"\nmodule load {tv_mod}"
+        
         return (
             "# Load cluster PyTorch Lightning stack and optional datasets\n"
-            f"{module_use_cmd}{base}\n"
+            f"{module_use_cmd}{base}{torchvision_cmd}\n"
             "module load DATASETS/IMAGENET-PYTORCH 2>/dev/null || true"
         )
 
     return f"# Load cluster PyTorch Lightning stack\n{module_use_cmd}{base}"
 
 
-def setup_pytorch_modules_if_run(mode, model_category="computer_vision"):
+def setup_pytorch_modules_if_run(mode, model_category="computer_vision", dataset_type="builtin", builtin_dataset="MNIST"):
     if mode == "monitor":
         return "# monitor mode — no training job"
-    return setup_pytorch_modules(model_category)
+    return setup_pytorch_modules(model_category, dataset_type, builtin_dataset)
 
 
 def setup_python_env(penv, pythonVersionDropdown, createEnvName, currentEnvDropdown, sharedEnvDropdown):
@@ -397,9 +415,7 @@ def retrieve_tasks_and_other_resources(mode, nodes, tasks, cpus, mem, gpu, numgp
 _DOWNLOAD_ONLY_BLOCK = '''
 import gzip
 import os
-import pickle
 import struct
-import tarfile
 import urllib.request
 from pathlib import Path
 
@@ -420,7 +436,7 @@ def _retrieve(url, dest):
     import ssl
     context = ssl._create_unverified_context()
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, context=context) as response:
+    with urllib.request.urlopen(req, context=context, timeout=20) as response:
         with open(dest, "wb") as f:
             while True:
                 chunk = response.read(8192)
@@ -435,6 +451,7 @@ def _download(url, dest, mirrors=()):
     if dest.exists():
         return
     errors = []
+    print(f"Download started for {dest.name}...")
     for candidate in (url,) + tuple(mirrors):
         tmp = dest.with_suffix(dest.suffix + ".tmp")
         for use_proxy in (True, False):
@@ -445,12 +462,14 @@ def _download(url, dest, mirrors=()):
                     with _NoProxy():
                         _retrieve(candidate, tmp)
                 tmp.rename(dest)
+                print(f"Download finished successfully for {dest.name}.")
                 return
             except Exception as err:
                 last_err = err
                 if tmp.exists():
                     tmp.unlink(missing_ok=True)
         errors.append(f"{candidate}: {last_err}")
+    print(f"Download failed for {dest.name}.")
     raise RuntimeError(
         "Failed to download "
         f"{dest.name}. Built-in datasets are prefetched on the submit node before "
@@ -494,43 +513,35 @@ def _ensure_idx_dataset_files(root, name):
 
 
 def _ensure_cifar_dataset_files(root, name):
+    import tarfile
+    root = Path(root)
     if name == "CIFAR10":
         archive = "cifar-10-python.tar.gz"
         folder = "cifar-10-batches-py"
-        urls = (
-            "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
+        primary = "https://huggingface.co/datasets/uoft-cs/cifar10/resolve/main/cifar-10-python.tar.gz"
+        mirrors = (
             "https://data.brainchip.com/dataset-mirror/cifar10/cifar-10-python.tar.gz",
-            "https://huggingface.co/datasets/uoft-cs/cifar10/resolve/main/cifar-10-python.tar.gz",
+            "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
         )
     else:
         archive = "cifar-100-python.tar.gz"
         folder = "cifar-100-python"
-        urls = (
-            "https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz",
+        primary = "https://huggingface.co/datasets/uoft-cs/cifar100/resolve/main/cifar-100-python.tar.gz"
+        mirrors = (
             "https://data.brainchip.com/dataset-mirror/cifar100/cifar-100-python.tar.gz",
-            "https://huggingface.co/datasets/uoft-cs/cifar100/resolve/main/cifar-100-python.tar.gz",
+            "https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz",
         )
-    root = Path(root) / name
-    extract_dir = root / folder
-    if extract_dir.exists():
+    dest_archive = root / archive
+    dest_folder = root / folder
+    if dest_folder.exists():
+        print(f"{name} folder already exists under {root}. Skipping download/extraction.")
         return
-    archive_path = root / archive
-    try:
-        _download(urls[0], archive_path, mirrors=urls[1:])
-    except Exception as e:
-        if archive_path.exists():
-            archive_path.unlink(missing_ok=True)
-        raise e
-    if not extract_dir.exists():
-        try:
-            with tarfile.open(archive_path, "r:gz") as tar:
-                tar.extractall(path=root)
-        except Exception as e:
-            if archive_path.exists():
-                archive_path.unlink(missing_ok=True)
-            _download(urls[0], archive_path, mirrors=urls[1:])
-            with tarfile.open(archive_path, "r:gz") as tar:
-                tar.extractall(path=root)
+    print(f"Downloading {name} dataset from {primary}...")
+    _download(primary, dest_archive, mirrors=mirrors)
+    print(f"Extracting {name} dataset archive {archive}...")
+    with tarfile.open(dest_archive, "r:gz") as tar:
+        tar.extractall(path=root)
+    print(f"Successfully extracted {name} dataset to {dest_folder}.")
 '''
 
 
@@ -591,35 +602,68 @@ def _load_idx_dataset(root, name, train):
 
 
 def _load_cifar_dataset(root, name, train):
+    import pickle
+    print(f"Initializing {name} dataset loading...")
     _ensure_cifar_dataset_files(root, name)
+    root = Path(root)
     if name == "CIFAR10":
         folder = "cifar-10-batches-py"
-        train_batches = [f"data_batch_{i}" for i in range(1, 6)]
-        test_batch = "test_batch"
+        files = (
+            ["data_batch_1", "data_batch_2", "data_batch_3", "data_batch_4", "data_batch_5"]
+            if train
+            else ["test_batch"]
+        )
     else:
         folder = "cifar-100-python"
-        train_batches = ["train"]
-        test_batch = "test"
-    root = Path(root) / name
-    extract_dir = root / folder
-    batches = train_batches if train else [test_batch]
-    images, labels = [], []
-    label_key = b"labels" if name == "CIFAR10" else b"fine_labels"
-    for batch in batches:
-        with open(extract_dir / batch, "rb") as f:
-            entry = pickle.load(f, encoding="bytes")
-        images.append(entry[b"data"])
-        labels.extend(entry[label_key])
-    images = np.concatenate(images).reshape(-1, 3, 32, 32).transpose(0, 2, 3, 1)
-    labels = np.array(labels, dtype=np.int64)
+        files = ["train" if train else "test"]
+    
+    images_list = []
+    labels_list = []
+    print(f"Loading {name} dataset files for split: {'train' if train else 'test'}...")
+    for fname in files:
+        fpath = root / folder / fname
+        print(f"Reading data file {fname}...")
+        with open(fpath, "rb") as f:
+            entry = pickle.load(f, encoding="latin1")
+            images_list.append(entry["data"])
+            if name == "CIFAR10":
+                labels_list.extend(entry["labels"])
+            else:
+                labels_list.extend(entry["fine_labels"])
+    
+    print(f"Processing and converting dataset tensors...")
+    images = np.vstack(images_list).reshape(-1, 3, 32, 32)
+    images = images.transpose((0, 2, 3, 1))
+    labels = np.array(labels_list, dtype=np.int64)
+    print(f"Successfully loaded {name} dataset with {len(images)} samples.")
     return ArrayImageDataset(images, labels, channels=3)
 
 
 def load_builtin_dataset(name, data_dir, train):
     if name in ("MNIST", "FashionMNIST"):
         return _load_idx_dataset(data_dir, name, train)
-    if name in ("CIFAR10", "CIFAR100"):
+    elif name in ("CIFAR10", "CIFAR100"):
         return _load_cifar_dataset(data_dir, name, train)
+    elif name == "ImageNet":
+        from torchvision.datasets import ImageFolder
+        import torchvision.transforms as T
+        path = "/scratch/data/pytorch-computer-vision-datasets/imagenet-raw-dataset"
+        split = "train" if train else "val"
+        if train:
+            transform = T.Compose([
+                T.RandomResizedCrop(224),
+                T.RandomHorizontalFlip(),
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
+        else:
+            transform = T.Compose([
+                T.Resize(256),
+                T.CenterCrop(224),
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
+        return ImageFolder(os.path.join(path, split), transform=transform)
     raise ValueError(f"Unsupported built-in dataset: {name}")
 
 
@@ -735,6 +779,21 @@ def main():
         except Exception as e:
             print(f"Could not save side-by-side .pt file: {{e}}")
 
+    # Save a .pt file side-by-side with the last/final checkpoint .ckpt file
+    if trainer.checkpoint_callback and hasattr(trainer.checkpoint_callback, 'last_model_path') and trainer.checkpoint_callback.last_model_path:
+        last_ckpt = trainer.checkpoint_callback.last_model_path
+        if last_ckpt != trainer.checkpoint_callback.best_model_path:
+            last_pt = os.path.splitext(last_ckpt)[0] + ".pt"
+            try:
+                ckpt = torch.load(last_ckpt, map_location="cpu")
+                if "state_dict" in ckpt:
+                    torch.save(ckpt["state_dict"], last_pt)
+                else:
+                    torch.save(ckpt, last_pt)
+                print(f"Saved PyTorch weights side-by-side at: {{last_pt}}")
+            except Exception as e:
+                print(f"Could not save side-by-side .pt file: {{e}}")
+
 if __name__ == "__main__":
     main()
 
@@ -772,11 +831,13 @@ def _gen_computer_vision_script(
 '''
         if builtin in ("MNIST", "FashionMNIST"):
             ch, nc, sz, arch = 1, 10, 28, "mlp"
-        else:
-            ch = 3
+        elif builtin in ("CIFAR10", "CIFAR100"):
             nc = 100 if builtin == "CIFAR100" else 10
-            sz = 32
-            arch = "cnn"
+            ch, nc, sz, arch = 3, nc, 32, "cnn"
+        elif builtin == "ImageNet":
+            ch, nc, sz, arch = 3, 1000, 224, "cnn"
+        else:
+            raise ValueError(f"Unsupported built-in dataset: {builtin}")
     else:
         dm = f'''class LitDataModule(L.LightningDataModule):
     def __init__(self, data_root="{_py_str(custom_path)}", batch_size={bs}, num_workers={nw}):
@@ -927,6 +988,8 @@ def main():
         _ensure_idx_dataset_files(DATA_DIR, DATASET)
     elif DATASET in ("CIFAR10", "CIFAR100"):
         _ensure_cifar_dataset_files(DATA_DIR, DATASET)
+    elif DATASET == "ImageNet":
+        print("ImageNet dataset is centrally available on HPRC; skipping download.")
     else:
         raise ValueError(f"Unsupported dataset for prefetch: {{DATASET}}")
     print(f"Prefetched {{DATASET}} under {{DATA_DIR}}")
@@ -1212,7 +1275,7 @@ def _gen_sequential_script(
     seq_len, pred_len, hidden_size, num_lstm_layers,
     ep, bs, lr, nw, seed_val, acc, dev, prec, log_n, log_dir,
     logger_lines, callback_block,
-    seq_dataset_type="builtin", seq_builtin_dataset="sine",
+    seq_dataset_type="builtin", seq_builtin_dataset="mackey_glass",
 ):
     """Returns (train_script, None) — sequential uses synthetic generator or CSV."""
     is_clf = (seq_task_type == "classification")
@@ -1258,13 +1321,19 @@ def _gen_sequential_script(
 '''
     else:
         # Synthetic generator branch
-        if seq_builtin_dataset == "sine":
+        if seq_builtin_dataset in ("mackey_glass", "sine"):
             dataset_init_block = f'''
-        # Generate synthetic sine wave
-        t = np.arange(0, 1500, 0.1)
-        signal = np.sin(t / 10.0) + np.cos(t / 5.0)
+        # Generate Mackey-Glass chaotic time series
+        np.random.seed(SEED)
+        n_samples = 5000
+        tau = 17
+        x = np.zeros(n_samples)
+        # Initialize history with random noise around 1.2
+        x[:tau] = 1.2 + 0.1 * np.random.randn(tau)
+        for i in range(tau, n_samples):
+            x[i] = 0.9 * x[i-1] + 0.2 * x[i-tau] / (1.0 + x[i-tau]**10)
+        signal = x.astype(np.float32)
         
-        # Predict next step or classify positive/negative trend
         features = signal[:-{pred_len}].reshape(-1, 1).astype(np.float32)
         if TASK_TYPE == "classification":
             # Classify whether next sequence value increases (1) or decreases (0)
@@ -1278,25 +1347,57 @@ def _gen_sequential_script(
         n = len(target)
         split = int(n * train_frac)
         
+        # Normalize features
+        self.feat_mean = features.mean(axis=0)
+        self.feat_std = features.std(axis=0) + 1e-8
+        features = (features - self.feat_mean) / self.feat_std
+        
         self.features = features[:split] if train else features[split:]
         self.target = target[:split] if train else target[split:]
         self.num_features = 1
 '''
-        else: # weather
+        else: # sunspots
             dataset_init_block = f'''
-        # Generate synthetic weather/temperature series with seasonal & daily cycles
-        np.random.seed(SEED)
-        t = np.arange(0, 5000)
-        temp = 20 + 10 * np.sin(2 * np.pi * t / 365) + 5 * np.sin(2 * np.pi * t / 24) + np.random.normal(0, 1.5, len(t))
-        humidity = 50 + 20 * np.cos(2 * np.pi * t / 365) + np.random.normal(0, 4, len(t))
+        # Load Monthly Mean Total Sunspot Number dataset (1749 to July 2018)
+        import os
+        import urllib.request
+        from pathlib import Path
+        import pandas as pd
+        import ssl
         
-        features = np.stack([temp, humidity], axis=1).astype(np.float32)
+        data_dir = Path("data")
+        data_dir.mkdir(exist_ok=True)
+        dest = data_dir / "sunspots.csv"
         
+        if not dest.exists():
+            print("Downloading Sunspots dataset...")
+            url = "https://raw.githubusercontent.com/dicodingacademy/assets/main/Simulation/machine_learning/sunspots.csv"
+            context = ssl._create_unverified_context()
+            req = urllib.request.Request(url, headers={{"User-Agent": "Mozilla/5.0"}})
+            try:
+                with urllib.request.urlopen(req, context=context) as response:
+                    with open(dest, "wb") as f:
+                        f.write(response.read())
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to download Sunspots dataset. "
+                    f"Built-in datasets are prefetched on the submit node. Error: {{e}}"
+                )
+                
+        df = pd.read_csv(dest)
+        # Columns: Unnamed: 0, Date, Monthly Mean Total Sunspot Number
+        # Use third column as target (sunspot counts)
+        signal = df.iloc[:, 2].values.astype(np.float32)
+        
+        features = signal[:-{pred_len}].reshape(-1, 1).astype(np.float32)
         if TASK_TYPE == "classification":
-            # Classify whether next temperature step is higher than average (1) or lower (0)
-            target = (temp > 20).astype(np.int64)
+            # Classify whether next sequence value increases (1) or decreases (0)
+            diff = np.diff(signal)
+            labels = (diff > 0).astype(np.int64)
+            target = labels[seq_len - 1 : len(features) - {pred_len}]
+            features = features[:len(target) + seq_len]
         else:
-            target = temp.astype(np.float32)
+            target = signal[{pred_len}:].astype(np.float32)
             
         n = len(target)
         split = int(n * train_frac)
@@ -1308,7 +1409,7 @@ def _gen_sequential_script(
         
         self.features = features[:split] if train else features[split:]
         self.target = target[:split] if train else target[split:]
-        self.num_features = 2
+        self.num_features = 1
 '''
 
     train_script = f'''#!/usr/bin/env python3
@@ -1455,7 +1556,36 @@ def main():
 if __name__ == "__main__":
     main()
 '''
-    return train_script, None
+    prefetch_script = None
+    if seq_dataset_type == "builtin" and seq_builtin_dataset in ("sunspots", "weather"):
+        prefetch_script = f'''#!/usr/bin/env python3
+"""Pre-download Monthly Sunspots dataset on the submit node."""
+
+import urllib.request
+import ssl
+from pathlib import Path
+
+URL = "https://raw.githubusercontent.com/dicodingacademy/assets/main/Simulation/machine_learning/sunspots.csv"
+DEST = Path("data") / "sunspots.csv"
+
+def main():
+    print(f"Downloading Sunspots dataset to {{DEST}}...")
+    DEST.parent.mkdir(exist_ok=True)
+    context = ssl._create_unverified_context()
+    req = urllib.request.Request(URL, headers={{"User-Agent": "Mozilla/5.0"}})
+    try:
+        with urllib.request.urlopen(req, context=context) as response:
+            with open(DEST, "wb") as f:
+                f.write(response.read())
+        print(f"Prefetch complete. File saved to {{DEST}}")
+    except Exception as e:
+        print(f"Error downloading Sunspots dataset: {{e}}")
+        raise e
+
+if __name__ == "__main__":
+    main()
+'''
+    return train_script, prefetch_script
 
 
 def _gen_gnn_script(
@@ -1464,15 +1594,23 @@ def _gen_gnn_script(
     logger_lines, callback_block,
 ):
     """Returns (train_script, prefetch_script_or_None)."""
-    use_builtin = graph_dataset_type in ("cora", "citeseer", "pubmed")
+    use_builtin = graph_dataset_type in ("cora", "citeseer", "pubmed", "pattern", "cluster") or graph_dataset_type.startswith("ogbn-")
+    is_gnn_benchmark = graph_dataset_type in ("pattern", "cluster")
+    is_ogb = graph_dataset_type.startswith("ogbn-")
     
     # Formalize built-in dataset names
     if graph_dataset_type == "cora":
         pyg_name = "Cora"
     elif graph_dataset_type == "citeseer":
         pyg_name = "CiteSeer"
-    else:
+    elif graph_dataset_type == "pubmed":
         pyg_name = "PubMed"
+    elif graph_dataset_type == "pattern":
+        pyg_name = "PATTERN"
+    elif graph_dataset_type == "cluster":
+        pyg_name = "CLUSTER"
+    else:
+        pyg_name = graph_dataset_type
         
     data_dir = "./data"
 
@@ -1481,14 +1619,102 @@ def _gen_gnn_script(
         return None, None
 
     if use_builtin:
-        dataset_setup = f'''
+        if is_gnn_benchmark:
+            dataset_setup = f'''
+        from torch_geometric.datasets import GNNBenchmarkDataset
+        self.train_ds = GNNBenchmarkDataset(root="{_py_str(data_dir)}", name="{pyg_name}", split="train")
+        self.val_ds = GNNBenchmarkDataset(root="{_py_str(data_dir)}", name="{pyg_name}", split="val")
+        self.num_features = self.train_ds.num_features
+        self.num_classes = self.train_ds.num_classes
+        self.is_gnn_benchmark = True'''
+            prefetch_script = f'''#!/usr/bin/env python3
+"""Pre-download PyTorch Geometric built-in GNNBenchmarkDataset on the submit node."""
+
+DATASET_NAME = "{pyg_name}"
+DATA_DIR = "{_py_str(data_dir)}"
+
+print(f"Downloading PyG GNNBenchmarkDataset: {{DATASET_NAME}}")
+from torch_geometric.datasets import GNNBenchmarkDataset
+
+train_dataset = GNNBenchmarkDataset(root=DATA_DIR, name=DATASET_NAME, split="train")
+val_dataset = GNNBenchmarkDataset(root=DATA_DIR, name=DATASET_NAME, split="val")
+print(f"Cached {{DATASET_NAME}} (train): {{len(train_dataset)}} graphs, "
+      f"{{train_dataset.num_features}} features, {{train_dataset.num_classes}} classes.")
+print(f"Cached {{DATASET_NAME}} (val): {{len(val_dataset)}} graphs.")
+print("Prefetch complete.")
+'''
+        elif is_ogb:
+            dataset_setup = f'''
+        import sys
+        import site
+        user_site = site.getusersitepackages()
+        if user_site not in sys.path:
+            sys.path.append(user_site)
+            
+        from ogb.nodeproppred import PygNodePropPredDataset
+        import torch
+        dataset = PygNodePropPredDataset(name="{pyg_name}", root="{_py_str(data_dir)}")
+        self.data = dataset[0]
+        
+        # Convert split indices to boolean masks for compatibility
+        split_idx = dataset.get_idx_split()
+        num_nodes = self.data.num_nodes
+        
+        train_mask = torch.zeros(num_nodes, dtype=torch.bool)
+        train_mask[split_idx['train']] = True
+        self.data.train_mask = train_mask
+        
+        val_mask = torch.zeros(num_nodes, dtype=torch.bool)
+        val_mask[split_idx['valid']] = True
+        self.data.val_mask = val_mask
+        
+        if self.data.y is not None:
+            self.data.y = self.data.y.view(-1)
+            
+        self.num_features = dataset.num_features
+        self.num_classes = dataset.num_classes
+        self.is_gnn_benchmark = False'''
+            prefetch_script = f'''#!/usr/bin/env python3
+"""Pre-download Open Graph Benchmark (OGB) dataset on the submit node."""
+
+import sys
+import subprocess
+import site
+
+try:
+    import ogb
+except ImportError:
+    print("Installing 'ogb' package via pip...")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", "ogb"])
+        user_site = site.getusersitepackages()
+        if user_site not in sys.path:
+            sys.path.append(user_site)
+    except Exception as e:
+        print(f"Warning: Failed to install ogb: {{e}}")
+
+DATASET_NAME = "{pyg_name}"
+DATA_DIR = "{_py_str(data_dir)}"
+
+print(f"Downloading OGB dataset: {{DATASET_NAME}}")
+from ogb.nodeproppred import PygNodePropPredDataset
+
+dataset = PygNodePropPredDataset(name=DATASET_NAME, root=DATA_DIR)
+data = dataset[0]
+print(f"Cached {{DATASET_NAME}}: {{data.num_nodes}} nodes, {{data.num_edges}} edges, "
+      f"{{dataset.num_features}} features, {{dataset.num_classes}} classes.")
+print("Prefetch complete.")
+'''
+        else:
+            dataset_setup = f'''
         from torch_geometric.datasets import Planetoid
         import torch_geometric.transforms as T
         dataset = Planetoid(root="{_py_str(data_dir)}", name="{pyg_name}", transform=T.NormalizeFeatures())
         self.data = dataset[0]
         self.num_features = dataset.num_features
-        self.num_classes = dataset.num_classes'''
-        prefetch_script = f'''#!/usr/bin/env python3
+        self.num_classes = dataset.num_classes
+        self.is_gnn_benchmark = False'''
+            prefetch_script = f'''#!/usr/bin/env python3
 """Pre-download PyTorch Geometric built-in dataset on the submit node."""
 
 DATASET_NAME = "{pyg_name}"
@@ -1509,7 +1735,8 @@ print("Prefetch complete.")
         data_path = "{_py_str(graph_data_path)}"
         self.data = torch.load(os.path.join(data_path, "data.pt"))
         self.num_features = self.data.num_node_features
-        self.num_classes = int(self.data.y.max().item()) + 1'''
+        self.num_classes = int(self.data.y.max().item()) + 1
+        self.is_gnn_benchmark = False'''
         prefetch_script = None
 
     train_script = f'''#!/usr/bin/env python3
@@ -1550,11 +1777,17 @@ class LitDataModule(L.LightningDataModule):
 
     def train_dataloader(self):
         from torch_geometric.loader import DataLoader as PyGDataLoader
-        return PyGDataLoader([self.data], batch_size=1)
+        if getattr(self, "is_gnn_benchmark", False):
+            return PyGDataLoader(self.train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS)
+        else:
+            return PyGDataLoader([self.data], batch_size=1)
 
     def val_dataloader(self):
         from torch_geometric.loader import DataLoader as PyGDataLoader
-        return PyGDataLoader([self.data], batch_size=1)
+        if getattr(self, "is_gnn_benchmark", False):
+            return PyGDataLoader(self.val_ds, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
+        else:
+            return PyGDataLoader([self.data], batch_size=1)
 
 
 class LitGCN(L.LightningModule):
@@ -1578,11 +1811,16 @@ class LitGCN(L.LightningModule):
 
     def _shared_step(self, batch, stage):
         out = self(batch.x, batch.edge_index)
-        mask = batch.train_mask if stage == "train" else batch.val_mask
-        loss = F.cross_entropy(out[mask], batch.y[mask])
-        acc = (out[mask].argmax(dim=-1) == batch.y[mask]).float().mean()
-        self.log(f"{{stage}}_loss", loss, prog_bar=True)
-        self.log(f"{{stage}}_acc", acc, prog_bar=True)
+        mask = getattr(batch, f"{{stage}}_mask", None)
+        if mask is not None:
+            loss = F.cross_entropy(out[mask], batch.y[mask])
+            acc = (out[mask].argmax(dim=-1) == batch.y[mask]).float().mean()
+        else:
+            loss = F.cross_entropy(out, batch.y)
+            acc = (out.argmax(dim=-1) == batch.y).float().mean()
+        batch_size = batch.num_graphs if hasattr(batch, "num_graphs") else 1
+        self.log(f"{{stage}}_loss", loss, prog_bar=True, batch_size=batch_size)
+        self.log(f"{{stage}}_acc", acc, prog_bar=True, batch_size=batch_size)
         return loss
 
     def training_step(self, batch, batch_idx):
@@ -1641,10 +1879,10 @@ def _gen_generative_script(
     use_builtin = gen_dataset_type != "custom"
 
     if use_builtin:
-        if gen_dataset_type == "MNIST":
+        if gen_dataset_type in ("MNIST", "FashionMNIST"):
             in_ch, img_sz = 1, 28
-        else:  # CIFAR10
-            in_ch, img_sz = 3, 32
+        else:
+            raise ValueError(f"Unsupported built-in generative dataset: {gen_dataset_type}")
         dm = f'''class LitDataModule(L.LightningDataModule):
     def __init__(self, data_dir="{_py_str(cache_dir)}", batch_size={bs}, num_workers={nw}):
         super().__init__()
@@ -1674,8 +1912,6 @@ DATA_DIR = "{_py_str(cache_dir)}"
 def main():
     if DATASET in ("MNIST", "FashionMNIST"):
         _ensure_idx_dataset_files(DATA_DIR, DATASET)
-    elif DATASET in ("CIFAR10", "CIFAR100"):
-        _ensure_cifar_dataset_files(DATA_DIR, DATASET)
     print(f"Prefetched {{DATASET}} under {{DATA_DIR}}")
 
 if __name__ == "__main__":
@@ -2109,7 +2345,7 @@ def generate_lightning_script(
     callback_lines = []
     if ckpt_on:
         callback_lines.append(
-            '        ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=1),'
+            '        ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=1, save_last=True),'
         )
     callback_block = (
         "callbacks = [\n" + "\n".join(callback_lines) + "\n    ]"
@@ -2137,7 +2373,7 @@ def generate_lightning_script(
 
     elif category == "sequential":
         seq_ds_type = (seqDatasetType or "builtin").strip()
-        seq_blt     = (seqBuiltinDataset or "sine").strip()
+        seq_blt     = (seqBuiltinDataset or "mackey_glass").strip()
         ts_path     = (tsDataPath or "").strip()
         tgt_col     = (targetColumn or "target").strip()
         task_type   = (seqTaskType or "regression").strip()

@@ -62,7 +62,8 @@
               { "value": "MNIST", "label": "MNIST" },
               { "value": "FashionMNIST", "label": "Fashion-MNIST" },
               { "value": "CIFAR10", "label": "CIFAR-10" },
-              { "value": "CIFAR100", "label": "CIFAR-100" }
+              { "value": "CIFAR100", "label": "CIFAR-100" },
+              { "value": "ImageNet", "label": "ImageNet" }
             ]
           }
         }
@@ -105,12 +106,12 @@
             "type": "select",
             "label": "Built-in dataset",
             "name": "seqBuiltinDataset",
-            "value": "sine",
+            "value": "mackey_glass",
             "options": [
-              { "value": "sine", "label": "Synthetic Sine Wave" },
-              { "value": "weather", "label": "Synthetic Temperature/Weather" }
+              { "value": "mackey_glass", "label": "Mackey-Glass" },
+              { "value": "sunspots", "label": "Monthly Sunspots (1749-2018)" }
             ],
-            "help": "Generates synthetic sequential data for demonstration."
+            "help": "Real/standard sequential datasets for demonstration."
           }
         }
       },
@@ -123,7 +124,8 @@
             "type": "picker",
             "label": "CSV dataset file",
             "name": "tsDataPath",
-            "localLabel": "Path",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
             "showFiles": "True",
             "files": "True",
             "help": "Path to a CSV file where each row is a time step."
@@ -209,9 +211,12 @@
             "options": [
               { "value": "cora", "label": "Cora Citation Network" },
               { "value": "citeseer", "label": "CiteSeer Network" },
-              { "value": "pubmed", "label": "PubMed Diabetes Network" }
+              { "value": "pubmed", "label": "PubMed Diabetes Network" },
+              { "value": "pattern", "label": "PATTERN (GNNBenchmarkDataset)" },
+              { "value": "cluster", "label": "CLUSTER (GNNBenchmarkDataset)" },
+              { "value": "ogbn-arxiv", "label": "ogbn-arxiv (OGB)" }
             ],
-            "help": "Planetoid graph dataset, downloaded automatically."
+            "help": "Planetoid, GNNBenchmarkDataset, or OGB graph datasets, downloaded automatically."
           }
         }
       },
@@ -224,7 +229,8 @@
             "type": "picker",
             "label": "Custom graph directory",
             "name": "graphDataPath",
-            "localLabel": "Path",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
             "showFiles": "False",
             "files": "False",
             "help": "Directory containing a data.pt file (a PyG Data object)."
@@ -280,9 +286,8 @@
             "name": "genBuiltinDataset",
             "value": "MNIST",
             "options": [
-              { "value": "MNIST", "label": "MNIST Digits" },
-              { "value": "FashionMNIST", "label": "Fashion-MNIST" },
-              { "value": "CIFAR10", "label": "CIFAR-10" }
+              { "value": "MNIST", "label": "MNIST" },
+              { "value": "FashionMNIST", "label": "Fashion-MNIST" }
             ],
             "help": "Image datasets for generative learning."
           }
@@ -297,7 +302,8 @@
             "type": "picker",
             "label": "Custom data directory",
             "name": "genCustomPath",
-            "localLabel": "Path",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
             "showFiles": "False",
             "files": "False",
             "help": "Root directory with train/ and val/ subdirectories."
@@ -330,7 +336,8 @@
         "type": "picker",
         "label": "Import dataset",
         "name": "customDatasetPath",
-        "localLabel": "Path",
+        "remoteLabel": "local",
+        "localLabel": "cluster",
         "showFiles": "True",
         "files": "True",
         "help": "Select a file or directory containing your custom training dataset. This path will be loaded inside the generated train.py script."
@@ -427,7 +434,8 @@
         "type": "checkbox",
         "label": "Enable model checkpointing",
         "name": "checkpointEnable",
-        "value": "Yes"
+        "value": "Yes",
+        "help": "When enabled, saves the best-performing model checkpoint based on minimum validation loss. When disabled, defaults to saving only the final model state at the last epoch."
       }
     }
   },
