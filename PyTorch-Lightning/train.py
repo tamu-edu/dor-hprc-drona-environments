@@ -87,7 +87,7 @@ def _download(url, dest, mirrors=()):
     print(f"Download failed for {dest.name}.")
     raise RuntimeError(
         "Failed to download "
-        f"{dest.name}. Built-in datasets are prefetched on the submit node before "
+        f"{dest.name}. Prepared datasets are prefetched on the submit node before "
         f"the Slurm job starts; compute nodes have no internet access. "
         f"Tried: {'; '.join(errors)}"
     )
@@ -279,7 +279,7 @@ def load_builtin_dataset(name, data_dir, train):
                 T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
         return ImageFolder(os.path.join(path, split), transform=transform)
-    raise ValueError(f"Unsupported built-in dataset: {name}")
+    raise ValueError(f"Unsupported prepared dataset: {name}")
 
 
 class TensorFolderDataset(Dataset):

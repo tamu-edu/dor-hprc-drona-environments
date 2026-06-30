@@ -42,7 +42,7 @@
         "name": "datasetType",
         "label": "Dataset source",
         "options": [
-          { "label": "Built-in", "value": "builtin" },
+          { "label": "Prepared", "value": "builtin" },
           { "label": "Import", "value": "custom" }
         ],
         "value": "builtin"
@@ -54,7 +54,7 @@
         "elements": {
           "builtinDataset": {
             "type": "select",
-            "label": "Built-in dataset",
+            "label": "Prepared dataset",
             "name": "builtinDataset",
             "value": "MNIST",
             "help": "Datasets are downloaded automatically on the submit node when you click Submit (compute nodes have no internet).",
@@ -92,7 +92,7 @@
         "name": "seqDatasetType",
         "label": "Dataset source",
         "options": [
-          { "label": "Built-in", "value": "builtin" },
+          { "label": "Prepared", "value": "builtin" },
           { "label": "Import", "value": "custom" }
         ],
         "value": "builtin"
@@ -104,7 +104,7 @@
         "elements": {
           "seqBuiltinDataset": {
             "type": "select",
-            "label": "Built-in dataset",
+            "label": "Prepared dataset",
             "name": "seqBuiltinDataset",
             "value": "mackey_glass",
             "options": [
@@ -193,7 +193,7 @@
         "name": "graphDatasetType",
         "label": "Dataset source",
         "options": [
-          { "label": "Built-in", "value": "builtin" },
+          { "label": "Prepared", "value": "builtin" },
           { "label": "Import", "value": "custom" }
         ],
         "value": "builtin"
@@ -205,7 +205,7 @@
         "elements": {
           "graphBuiltinDataset": {
             "type": "select",
-            "label": "Built-in dataset",
+            "label": "Prepared dataset",
             "name": "graphBuiltinDataset",
             "value": "cora",
             "options": [
@@ -270,7 +270,7 @@
         "name": "genDatasetType",
         "label": "Dataset source",
         "options": [
-          { "label": "Built-in", "value": "builtin" },
+          { "label": "Prepared", "value": "builtin" },
           { "label": "Import", "value": "custom" }
         ],
         "value": "builtin"
@@ -282,7 +282,7 @@
         "elements": {
           "genBuiltinDataset": {
             "type": "select",
-            "label": "Built-in dataset",
+            "label": "Prepared dataset",
             "name": "genBuiltinDataset",
             "value": "MNIST",
             "options": [

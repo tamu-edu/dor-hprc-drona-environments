@@ -472,7 +472,7 @@ def _download(url, dest, mirrors=()):
     print(f"Download failed for {dest.name}.")
     raise RuntimeError(
         "Failed to download "
-        f"{dest.name}. Built-in datasets are prefetched on the submit node before "
+        f"{dest.name}. Prepared datasets are prefetched on the submit node before "
         f"the Slurm job starts; compute nodes have no internet access. "
         f"Tried: {'; '.join(errors)}"
     )
@@ -664,7 +664,7 @@ def load_builtin_dataset(name, data_dir, train):
                 T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
         return ImageFolder(os.path.join(path, split), transform=transform)
-    raise ValueError(f"Unsupported built-in dataset: {name}")
+    raise ValueError(f"Unsupported prepared dataset: {name}")
 
 
 class TensorFolderDataset(Dataset):
@@ -837,7 +837,7 @@ def _gen_computer_vision_script(
         elif builtin == "ImageNet":
             ch, nc, sz, arch = 3, 1000, 224, "cnn"
         else:
-            raise ValueError(f"Unsupported built-in dataset: {builtin}")
+            raise ValueError(f"Unsupported prepared dataset: {builtin}")
     else:
         dm = f'''class LitDataModule(L.LightningDataModule):
     def __init__(self, data_root="{_py_str(custom_path)}", batch_size={bs}, num_workers={nw}):
@@ -976,7 +976,7 @@ SEED = {seed_val}
     prefetch_script = None
     if ds_type == "builtin":
         prefetch_script = f'''#!/usr/bin/env python3
-"""Pre-download built-in image datasets on the submit node (compute nodes have no internet)."""
+"""Pre-download prepared image datasets on the submit node (compute nodes have no internet)."""
 
 DATASET = "{_py_str(builtin)}"
 DATA_DIR = "{_py_str(cache_dir)}"
@@ -1381,7 +1381,7 @@ def _gen_sequential_script(
             except Exception as e:
                 raise RuntimeError(
                     f"Failed to download Sunspots dataset. "
-                    f"Built-in datasets are prefetched on the submit node. Error: {{e}}"
+                    f"Prepared datasets are prefetched on the submit node. Error: {{e}}"
                 )
                 
         df = pd.read_csv(dest)
@@ -1598,7 +1598,7 @@ def _gen_gnn_script(
     is_gnn_benchmark = graph_dataset_type in ("pattern", "cluster")
     is_ogb = graph_dataset_type.startswith("ogbn-")
     
-    # Formalize built-in dataset names
+    # Formalize prepared dataset names
     if graph_dataset_type == "cora":
         pyg_name = "Cora"
     elif graph_dataset_type == "citeseer":
@@ -1628,7 +1628,7 @@ def _gen_gnn_script(
         self.num_classes = self.train_ds.num_classes
         self.is_gnn_benchmark = True'''
             prefetch_script = f'''#!/usr/bin/env python3
-"""Pre-download PyTorch Geometric built-in GNNBenchmarkDataset on the submit node."""
+"""Pre-download PyTorch Geometric prepared GNNBenchmarkDataset on the submit node."""
 
 DATASET_NAME = "{pyg_name}"
 DATA_DIR = "{_py_str(data_dir)}"
@@ -1715,7 +1715,7 @@ print("Prefetch complete.")
         self.num_classes = dataset.num_classes
         self.is_gnn_benchmark = False'''
             prefetch_script = f'''#!/usr/bin/env python3
-"""Pre-download PyTorch Geometric built-in dataset on the submit node."""
+"""Pre-download PyTorch Geometric prepared dataset on the submit node."""
 
 DATASET_NAME = "{pyg_name}"
 DATA_DIR = "{_py_str(data_dir)}"
@@ -1882,7 +1882,7 @@ def _gen_generative_script(
         if gen_dataset_type in ("MNIST", "FashionMNIST"):
             in_ch, img_sz = 1, 28
         else:
-            raise ValueError(f"Unsupported built-in generative dataset: {gen_dataset_type}")
+            raise ValueError(f"Unsupported prepared generative dataset: {gen_dataset_type}")
         dm = f'''class LitDataModule(L.LightningDataModule):
     def __init__(self, data_dir="{_py_str(cache_dir)}", batch_size={bs}, num_workers={nw}):
         super().__init__()
@@ -1902,7 +1902,7 @@ def _gen_generative_script(
         return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers)
 '''
         prefetch_script = f'''#!/usr/bin/env python3
-"""Pre-download built-in dataset for VAE training."""
+"""Pre-download prepared dataset for VAE training."""
 
 DATASET = "{_py_str(gen_dataset_type)}"
 DATA_DIR = "{_py_str(cache_dir)}"
