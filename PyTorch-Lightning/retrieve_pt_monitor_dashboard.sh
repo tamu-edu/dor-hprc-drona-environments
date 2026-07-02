@@ -60,8 +60,42 @@ emit_slurm_summary() {
                 *)       ROW_CLASS="" ;;
             esac
         else
-            ROW=$(sacct -j "$JID" --noheader --format=JobID,JobName,State,Elapsed,NodeList \
-                  --parsable2 2>/dev/null | head -1)
+            RAW_SACCT=$(sacct -j "$JID" --noheader --format=JobID,JobName,State,Elapsed,NodeList,Submit --parsable2 2>/dev/null)
+            ROW=$(python3 -c "
+import sys, os, datetime
+raw_sacct = sys.argv[1]
+location = sys.argv[2]
+target_jid = sys.argv[3]
+ref_path = os.path.join(location, 'slurm_jobids.txt')
+if not os.path.exists(ref_path):
+    ref_path = location
+ref_time = os.path.getmtime(ref_path) if os.path.exists(ref_path) else None
+best_row = ''
+min_diff = float('inf')
+for line in raw_sacct.strip().split('\n'):
+    if not line.strip():
+        continue
+    parts = line.split('|')
+    if len(parts) < 6:
+        continue
+    jid, name, state, elapsed, nodelist, submit_str = parts[:6]
+    if jid != target_jid:
+        continue
+    try:
+        dt = datetime.datetime.strptime(submit_str.strip(), '%Y-%m-%dT%H:%M:%S')
+        submit_time = dt.timestamp()
+    except Exception:
+        submit_time = None
+    if ref_time is not None and submit_time is not None:
+        diff = abs(ref_time - submit_time)
+        if diff < min_diff:
+            min_diff = diff
+            best_row = f'{jid}|{name}|{state}|{elapsed}|{nodelist}'
+    elif not best_row:
+        best_row = f'{jid}|{name}|{state}|{elapsed}|{nodelist}'
+if best_row:
+    print(best_row)
+" "$RAW_SACCT" "$LOCATION" "$JID")
             STATUS=$(echo "$ROW" | cut -d'|' -f3 | xargs)
             case "$STATUS" in
                 COMPLETED)   ROW_CLASS="table-success" ;;

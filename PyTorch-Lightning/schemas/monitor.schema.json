@@ -14,23 +14,6 @@
     }
   },
 
-  "pt_location_link_row": {
-    "type": "rowContainer",
-    "label": "",
-    "condition": "mode.monitor && !pt_workflow. && !pt_location.",
-    "elements": {
-      "pt_location_link": {
-        "type": "staticText",
-        "name": "pt_location_link_html",
-        "isDynamic": true,
-        "allowHtml": true,
-        "retrieverParams": {
-          "JOB_DIR": "$pt_location"
-        },
-        "retriever": "drona_info_jobdir_html.sh"
-      }
-    }
-  },
 
   "pt_monitor_dashboard_row": {
     "type": "rowContainer",
@@ -110,37 +93,28 @@
     }
   },
 
-  "tbConnectToggle": {
-    "type": "checkbox",
-    "label": "Connect to TensorBoard server",
-    "name": "tbConnectEnable",
-    "help": "Optional. Enable to enter host and port for an already-running TensorBoard instance."
-  },
-
-  "tb_connect_section": {
+  "tb_settings_section": {
     "type": "rowContainer",
-    "label": "TensorBoard — Connect to Server",
-    "condition": "tbConnectEnable.Yes",
+    "label": "TensorBoard — Settings",
+    "condition": "mode.monitor && !pt_workflow.",
     "elements": {
-      "tbHost": {
-        "type": "text",
-        "label": "TensorBoard host",
-        "name": "tbHost",
-        "help": "Hostname or IP of a running TensorBoard server (e.g. compute node or localhost with port forwarding).",
-        "value": "localhost"
-      },
       "tbPort": {
         "type": "number",
-        "label": "TensorBoard port",
+        "label": "Port",
         "name": "tbPort",
         "value": "6006"
+      },
+      "tbStartTrigger": {
+        "type": "text",
+        "name": "tbStartTrigger",
+        "value": ""
       }
     }
   },
-
+ 
   "tb_launch_section": {
     "type": "rowContainer",
-    "label": "TensorBoard — Launch from Run Logs",
+    "label": "TensorBoard — Setup Instructions",
     "condition": "mode.monitor && !pt_workflow.",
     "elements": {
       "tbLaunchStatus": {
@@ -149,8 +123,11 @@
         "label": "Launch instructions",
         "isDynamic": true,
         "allowHtml": true,
+        "refreshInterval": "15",
         "retrieverParams": {
-          "RESOLVED_LOGDIR": "$resolved_logdir"
+          "RESOLVED_LOGDIR": "$resolved_logdir",
+          "TB_PORT": "$tbPort",
+          "TB_START_TRIGGER": "$tbStartTrigger"
         },
         "retriever": "retrieve_tb_launch.sh"
       }

@@ -2438,3 +2438,36 @@ def generate_lightning_script(
         _write_staged_file(env_dir, job_location, "prefetch_data.py", prefetch_script)
 
     return ""
+
+
+def setup_tensorboard_in_job(mode, enableTensorBoard, location):
+    if mode == "monitor":
+        return ""
+    if not _checkbox_on(enableTensorBoard):
+        return ""
+
+    return """# Launch TensorBoard in the background on the compute node
+if [ -d "lightning_logs" ] || mkdir -p "lightning_logs"; then
+    echo "Starting TensorBoard background server..."
+    
+    # Find a free port starting at 6006
+    TB_PORT=6006
+    for port in {6006..6050}; do
+        if ! ss -tuln | grep -q ":$port "; then
+            TB_PORT=$port
+            break
+        fi
+    done
+    
+    echo "$TB_PORT" > tb_port.txt
+    NODE_NAME=$(hostname)
+    
+    # Isolate module loading and execution in a subshell to avoid compiler toolchain conflicts
+    (
+        module load GCC/13.2.0 tensorboard/2.18.0
+        nohup timeout 1h tensorboard --logdir="lightning_logs" --port=$TB_PORT --bind_all >/dev/null 2>&1 &
+    )
+    echo "TensorBoard auto-started on node $NODE_NAME port $TB_PORT"
+fi
+"""
+

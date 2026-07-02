@@ -12,4 +12,5 @@ module load WebProxy
 [setupEnv]
 
 cd [flocation]
+[tbLaunch]
 python3 train.py
