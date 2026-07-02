@@ -148,7 +148,8 @@ emit_logs() {
   fi
 }
 
-echo "<div id='pt-monitor-dashboard'>"
+LOCATION_ESC=$(echo "$LOCATION" | html_escape | sed 's/"/\&quot;/g')
+echo "<div id='pt-monitor-dashboard' data-pt-location=\"$LOCATION_ESC\">"
 
 echo "<div style='display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap'>"
 echo "  <span style='font-size:0.82em;color:#868e96'>Auto-refreshes every 15 seconds.</span>"
@@ -172,18 +173,139 @@ cat << 'SCRIPT'
 (function () {
   var COOLDOWN_MS = 5000;
 
-  function bindLogArrows(root) {
-    root.querySelectorAll('.pt-logs-root details').forEach(function (d) {
-      if (d.dataset.ptArrowBound) return;
-      d.dataset.ptArrowBound = '1';
-      d.addEventListener('toggle', function () {
-        var arrow = d.querySelector('.pt-log-arrow');
-        if (arrow) arrow.textContent = d.open ? '\u25BC' : '\u25B6';
-        if (d.open) {
-          var vp = d.querySelector('.pt-log-viewport');
-          if (vp) vp.scrollTop = vp.scrollHeight;
+  function updateDashboard(existing, newDash) {
+    // 1. Update the slurm section
+    var existingSlurm = existing.querySelector('.pt-slurm-section');
+    var newSlurm = newDash.querySelector('.pt-slurm-section');
+    if (existingSlurm && newSlurm) {
+      existingSlurm.innerHTML = newSlurm.innerHTML;
+    }
+
+    // 2. Update the logs section
+    var existingLogsRoot = existing.querySelector('.pt-logs-root');
+    var newLogsRoot = newDash.querySelector('.pt-logs-root');
+    if (existingLogsRoot && newLogsRoot) {
+      var newDetails = newLogsRoot.querySelectorAll('.pt-log-container');
+      var existingDetails = existingLogsRoot.querySelectorAll('.pt-log-container');
+
+      var existingMap = {};
+      existingDetails.forEach(function (d) {
+        var logfile = d.getAttribute('data-pt-logfile');
+        if (logfile) {
+          existingMap[logfile] = d;
         }
       });
+
+      var presentKeys = {};
+      newDetails.forEach(function (newD) {
+        var logfile = newD.getAttribute('data-pt-logfile');
+        if (!logfile) return;
+        presentKeys[logfile] = true;
+
+        var existingD = existingMap[logfile];
+        if (existingD) {
+          // Update header text
+          var existingHeader = existingD.querySelector('.pt-log-header');
+          var newHeader = newD.querySelector('.pt-log-header');
+          if (existingHeader && newHeader) {
+            if (existingHeader.innerHTML !== newHeader.innerHTML) {
+              existingHeader.innerHTML = newHeader.innerHTML;
+            }
+          }
+
+          // Update the sub-header
+          var existingSubHeader = existingD.querySelector('.pt-log-sub-header');
+          var newSubHeader = newD.querySelector('.pt-log-sub-header');
+          if (existingSubHeader && newSubHeader) {
+            if (existingSubHeader.innerHTML !== newSubHeader.innerHTML) {
+              existingSubHeader.innerHTML = newSubHeader.innerHTML;
+            }
+          }
+
+          // Update viewport content
+          var existingVp = existingD.querySelector('.pt-log-viewport');
+          var newVp = newD.querySelector('.pt-log-viewport');
+          if (existingVp && newVp) {
+            var existingPre = existingVp.querySelector('.pt-log-pre');
+            var newPre = newVp.querySelector('.pt-log-pre');
+            if (existingPre && newPre) {
+              if (existingPre.innerHTML !== newPre.innerHTML) {
+                var wasAtBottom = (existingVp.scrollHeight - existingVp.clientHeight - existingVp.scrollTop) < 15;
+                existingPre.innerHTML = newPre.innerHTML;
+                if (wasAtBottom) {
+                  existingVp.scrollTop = existingVp.scrollHeight;
+                }
+              }
+            }
+          }
+        } else {
+          // New file stream, append it!
+          var importedD = document.importNode(newD, true);
+          existingLogsRoot.appendChild(importedD);
+        }
+      });
+
+      // Remove removed file streams
+      existingDetails.forEach(function (d) {
+        var logfile = d.getAttribute('data-pt-logfile');
+        if (logfile && !presentKeys[logfile]) {
+          d.parentNode.removeChild(d);
+        }
+      });
+
+      // Auto-scroll newly added logs if any
+      scrollToBottom(existing);
+    }
+
+    // 3. Update cooldown hint
+    var existingHint = existing.querySelector('#pt-refresh-cooldown-hint');
+    var newHint = newDash.querySelector('#pt-refresh-cooldown-hint');
+    if (existingHint && newHint) {
+      existingHint.innerHTML = newHint.innerHTML;
+    }
+  }
+
+  // Monkeypatch Element.prototype.innerHTML setter once to intercept dashboard updates
+  if (!window.__pt_inner_html_patched) {
+    window.__pt_inner_html_patched = true;
+    var descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+    if (descriptor && descriptor.set) {
+      var originalSet = descriptor.set;
+      Object.defineProperty(Element.prototype, 'innerHTML', {
+        set: function (html) {
+          if (typeof html === 'string' && html.indexOf('pt-monitor-dashboard') !== -1) {
+            var existingDashboard = document.getElementById('pt-monitor-dashboard');
+            if (existingDashboard) {
+              try {
+                var parser = new DOMParser();
+                var newDoc = parser.parseFromString(html, 'text/html');
+                var newDashboard = newDoc.getElementById('pt-monitor-dashboard');
+                if (newDashboard) {
+                  var oldLoc = existingDashboard.getAttribute('data-pt-location');
+                  var newLoc = newDashboard.getAttribute('data-pt-location');
+                  if (oldLoc === newLoc) {
+                    updateDashboard(existingDashboard, newDashboard);
+                    return; // Skip replacing innerHTML of the container
+                  }
+                }
+              } catch (err) {
+                console.error('Error doing smart dashboard update:', err);
+              }
+            }
+          }
+          originalSet.call(this, html);
+        },
+        configurable: true,
+        enumerable: true
+      });
+    }
+  }
+
+  function scrollToBottom(root) {
+    root.querySelectorAll('.pt-logs-root .pt-log-viewport').forEach(function (vp) {
+      if (vp.dataset.ptScrolledOnce) return;
+      vp.dataset.ptScrolledOnce = '1';
+      vp.scrollTop = vp.scrollHeight;
     });
   }
 
@@ -259,18 +381,9 @@ cat << 'SCRIPT'
     }, true);
   }
 
-  function scrollToBottom(root) {
-    root.querySelectorAll('.pt-logs-root details[open] .pt-log-viewport').forEach(function (vp) {
-      if (vp.dataset.ptScrolledOnce) return;
-      vp.dataset.ptScrolledOnce = '1';
-      vp.scrollTop = vp.scrollHeight;
-    });
-  }
-
   function init() {
     var root = document.getElementById('pt-monitor-dashboard');
     if (!root) return;
-    bindLogArrows(root);
     bindRefreshCooldown();
     scrollToBottom(root);
   }

@@ -104,9 +104,22 @@
         "name": "tbPort",
         "value": "6006"
       },
+      "customLogdir": {
+        "type": "picker",
+        "label": "Custom Log Directory",
+        "name": "customLogdir",
+        "showFiles": "False",
+        "files": "False",
+        "help": "Optional: Choose a custom log folder if auto-detection fails or logs are written elsewhere."
+      },
       "tbStartTrigger": {
         "type": "text",
         "name": "tbStartTrigger",
+        "value": ""
+      },
+      "tbStopTrigger": {
+        "type": "text",
+        "name": "tbStopTrigger",
         "value": ""
       }
     }
@@ -120,14 +133,16 @@
       "tbLaunchStatus": {
         "type": "staticText",
         "name": "tb_launch_html",
-        "label": "Launch instructions",
+        "label": "",
         "isDynamic": true,
         "allowHtml": true,
         "refreshInterval": "15",
         "retrieverParams": {
           "RESOLVED_LOGDIR": "$resolved_logdir",
+          "CUSTOM_LOGDIR": "$customLogdir",
           "TB_PORT": "$tbPort",
-          "TB_START_TRIGGER": "$tbStartTrigger"
+          "TB_START_TRIGGER": "$tbStartTrigger",
+          "TB_STOP_TRIGGER": "$tbStopTrigger"
         },
         "retriever": "retrieve_tb_launch.sh"
       }

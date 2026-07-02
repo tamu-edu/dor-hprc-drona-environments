@@ -424,12 +424,6 @@
         "name": "logEveryNSteps",
         "value": "50"
       },
-      "enableTensorBoard": {
-        "type": "checkbox",
-        "label": "Enable TensorBoard logger",
-        "name": "enableTensorBoard",
-        "value": "Yes"
-      },
       "checkpointEnable": {
         "type": "checkbox",
         "label": "Enable model checkpointing",
