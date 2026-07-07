@@ -2331,7 +2331,7 @@ def generate_lightning_script(
     dev = "1"
     prec = _resolve_val(precision, "32")
 
-    tb_on   = _checkbox_on(enableTensorBoard)
+    tb_on   = True
     ckpt_on = _checkbox_on(checkpointEnable)
 
     logger_lines = []
@@ -2437,37 +2437,63 @@ def generate_lightning_script(
     if prefetch_script:
         _write_staged_file(env_dir, job_location, "prefetch_data.py", prefetch_script)
 
+    port_finder = env_dir / "find_free_tb_port.sh"
+    if port_finder.is_file():
+        _write_staged_file(env_dir, job_location, "find_free_tb_port.sh", port_finder.read_text())
+
     return ""
 
 
 def setup_tensorboard_in_job(mode, enableTensorBoard, location):
     if mode == "monitor":
         return ""
-    if not _checkbox_on(enableTensorBoard):
-        return ""
 
-    return """# Launch TensorBoard in the background on the compute node
-if [ -d "lightning_logs" ] || mkdir -p "lightning_logs"; then
-    echo "Starting TensorBoard background server..."
+    # Parse logDir from train.py if possible
+    log_dir = "lightning_logs"
+    if location:
+        train_py_path = os.path.join(location, "train.py")
+        if os.path.isfile(train_py_path):
+            try:
+                import re
+                with open(train_py_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                match = re.search(r'LOG_DIR\s*=\s*["\']([^"\']+)["\']', content)
+                if match:
+                    val = match.group(1)
+                    if val.startswith("./"):
+                        val = val[2:]
+                    log_dir = val
+            except Exception:
+                pass
+
+    return f"""# Launch TensorBoard in the background on the compute node using srun
+if [ -d "{log_dir}" ] || mkdir -p "{log_dir}"; then
+    echo "Starting TensorBoard background server with srun..." >&2
     
-    # Find a free port starting at 6006
-    TB_PORT=6006
-    for port in {6006..6050}; do
-        if ! ss -tuln | grep -q ":$port "; then
-            TB_PORT=$port
-            break
-        fi
-    done
-    
+    TB_PORT=$(bash find_free_tb_port.sh)
     echo "$TB_PORT" > tb_port.txt
     NODE_NAME=$(hostname)
     
     # Isolate module loading and execution in a subshell to avoid compiler toolchain conflicts
+    # Use srun to launch tensorboard concurrently within the main job's allocation
     (
         module load GCC/13.2.0 tensorboard/2.18.0
-        nohup timeout 1h tensorboard --logdir="lightning_logs" --port=$TB_PORT --bind_all >/dev/null 2>&1 &
-    )
-    echo "TensorBoard auto-started on node $NODE_NAME port $TB_PORT"
+        srun --ntasks=1 --nodes=1 --cpus-per-task=1 --overlap tensorboard --logdir="{log_dir}" --port=$TB_PORT --bind_all >&2
+    ) &
+    TB_PID=$!
+    
+    # Register exit trap to ensure TensorBoard is killed once the job finishes
+    cleanup() {{
+        echo "Cleaning up TensorBoard server..." >&2
+        if [ -n "$TB_PID" ]; then
+            kill $TB_PID 2>/dev/null
+            pkill -P $TB_PID 2>/dev/null
+        fi
+        pkill -u $USER -f "tensorboard --logdir=.*--port=$TB_PORT" 2>/dev/null
+    }}
+    trap cleanup EXIT
+    
+    echo "TensorBoard auto-started with srun on node $NODE_NAME port $TB_PORT" >&2
 fi
 """
 

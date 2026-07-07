@@ -140,6 +140,322 @@ if best_row:
     echo "<tbody>${rows}</tbody></table>"
 }
 
+emit_gpu_summary() {
+    if [ -z "$LOCATION" ] || [ ! -d "$LOCATION" ]; then
+        return 0
+    fi
+
+    local JOBIDS_FILE="${LOCATION}/slurm_jobids.txt"
+    local -a JOBIDS=()
+
+    if [ -f "$JOBIDS_FILE" ]; then
+        mapfile -t JOBIDS < <(grep -v '^\s*$' "$JOBIDS_FILE")
+    fi
+
+    if [ ${#JOBIDS[@]} -eq 0 ]; then
+        shopt -s nullglob
+        local f base
+        for f in "$LOCATION"/out.*; do
+            base="$(basename "$f")"
+            if [[ "$base" =~ ^out\.([0-9]+)$ ]]; then
+                JOBIDS+=("${BASH_REMATCH[1]}")
+            fi
+        done
+        shopt -u nullglob
+    fi
+
+    if [ ${#JOBIDS[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    local has_running_gpu=false
+    local gpu_html=""
+
+    for JID in "${JOBIDS[@]}"; do
+        JID="${JID//$'\r'/}"
+        JID="$(echo "$JID" | xargs)"
+        [ -z "$JID" ] && continue
+
+        # Get status and node name from squeue
+        local ROW
+        ROW=$(squeue -j "$JID" -h -o "%T|%N" 2>/dev/null | head -1)
+        [ -z "$ROW" ] && continue
+
+        local STATUS NODE_LIST
+        STATUS=$(echo "$ROW" | cut -d'|' -f1)
+        NODE_LIST=$(echo "$ROW" | cut -d'|' -f2)
+
+        if [ "$STATUS" = "RUNNING" ] && [ -n "$NODE_LIST" ] && [ "$NODE_LIST" != "(null)" ]; then
+            # Expand node list using scontrol if possible
+            local NODE
+            NODE=$(scontrol show hostnames "$NODE_LIST" 2>/dev/null | head -1)
+            [ -z "$NODE" ] && NODE="$NODE_LIST"
+
+            # Query GPU stats on the compute node using the existing job allocation
+            local RAW_GPU
+            RAW_GPU=$(timeout 5 srun --jobid="${JID}" --nodelist="${NODE}" --nodes=1 --ntasks=1 --overlap -t 0:03 python3 - <<'EOF' 2>/dev/null
+import subprocess
+import shutil
+import re
+import json
+
+def get_nvidia_gpus():
+    if not shutil.which("nvidia-smi"):
+        return []
+    try:
+        out = subprocess.check_output([
+            "nvidia-smi",
+            "--query-gpu=index,name,utilization.gpu,utilization.memory,memory.used,memory.total",
+            "--format=csv,noheader,nounits"
+        ]).decode("utf-8", errors="ignore")
+        gpus = []
+        for line in out.strip().split('\n'):
+            if line.strip():
+                parts = [p.strip() for p in line.split(',')]
+                if len(parts) == 6:
+                    gpus.append({
+                        "type": "NVIDIA",
+                        "index": parts[0],
+                        "name": parts[1],
+                        "gpu_util": parts[2],
+                        "mem_util": parts[3],
+                        "mem_used": parts[4],
+                        "mem_total": parts[5]
+                    })
+        return gpus
+    except Exception as e:
+        return []
+
+def get_intel_gpus():
+    if shutil.which("xpumcli"):
+        try:
+            try:
+                out = subprocess.check_output(["xpumcli", "stats", "--json"]).decode("utf-8", errors="ignore")
+                data = json.loads(out)
+                gpus = []
+                if isinstance(data, list):
+                    for dev in data:
+                        dev_id = dev.get("device_id", 0)
+                        dev_name = dev.get("device_name", "Intel PVC")
+                        telemetry = dev.get("telemetry", {})
+                        gpu_util = telemetry.get("gpu_utilization", {}).get("value", 0)
+                        mem_util = telemetry.get("memory_utilization", {}).get("value", 0)
+                        mem_used = telemetry.get("memory_used", {}).get("value", 0)
+                        mem_total = telemetry.get("memory_total", {}).get("value", 131072)
+                        gpus.append({
+                            "type": "Intel",
+                            "index": str(dev_id),
+                            "name": dev_name,
+                            "gpu_util": str(gpu_util),
+                            "mem_util": str(mem_util),
+                            "mem_used": str(int(mem_used)),
+                            "mem_total": str(int(mem_total))
+                        })
+                return gpus
+            except Exception:
+                out = subprocess.check_output(["xpumcli", "stats"]).decode("utf-8", errors="ignore")
+                gpus = []
+                dev_blocks = re.split(r'Device ID:', out)
+                for block in dev_blocks[1:]:
+                    lines = block.split('\n')
+                    dev_id = lines[0].strip()
+                    gpu_util = "0"
+                    mem_util = "0"
+                    mem_used = "0"
+                    mem_total = "131072"
+                    for line in lines:
+                        if "GPU Utilization" in line:
+                            m = re.search(r'(\d+)', line)
+                            if m: gpu_util = m.group(1)
+                        elif "Memory Utilization" in line:
+                            m = re.search(r'(\d+)', line)
+                            if m: mem_util = m.group(1)
+                        elif "Memory Used" in line:
+                            m = re.search(r'(\d+)', line)
+                            if m: mem_used = m.group(1)
+                        elif "Memory Total" in line:
+                            m = re.search(r'(\d+)', line)
+                            if m: mem_total = m.group(1)
+                    gpus.append({
+                        "type": "Intel",
+                        "index": dev_id,
+                        "name": "Intel Data Center GPU Max",
+                        "gpu_util": gpu_util,
+                        "mem_util": mem_util,
+                        "mem_used": mem_used,
+                        "mem_total": mem_total
+                    })
+                return gpus
+        except Exception as e:
+            return []
+    
+    if shutil.which("xpu-smi"):
+        try:
+            out = subprocess.check_output(["xpu-smi", "stats", "-j"]).decode("utf-8", errors="ignore")
+            data = json.loads(out)
+            gpus = []
+            devices = data.get("devices", [])
+            for dev in devices:
+                dev_id = dev.get("device_id", 0)
+                dev_name = dev.get("device_name", "Intel PVC")
+                gpu_util = dev.get("gpu_utilization", 0)
+                mem_util = dev.get("memory_utilization", 0)
+                mem_used = dev.get("memory_used", 0)
+                mem_total = dev.get("memory_total", 131072)
+                gpus.append({
+                    "type": "Intel",
+                    "index": str(dev_id),
+                    "name": dev_name,
+                    "gpu_util": str(gpu_util),
+                    "mem_util": str(mem_util),
+                    "mem_used": str(int(mem_used)),
+                    "mem_total": str(int(mem_total))
+                })
+            return gpus
+        except Exception as e:
+            return []
+    return []
+
+def get_amd_gpus():
+    if not shutil.which("rocm-smi"):
+        return []
+    try:
+        out = subprocess.check_output(["rocm-smi", "--showuse", "--showmemuse", "--json"]).decode("utf-8", errors="ignore")
+        data = json.loads(out)
+        gpus = []
+        for card, metrics in data.items():
+            if card.startswith("card"):
+                idx = card.replace("card", "")
+                gpu_util = metrics.get("GPU use (%)", "0")
+                mem_util = metrics.get("GPU memory use (%)", "0")
+                gpus.append({
+                    "type": "AMD",
+                    "index": idx,
+                    "name": "AMD Instinct GPU",
+                    "gpu_util": str(gpu_util),
+                    "mem_util": str(mem_util),
+                    "mem_used": "0",
+                    "mem_total": "0"
+                })
+        return gpus
+    except Exception as e:
+        return []
+
+def main():
+    gpus = get_nvidia_gpus()
+    if not gpus:
+        gpus = get_intel_gpus()
+    if not gpus:
+        gpus = get_amd_gpus()
+    
+    if not gpus:
+        print("NONE")
+        return
+        
+    for g in gpus:
+        if g["type"] == "ERROR":
+            print(f"ERROR|{g['msg']}")
+        else:
+            print(f"{g['type']}|{g['index']}|{g['name']}|{g['gpu_util']}|{g['mem_util']}|{g['mem_used']}|{g['mem_total']}")
+
+if __name__ == '__main__':
+    main()
+EOF
+)
+
+            if [ -n "$RAW_GPU" ] && [ "$RAW_GPU" != "NONE" ]; then
+                has_running_gpu=true
+                
+                while IFS='|' read -r type idx name gpu_util mem_util mem_used mem_total; do
+                    [ -z "$type" ] && continue
+                    
+                    if [ "$type" = "ERROR" ]; then
+                        gpu_html+="<div style='color:#dc3545;font-size:0.85em;padding:4px 2px'>Error fetching GPU stats: ${idx}</div>"
+                        continue
+                    fi
+                    
+                    # Sanitize utilization values to ensure valid progress bar widths
+                    if [ -z "$gpu_util" ] || ! [[ "$gpu_util" =~ ^[0-9]+$ ]]; then
+                        gpu_util=0
+                    fi
+                    if [ -z "$mem_util" ] || ! [[ "$mem_util" =~ ^[0-9]+$ ]]; then
+                        mem_util=0
+                    fi
+                    if [ -z "$mem_used" ] || ! [[ "$mem_used" =~ ^[0-9]+$ ]]; then
+                        mem_used=0
+                    fi
+                    if [ -z "$mem_total" ] || ! [[ "$mem_total" =~ ^[0-9]+$ ]]; then
+                        mem_total=0
+                    fi
+                    
+                    local mem_text=""
+                    if [ "$mem_total" -gt 0 ]; then
+                        local used_gb total_gb
+                        used_gb=$(python3 -c "print(f'{float($mem_used)/1024:.1f}')")
+                        total_gb=$(python3 -c "print(f'{float($mem_total)/1024:.1f}')")
+                        mem_text=" &nbsp;|&nbsp; Memory: ${used_gb} GB / ${total_gb} GB"
+                        # Recalculate capacity utilization percentage to match capacity instead of bandwidth
+                        mem_util=$(python3 -c "print(int(round((float($mem_used)/float($mem_total))*100)))")
+                    fi
+                    
+                    local gpu_color="#198754"
+                    if [ "$gpu_util" -ge 80 ]; then
+                        gpu_color="#dc3545"
+                    elif [ "$gpu_util" -ge 50 ]; then
+                        gpu_color="#ffc107"
+                    fi
+
+                    local mem_color="#0d6efd"
+                    if [ "$mem_util" -ge 80 ]; then
+                        mem_color="#dc3545"
+                    elif [ "$mem_util" -ge 50 ]; then
+                        mem_color="#ffc107"
+                    fi
+
+                    gpu_html+="<div class='card mb-3' style='border: 1px solid #dee2e6; border-radius: 8px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 15px;'>"
+                    gpu_html+="  <div class='card-header' style='background: #f8f9fa; padding: 10px 15px; font-weight: 600; font-size: 0.9em; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;'>"
+                    gpu_html+="    <span>${type} GPU #${idx}: <span style='font-weight: normal; color: #495057;'>${name}</span></span>"
+                    gpu_html+="    <span style='font-size: 0.85em; color: #6c757d; font-weight: normal;'>Node: ${NODE}</span>"
+                    gpu_html+="  </div>"
+                    gpu_html+="  <div class='card-body' style='padding: 15px; display: flex; flex-direction: column; gap: 12px;'>"
+                    
+                    gpu_html+="    <div>"
+                    gpu_html+="      <div style='display: flex; justify-content: space-between; font-size: 0.85em; font-weight: 500; margin-bottom: 4px;'>"
+                    gpu_html+="        <span>GPU Core Utilization</span>"
+                    gpu_html+="        <span style='color: ${gpu_color}; font-weight: 600;'>${gpu_util}%</span>"
+                    gpu_html+="      </div>"
+                    gpu_html+="      <div style='background: #e9ecef; border-radius: 4px; height: 10px; overflow: hidden;'>"
+                    gpu_html+="        <div style='background: ${gpu_color}; width: ${gpu_util}%; height: 100%; transition: width 0.3s;'></div>"
+                    gpu_html+="      </div>"
+                    gpu_html+="    </div>"
+                    
+                    if [ -n "$mem_util" ] && [ "$mem_util" -ne 0 ] || [ -n "$mem_text" ]; then
+                        gpu_html+="    <div>"
+                        gpu_html+="      <div style='display: flex; justify-content: space-between; font-size: 0.85em; font-weight: 500; margin-bottom: 4px;'>"
+                        gpu_html+="        <span>GPU Memory Usage${mem_text}</span>"
+                        gpu_html+="        <span style='color: ${mem_color}; font-weight: 600;'>${mem_util}%</span>"
+                        gpu_html+="      </div>"
+                        gpu_html+="      <div style='background: #e9ecef; border-radius: 4px; height: 10px; overflow: hidden;'>"
+                        gpu_html+="        <div style='background: ${mem_color}; width: ${mem_util}%; height: 100%; transition: width 0.3s;'></div>"
+                        gpu_html+="      </div>"
+                        gpu_html+="    </div>"
+                    fi
+                    
+                    gpu_html+="  </div>"
+                    gpu_html+="</div>"
+                done <<< "$RAW_GPU"
+            fi
+        fi
+    done
+
+    if $has_running_gpu; then
+        echo "<div class='pt-gpu-section' style='margin-top:14px'>"
+        echo "<div style='font-size:0.9em;font-weight:600;color:#495057;margin-bottom:8px'>GPU Utilization</div>"
+        echo "${gpu_html}"
+        echo "</div>"
+    fi
+}
+
 emit_logs() {
   if [ -f "$SCRIPT_DIR/retrieve_pt_logs.sh" ]; then
       bash "$SCRIPT_DIR/retrieve_pt_logs.sh"
@@ -161,6 +477,8 @@ echo "<div style='font-size:0.9em;font-weight:600;color:#495057;margin-bottom:8p
 emit_slurm_summary
 echo "</div>"
 
+emit_gpu_summary
+
 echo "<div class='pt-logs-section' style='margin-top:14px'>"
 echo "<div style='font-size:0.9em;font-weight:600;color:#495057;margin-bottom:8px'>Output/Error logs</div>"
 emit_logs
@@ -179,6 +497,36 @@ cat << 'SCRIPT'
     var newSlurm = newDash.querySelector('.pt-slurm-section');
     if (existingSlurm && newSlurm) {
       existingSlurm.innerHTML = newSlurm.innerHTML;
+    }
+
+    // 1.5. Update the gpu section
+    // Skip GPU update for 30s after any TensorBoard interaction so the bars
+    // don't reset to 0% while the TB-triggered refresh re-runs the srun query.
+    var tbGuardActive = window.__tb_interaction_ts &&
+      (Date.now() - window.__tb_interaction_ts < 30000);
+    var existingGpu = existing.querySelector('.pt-gpu-section');
+    var newGpu = newDash.querySelector('.pt-gpu-section');
+    if (!tbGuardActive) {
+      if (existingGpu && newGpu) {
+        existingGpu.innerHTML = newGpu.innerHTML;
+      } else if (newGpu) {
+        var logsSec = existing.querySelector('.pt-logs-section');
+        if (logsSec) {
+          var div = document.createElement('div');
+          div.className = 'pt-gpu-section';
+          div.style.marginTop = '14px';
+          div.innerHTML = newGpu.innerHTML;
+          logsSec.parentNode.insertBefore(div, logsSec);
+        } else {
+          var div = document.createElement('div');
+          div.className = 'pt-gpu-section';
+          div.style.marginTop = '14px';
+          div.innerHTML = newGpu.innerHTML;
+          existing.appendChild(div);
+        }
+      } else if (existingGpu) {
+        existingGpu.parentNode.removeChild(existingGpu);
+      }
     }
 
     // 2. Update the logs section
@@ -212,32 +560,6 @@ cat << 'SCRIPT'
               existingHeader.innerHTML = newHeader.innerHTML;
             }
           }
-
-          // Update the sub-header
-          var existingSubHeader = existingD.querySelector('.pt-log-sub-header');
-          var newSubHeader = newD.querySelector('.pt-log-sub-header');
-          if (existingSubHeader && newSubHeader) {
-            if (existingSubHeader.innerHTML !== newSubHeader.innerHTML) {
-              existingSubHeader.innerHTML = newSubHeader.innerHTML;
-            }
-          }
-
-          // Update viewport content
-          var existingVp = existingD.querySelector('.pt-log-viewport');
-          var newVp = newD.querySelector('.pt-log-viewport');
-          if (existingVp && newVp) {
-            var existingPre = existingVp.querySelector('.pt-log-pre');
-            var newPre = newVp.querySelector('.pt-log-pre');
-            if (existingPre && newPre) {
-              if (existingPre.innerHTML !== newPre.innerHTML) {
-                var wasAtBottom = (existingVp.scrollHeight - existingVp.clientHeight - existingVp.scrollTop) < 15;
-                existingPre.innerHTML = newPre.innerHTML;
-                if (wasAtBottom) {
-                  existingVp.scrollTop = existingVp.scrollHeight;
-                }
-              }
-            }
-          }
         } else {
           // New file stream, append it!
           var importedD = document.importNode(newD, true);
@@ -252,9 +574,6 @@ cat << 'SCRIPT'
           d.parentNode.removeChild(d);
         }
       });
-
-      // Auto-scroll newly added logs if any
-      scrollToBottom(existing);
     }
 
     // 3. Update cooldown hint
@@ -301,14 +620,6 @@ cat << 'SCRIPT'
     }
   }
 
-  function scrollToBottom(root) {
-    root.querySelectorAll('.pt-logs-root .pt-log-viewport').forEach(function (vp) {
-      if (vp.dataset.ptScrolledOnce) return;
-      vp.dataset.ptScrolledOnce = '1';
-      vp.scrollTop = vp.scrollHeight;
-    });
-  }
-
   function findRefreshButton(root) {
     var el = root;
     while (el && el !== document.body) {
@@ -328,6 +639,24 @@ cat << 'SCRIPT'
       el = parent;
     }
     return null;
+  }
+
+  // Stamp window.__tb_interaction_ts whenever a TensorBoard trigger input
+  // changes value, so updateDashboard() can skip the GPU section update
+  // for the next 30 seconds and avoid a false 0% flash.
+  function bindTbInteractionGuard() {
+    if (window.__ptTbGuardBound) return;
+    window.__ptTbGuardBound = true;
+
+    function markInteraction(e) {
+      if (e.target && (e.target.name === 'tbStartTrigger' || e.target.name === 'tbStopTrigger')) {
+        if (e.target.value !== '') {
+          window.__tb_interaction_ts = Date.now();
+        }
+      }
+    }
+    document.addEventListener('input', markInteraction, true);
+    document.addEventListener('change', markInteraction, true);
   }
 
   function bindRefreshCooldown() {
@@ -385,7 +714,7 @@ cat << 'SCRIPT'
     var root = document.getElementById('pt-monitor-dashboard');
     if (!root) return;
     bindRefreshCooldown();
-    scrollToBottom(root);
+    bindTbInteractionGuard();
   }
 
   if (document.readyState === 'loading') {
@@ -395,6 +724,6 @@ cat << 'SCRIPT'
   }
   setTimeout(init, 200);
   setTimeout(init, 800);
-})();
+ })();
 </script>
 SCRIPT

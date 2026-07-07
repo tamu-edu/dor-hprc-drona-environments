@@ -1,20 +1,4 @@
 {
-  "monitor_help_banner": {
-    "type": "rowContainer",
-    "label": "",
-    "condition": "mode.monitor",
-    "elements": {
-      "monitorHelp": {
-        "type": "staticText",
-        "label": "",
-        "name": "monitor_help",
-        "allowHtml": true,
-        "value": "<div style='background:#e7f5ff;padding:10px 12px;border-radius:6px;font-size:0.95em;border-left:4px solid #339af0'><strong>Monitor mode</strong> — Select a training run below. The <strong>dashboard</strong> auto-refreshes every 15 seconds; use the single <strong>Refresh</strong> button (5 second cooldown) to update Slurm status and logs immediately. Click <strong>Preview</strong> for a snapshot tab. Submit does not launch a new training job.</div>"
-      }
-    }
-  },
-
-
   "pt_monitor_dashboard_row": {
     "type": "rowContainer",
     "label": "Dashboard",
@@ -93,38 +77,31 @@
     }
   },
 
-  "tb_settings_section": {
-    "type": "rowContainer",
-    "label": "TensorBoard — Settings",
+  "hidden_tb_start_trigger": {
+    "type": "text",
+    "name": "tbStartTrigger",
     "condition": "mode.monitor && !pt_workflow.",
-    "elements": {
-      "tbPort": {
-        "type": "number",
-        "label": "Port",
-        "name": "tbPort",
-        "value": "6006"
-      },
-      "customLogdir": {
-        "type": "picker",
-        "label": "Custom Log Directory",
-        "name": "customLogdir",
-        "showFiles": "False",
-        "files": "False",
-        "help": "Optional: Choose a custom log folder if auto-detection fails or logs are written elsewhere."
-      },
-      "tbStartTrigger": {
-        "type": "text",
-        "name": "tbStartTrigger",
-        "value": ""
-      },
-      "tbStopTrigger": {
-        "type": "text",
-        "name": "tbStopTrigger",
-        "value": ""
-      }
-    }
+    "value": ""
   },
- 
+
+  "hidden_tb_stop_trigger": {
+    "type": "text",
+    "name": "tbStopTrigger",
+    "condition": "mode.monitor && !pt_workflow.",
+    "value": ""
+  },
+
+  "hidden_tb_logdir": {
+    "type": "picker",
+    "label": "TensorBoard Log Directory",
+    "name": "tbLogDir",
+    "localLabel": "Location",
+    "showFiles": "False",
+    "files": "False",
+    "condition": "mode.monitor && !pt_workflow.",
+    "help": "Select a custom log directory for TensorBoard."
+  },
+
   "tb_launch_section": {
     "type": "rowContainer",
     "label": "TensorBoard — Setup Instructions",
@@ -139,8 +116,7 @@
         "refreshInterval": "15",
         "retrieverParams": {
           "RESOLVED_LOGDIR": "$resolved_logdir",
-          "CUSTOM_LOGDIR": "$customLogdir",
-          "TB_PORT": "$tbPort",
+          "CUSTOM_LOGDIR": "$tbLogDir",
           "TB_START_TRIGGER": "$tbStartTrigger",
           "TB_STOP_TRIGGER": "$tbStopTrigger"
         },
