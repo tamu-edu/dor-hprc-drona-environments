@@ -1,0 +1,127 @@
+{
+  "pt_monitor_dashboard_row": {
+    "type": "rowContainer",
+    "label": "Dashboard",
+    "condition": "mode.monitor && !pt_workflow. && !pt_location.",
+    "elements": {
+      "pt_monitor_dashboard": {
+        "type": "staticText",
+        "name": "pt_monitor_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "15",
+        "showRefreshButton": true,
+        "retrieverParams": {
+          "LOCATION": "$pt_location"
+        },
+        "retriever": "retrieve_pt_monitor_dashboard.sh"
+      }
+    }
+  },
+
+  "hidden_jobs_check": {
+    "type": "hidden",
+    "label": "JOB_IDS",
+    "name": "jobs",
+    "refreshInterval": "15",
+    "isDynamic": true,
+    "condition": "mode.monitor && !pt_workflow.",
+    "retrieverParams": {
+      "WORKFLOW_ID": "$pt_workflow"
+    },
+    "retriever": "drona_info_jobs.sh"
+  },
+
+  "hidden_status_check": {
+    "type": "hidden",
+    "name": "status",
+    "label": "Status",
+    "isDynamic": true,
+    "condition": "mode.monitor && !jobs.",
+    "refreshInterval": "15",
+    "retrieverParams": {
+      "JOBID": "$jobs"
+    },
+    "retriever": "drona_info_slurmstatus.sh"
+  },
+
+  "hidden_logdir": {
+    "type": "hidden",
+    "name": "resolved_logdir",
+    "isDynamic": true,
+    "condition": "mode.monitor && !pt_workflow.",
+    "retrieverParams": {
+      "WORKFLOW_ID": "$pt_workflow",
+      "JOB_DIR": "$pt_location"
+    },
+    "retriever": "retrieve_pt_logdir.sh"
+  },
+
+  "job_summary_section": {
+    "type": "rowContainer",
+    "condition": "mode.monitor && !pt_workflow. && !status. && status.DONE && !jobs.",
+    "label": "Job Summary",
+    "elements": {
+      "seff_summary": {
+        "type": "staticText",
+        "name": "seffsummary",
+        "label": "Job Summary",
+        "isDynamic": true,
+        "retrieverParams": {
+          "JOBIDS": "$jobs"
+        },
+        "retriever": "drona_slurm_seff.sh",
+        "showRefreshButton": false,
+        "allowHtml": true
+      }
+    }
+  },
+
+  "hidden_tb_start_trigger": {
+    "type": "text",
+    "name": "tbStartTrigger",
+    "condition": "mode.monitor && !pt_workflow.",
+    "value": ""
+  },
+
+  "hidden_tb_stop_trigger": {
+    "type": "text",
+    "name": "tbStopTrigger",
+    "condition": "mode.monitor && !pt_workflow.",
+    "value": ""
+  },
+
+  "hidden_tb_logdir": {
+    "type": "picker",
+    "label": "TensorBoard Log Directory",
+    "name": "tbLogDir",
+    "localLabel": "Location",
+    "showFiles": "False",
+    "files": "False",
+    "condition": "mode.monitor && !pt_workflow.",
+    "help": "Select a custom log directory for TensorBoard."
+  },
+
+  "tb_launch_section": {
+    "type": "rowContainer",
+    "label": "TensorBoard — Setup Instructions",
+    "condition": "mode.monitor && !pt_workflow.",
+    "elements": {
+      "tbLaunchStatus": {
+        "type": "staticText",
+        "name": "tb_launch_html",
+        "label": "",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "15",
+        "retrieverParams": {
+          "RESOLVED_LOGDIR": "$resolved_logdir",
+          "CUSTOM_LOGDIR": "$tbLogDir",
+          "TB_START_TRIGGER": "$tbStartTrigger",
+          "TB_STOP_TRIGGER": "$tbStopTrigger"
+        },
+        "retriever": "retrieve_tb_launch.sh"
+      }
+    }
+  }
+}

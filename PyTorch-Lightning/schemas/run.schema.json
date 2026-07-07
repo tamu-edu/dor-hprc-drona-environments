@@ -1,0 +1,506 @@
+{
+  "runDestinationFinal": {
+    "type": "jobNameLocation",
+    "label": "Job Name and Location",
+    "help": "Optional. Leave blank to use defaults. If empty, the engine will assign a job ID and staging path automatically. Spaces in the job name are converted to underscores.",
+    "customJobName": "",
+    "pickerLabel": "Location",
+    "showName": true,
+    "showLocation": true,
+    "disableJobNameChange": false,
+    "disableJobLocationChange": false
+  },
+
+  "ContainerModelCategory": {
+    "type": "rowContainer",
+    "label": "Model Type",
+    "elements": {
+      "modelCategory": {
+        "type": "select",
+        "name": "modelCategory",
+        "label": "Model category",
+        "help": "Select the type of model you want to train. Each category loads the correct cluster modules and generates a tailored train.py template.",
+        "options": [
+          { "label": "Computer Vision", "value": "computer_vision" },
+          { "label": "Sequential / Time-Series", "value": "sequential" },
+          { "label": "Graph Neural Networks (GNN)", "value": "gnn" },
+          { "label": "Generative Models (VAE)", "value": "generative" },
+          { "label": "Custom (Bare-bones)", "value": "custom" }
+        ],
+        "value": "custom"
+      }
+    }
+  },
+
+  "ContainerCVDataset": {
+    "type": "rowContainer",
+    "label": "Image Dataset",
+    "condition": "modelCategory.computer_vision",
+    "elements": {
+      "datasetType": {
+        "type": "radioGroup",
+        "name": "datasetType",
+        "label": "Dataset source",
+        "options": [
+          { "label": "Prepared", "value": "builtin" },
+          { "label": "Import", "value": "custom" }
+        ],
+        "value": "builtin"
+      },
+      "builtinDatasetRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "datasetType.builtin",
+        "elements": {
+          "builtinDataset": {
+            "type": "select",
+            "label": "Prepared dataset",
+            "name": "builtinDataset",
+            "value": "MNIST",
+            "help": "Datasets are downloaded automatically on the submit node when you click Submit (compute nodes have no internet).",
+            "options": [
+              { "value": "MNIST", "label": "MNIST" },
+              { "value": "FashionMNIST", "label": "Fashion-MNIST" },
+              { "value": "CIFAR10", "label": "CIFAR-10" },
+              { "value": "CIFAR100", "label": "CIFAR-100" },
+              { "value": "ImageNet", "label": "ImageNet" }
+            ]
+          }
+        }
+      },
+      "customDataPath": {
+        "type": "picker",
+        "label": "Custom data directory",
+        "name": "customDataPath",
+        "remoteLabel": "local",
+        "localLabel": "cluster",
+        "showFiles": "False",
+        "help": "Path to dataset root with train/ and val/ subdirectories. Each class is a subfolder containing .pt tensor files ([C,H,W] or dict with x/y keys).",
+        "condition": "datasetType.custom",
+        "files": "False"
+      }
+    }
+  },
+
+  "ContainerSeqDataset": {
+    "type": "rowContainer",
+    "label": "Time-Series Dataset",
+    "condition": "modelCategory.sequential",
+    "elements": {
+      "seqDatasetType": {
+        "type": "radioGroup",
+        "name": "seqDatasetType",
+        "label": "Dataset source",
+        "options": [
+          { "label": "Prepared", "value": "builtin" },
+          { "label": "Import", "value": "custom" }
+        ],
+        "value": "builtin"
+      },
+      "builtinSeqDatasetRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "seqDatasetType.builtin",
+        "elements": {
+          "seqBuiltinDataset": {
+            "type": "select",
+            "label": "Prepared dataset",
+            "name": "seqBuiltinDataset",
+            "value": "mackey_glass",
+            "options": [
+              { "value": "mackey_glass", "label": "Mackey-Glass" },
+              { "value": "sunspots", "label": "Monthly Sunspots (1749-2018)" }
+            ],
+            "help": "Real/standard sequential datasets for demonstration."
+          }
+        }
+      },
+      "customSeqDatasetRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "seqDatasetType.custom",
+        "elements": {
+          "tsDataPath": {
+            "type": "picker",
+            "label": "CSV dataset file",
+            "name": "tsDataPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "help": "Path to a CSV file where each row is a time step."
+          },
+          "targetColumn": {
+            "type": "text",
+            "label": "Target column",
+            "name": "targetColumn",
+            "value": "target"
+          }
+        }
+      }
+    }
+  },
+
+  "ContainerSeqSettings": {
+    "type": "rowContainer",
+    "label": "LSTM Settings",
+    "condition": "modelCategory.sequential",
+    "elements": {
+      "seqTaskType": {
+        "type": "radioGroup",
+        "name": "seqTaskType",
+        "label": "Task type",
+        "options": [
+          { "label": "Regression", "value": "regression" },
+          { "label": "Classification", "value": "classification" }
+        ],
+        "value": "regression"
+      },
+      "seqLen": {
+        "type": "number",
+        "label": "Lookback window",
+        "name": "seqLen",
+        "value": "50"
+      },
+      "predLen": {
+        "type": "number",
+        "label": "Prediction horizon",
+        "name": "predLen",
+        "value": "1"
+      },
+      "hiddenSize": {
+        "type": "number",
+        "label": "LSTM hidden size",
+        "name": "hiddenSize",
+        "value": "128"
+      },
+      "numLstmLayers": {
+        "type": "number",
+        "label": "LSTM layers",
+        "name": "numLstmLayers",
+        "value": "2"
+      }
+    }
+  },
+
+  "ContainerGNNDataset": {
+    "type": "rowContainer",
+    "label": "Graph Dataset",
+    "condition": "modelCategory.gnn",
+    "elements": {
+      "graphDatasetType": {
+        "type": "radioGroup",
+        "name": "graphDatasetType",
+        "label": "Dataset source",
+        "options": [
+          { "label": "Prepared", "value": "builtin" },
+          { "label": "Import", "value": "custom" }
+        ],
+        "value": "builtin"
+      },
+      "builtinGNNDatasetRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "graphDatasetType.builtin",
+        "elements": {
+          "graphBuiltinDataset": {
+            "type": "select",
+            "label": "Prepared dataset",
+            "name": "graphBuiltinDataset",
+            "value": "cora",
+            "options": [
+              { "value": "cora", "label": "Cora Citation Network" },
+              { "value": "citeseer", "label": "CiteSeer Network" },
+              { "value": "pubmed", "label": "PubMed Diabetes Network" },
+              { "value": "pattern", "label": "PATTERN (GNNBenchmarkDataset)" },
+              { "value": "cluster", "label": "CLUSTER (GNNBenchmarkDataset)" },
+              { "value": "ogbn-arxiv", "label": "ogbn-arxiv (OGB)" }
+            ],
+            "help": "Planetoid, GNNBenchmarkDataset, or OGB graph datasets, downloaded automatically."
+          }
+        }
+      },
+      "customGNNDatasetRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "graphDatasetType.custom",
+        "elements": {
+          "graphDataPath": {
+            "type": "picker",
+            "label": "Custom graph directory",
+            "name": "graphDataPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "False",
+            "files": "False",
+            "help": "Directory containing a data.pt file (a PyG Data object)."
+          }
+        }
+      }
+    }
+  },
+
+  "ContainerGNNSettings": {
+    "type": "rowContainer",
+    "label": "GCN Settings",
+    "condition": "modelCategory.gnn",
+    "elements": {
+      "gnnHiddenDim": {
+        "type": "number",
+        "label": "Hidden channels",
+        "name": "gnnHiddenDim",
+        "value": "64"
+      },
+      "gnnNumLayers": {
+        "type": "number",
+        "label": "GCN layers",
+        "name": "gnnNumLayers",
+        "value": "2"
+      }
+    }
+  },
+
+  "ContainerGenDataset": {
+    "type": "rowContainer",
+    "label": "Generative Dataset",
+    "condition": "modelCategory.generative",
+    "elements": {
+      "genDatasetType": {
+        "type": "radioGroup",
+        "name": "genDatasetType",
+        "label": "Dataset source",
+        "options": [
+          { "label": "Prepared", "value": "builtin" },
+          { "label": "Import", "value": "custom" }
+        ],
+        "value": "builtin"
+      },
+      "builtinGenDatasetRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "genDatasetType.builtin",
+        "elements": {
+          "genBuiltinDataset": {
+            "type": "select",
+            "label": "Prepared dataset",
+            "name": "genBuiltinDataset",
+            "value": "MNIST",
+            "options": [
+              { "value": "MNIST", "label": "MNIST" },
+              { "value": "FashionMNIST", "label": "Fashion-MNIST" }
+            ],
+            "help": "Image datasets for generative learning."
+          }
+        }
+      },
+      "customGenDatasetRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "genDatasetType.custom",
+        "elements": {
+          "genCustomPath": {
+            "type": "picker",
+            "label": "Custom data directory",
+            "name": "genCustomPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "False",
+            "files": "False",
+            "help": "Root directory with train/ and val/ subdirectories."
+          }
+        }
+      }
+    }
+  },
+
+  "ContainerGenSettings": {
+    "type": "rowContainer",
+    "label": "VAE Settings",
+    "condition": "modelCategory.generative",
+    "elements": {
+      "latentDim": {
+        "type": "number",
+        "label": "Latent dimension (z)",
+        "name": "latentDim",
+        "value": "128"
+      }
+    }
+  },
+
+  "ContainerCustomDataset": {
+    "type": "rowContainer",
+    "label": "Custom Dataset",
+    "condition": "modelCategory.custom",
+    "elements": {
+      "customDatasetPath": {
+        "type": "picker",
+        "label": "Import dataset",
+        "name": "customDatasetPath",
+        "remoteLabel": "local",
+        "localLabel": "cluster",
+        "showFiles": "True",
+        "files": "True",
+        "help": "Select a file or directory containing your custom training dataset. This path will be loaded inside the generated train.py script."
+      }
+    }
+  },
+
+  "ContainerHyperparams": {
+    "type": "rowContainer",
+    "label": "Training",
+    "elements": {
+      "epochs": {
+        "type": "number",
+        "label": "Epochs",
+        "name": "epochs",
+        "value": "10"
+      },
+      "batchSize": {
+        "type": "number",
+        "label": "Batch size",
+        "name": "batchSize",
+        "value": "32",
+        "condition": "!modelCategory.gnn"
+      },
+      "precision": {
+        "type": "select",
+        "label": "Precision",
+        "name": "precision",
+        "value": "32",
+        "options": [
+          { "label": "32-bit (FP32)", "value": "32" },
+          { "label": "16-bit (FP16)", "value": "16" }
+        ],
+        "help": "Training precision. 16-bit precision requires GPU/Tensor Core support.",
+        "condition": "modelCategory.gnn"
+      },
+      "learningRate": {
+        "type": "text",
+        "label": "Learning rate",
+        "name": "learningRate",
+        "value": "1e-3",
+        "placeholder": "e.g. 0.001 or 1e-3",
+        "help": "Decimal or scientific notation only (e.g. 0.001, 1e-3). Invalid values are rejected when the job script is generated."
+      },
+      "numWorkers": {
+        "type": "number",
+        "label": "DataLoader workers",
+        "name": "numWorkers",
+        "value": "0",
+        "help": "Number of DataLoader subprocesses. Use 0 on single-CPU allocations to avoid worker overhead."
+      },
+      "seed": {
+        "type": "number",
+        "label": "Random seed",
+        "name": "seed",
+        "value": "42",
+        "help": "Seed for PyTorch Lightning and dataset randomness. Default is 42."
+      }
+    }
+  },
+
+  "ContainerLogging": {
+    "type": "rowContainer",
+    "label": "Logging",
+    "elements": {
+      "logDir": {
+        "type": "picker",
+        "label": "Log directory",
+        "name": "logDir",
+        "localLabel": "Location",
+        "showFiles": "False",
+        "files": "False",
+        "defaultLocation": "./lightning_logs",
+        "defaultPaths": {
+          "HOME": "$HOME",
+          "SCRATCH": "/scratch/user/$USER"
+        },
+        "useHPCDefaultPaths": "False",
+        "help": "Directory where Lightning TensorBoard/CSV logs and checkpoints are written. Defaults to ./lightning_logs relative to the job staging directory."
+      },
+      "logEveryNSteps": {
+        "type": "number",
+        "label": "Log every N steps",
+        "name": "logEveryNSteps",
+        "value": "50"
+      },
+      "checkpointEnable": {
+        "type": "checkbox",
+        "label": "Enable model checkpointing",
+        "name": "checkpointEnable",
+        "value": "Yes",
+        "help": "When enabled, saves the best-performing model checkpoint based on minimum validation loss. When disabled, defaults to saving only the final model state at the last epoch."
+      }
+    }
+  },
+
+  "SlurmCheckbox": {
+    "type": "checkbox",
+    "label": "Set Job requirements",
+    "name": "slurmbox",
+    "help": "Check this box if you want to set Slurm options.",
+    "value": "Yes"
+  },
+
+  "ContainerTasks": {
+    "type": "rowContainer",
+    "label": "GPU",
+    "condition": "slurmbox.Yes",
+    "elements": {
+      "cpus": {
+        "type": "number",
+        "label": "#CPUs/task",
+        "name": "cpus",
+        "value": "1",
+        "max": "96"
+      },
+      "gpuDropdown": {
+        "type": "dynamicSelect",
+        "label": "Use Accelerator",
+        "name": "gpu",
+        "value": "none",
+        "help": "Optional. Defaults to CPU (no accelerator). Select a GPU only if your training will use it.",
+        "retriever": "retrieve_gpus"
+      },
+      "numgpus": {
+        "type": "number",
+        "label": "#GPUs",
+        "name": "numgpu",
+        "value": "1",
+        "condition": " !gpu.none && !gpu. "
+      }
+    }
+  },
+
+  "ContainerAdditionals": {
+    "type": "rowContainer",
+    "label": "Slurm Options",
+    "condition": "slurmbox.Yes",
+    "elements": {
+      "memory": {
+        "type": "unit",
+        "label": "Memory",
+        "name": "memory",
+        "units": [{ "label": "GB", "value": "G" }]
+      },
+      "Walltime": {
+        "type": "time",
+        "label": "Expected run time",
+        "name": "walltime",
+        "value": ""
+      },
+      "account": {
+        "type": "dynamicSelect",
+        "label": "Project Account",
+        "name": "account",
+        "retriever": "list_accounts"
+      },
+      "extraText": {
+        "type": "text",
+        "label": "Additional Slurm parameters",
+        "name": "extra_slurm",
+        "value": ""
+      }
+    }
+  }
+}

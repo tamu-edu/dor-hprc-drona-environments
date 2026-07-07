@@ -1,0 +1,50 @@
+{
+  "ModeRow": {
+    "type": "rowContainer",
+    "label": "",
+    "elements": {
+      "ModeRadio": {
+        "type": "radioGroup",
+        "name": "mode",
+        "label": "Mode",
+        "options": [
+          { "label": "Run", "value": "run" },
+          { "label": "Monitor", "value": "monitor" }
+        ],
+        "value": "run"
+      }
+    }
+  },
+  "pt_workflow_select": {
+    "type": "dynamicSelect",
+    "label": "Select Training Run",
+    "name": "pt_workflow",
+    "help": "Lists PyTorch-Lightning runs from your Drona job history whose workflow folder still exists. After selecting a run, Slurm status and logs auto-refresh on the form; click Preview for a snapshot tab.",
+    "condition": "mode.monitor",
+    "retriever": "retrieve_pt_workflows.sh"
+  },
+  "pt_location_hidden": {
+    "type": "hidden",
+    "name": "pt_location",
+    "isDynamic": true,
+    "condition": "mode.monitor && !pt_workflow.",
+    "retrieverParams": {
+      "DRONA_ID": "$pt_workflow"
+    },
+    "retriever": "retrieve_pt_job_info.sh"
+  },
+  "RunContainer": {
+    "type": "container",
+    "elements": {
+      "$ref": "schemas/run.schema.json"
+    },
+    "condition": "mode.run"
+  },
+  "MonitorContainer": {
+    "type": "container",
+    "elements": {
+      "$ref": "schemas/monitor.schema.json"
+    },
+    "condition": "mode.monitor"
+  }
+}
