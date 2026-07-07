@@ -296,7 +296,7 @@
     "label": "Select AlphaFold Run",
     "name": "af_workflow",
     "condition": "mode.monitor",
-    "retriever": "retrieve_af_workflows.sh"
+    "retriever": "drona_select_wf.sh"
   },
   "af_location_hidden": {
     "type": "hidden",
@@ -315,7 +315,8 @@
     "refreshInterval": "30",
     "condition": "mode.monitor && !af_location.",
     "retrieverParams": {
-      "LOCATION": "$af_location"
+      "LOCATION": "$af_location",
+      "DRONA_ID": "$af_workflow"
     },
     "retriever": "retrieve_af_slurm_status.sh"
   },
@@ -348,7 +349,8 @@
         "allowHtml": true,
         "refreshInterval": "30",
         "retrieverParams": {
-          "LOCATION": "$af_location"
+          "LOCATION": "$af_location",
+	  "DRONA_ID": "$af_workflow"
         },
         "retriever": "retrieve_af_slurm_summary.sh"
       }

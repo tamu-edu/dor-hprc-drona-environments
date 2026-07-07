@@ -20,22 +20,9 @@ grace_pickle_module = ''' module load AlphaPickle/1.4.1 '''
 faster_pickle_module = '''module load AlphaPickle/1.4.1'''
 
 driver_alphafold3 = '''
-out=`/sw/local/bin/sbatch [account] [email] alphafold3-cpu.job`
-jobid=`echo "$out" | grep "Submitted batch job" | cut -d" " -f4`
 
-if [ -z "${jobid}" ]; then
-   echo "The Alphafold job was not submitted succesfully. Exiting now"
-   exit 0
-fi
-
-echo "Submitted alphafold3-cpu.job, jobid: ${jobid}"
-
-out=`/sw/local/bin/sbatch [account] [email] --dependency=afterok:${jobid} alphafold3-gpu.job`
-jobidgpu=`echo "$out" | grep "Submitted batch job" | cut -d" " -f4`
-
-echo "Submitted alphafold3-gpu.job, jobid: ${jobidgpu}, depending on successful completion of job ${jobid}"
-
-printf "%s\n%s\n" "$jobid" "$jobidgpu" > slurm_jobids.txt
+# use the drona submit driver to start the workflow
+$DRONA_RUNTIME_DIR/driver_scripts/drona_wf_driver_sbatch alphafold3-cpu.job alphafold3-gpu.job
 '''
 
 driver_parafold= '''

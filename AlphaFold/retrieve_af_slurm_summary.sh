@@ -1,14 +1,29 @@
 #!/bin/bash
 # Given $LOCATION, emits an HTML table summarising the SLURM jobs for this run.
 
-JOBIDS_FILE="${LOCATION}/slurm_jobids.txt"
+#JOBIDS_FILE="${LOCATION}/slurm_jobids.txt"
 
-if [ ! -f "$JOBIDS_FILE" ]; then
-    echo "<div style='font-size:0.83em;color:#6c757d;padding:4px 2px'>Waiting for SLURM job IDs — driver script may still be starting.</div>"
-    exit 0
-fi
+#if [ ! -f "$JOBIDS_FILE" ]; then
+#    echo "<div style='font-size:0.83em;color:#6c757d;padding:4px 2px'>Waiting for SLURM job IDs — driver script may still be starting.</div>"
+#    exit 0
+#fi
 
-mapfile -t JOBIDS < <(grep -v '^\s*$' "$JOBIDS_FILE")
+#mapfile -t JOBIDS < <(grep -v '^\s*$' "$JOBIDS_FILE")
+
+
+JSON_INPUT=$($DRONA_RUNTIME_DIR/db_access/drona_db_retriever.py -i $DRONA_ID)
+
+# Capture Python's print output into a Bash variable
+JOBIDS=$(python3 <<EOF
+import json
+import sys
+
+data = json.loads("""$JSON_INPUT""")
+ids = [str(job["id"]) for job in data["runtime_meta"]["jobinfo"]]
+print(" ".join(ids))
+EOF
+)
+
 
 if [ ${#JOBIDS[@]} -eq 0 ]; then
     echo "<div style='font-size:0.83em;color:#6c757d;padding:4px 2px'>No SLURM job IDs recorded yet.</div>"
@@ -21,7 +36,8 @@ has_failed=false
 has_pending=false
 all_done=true
 
-for JID in "${JOBIDS[@]}"; do
+for JID in $JOBIDS; do
+#for JID in "${JOBIDS[@]}"; do
     # Try squeue (active jobs)
     ROW=$(squeue -j "$JID" -h -o "%i|%j|%T|%M|%N" 2>/dev/null | head -1)
 
@@ -45,7 +61,6 @@ for JID in "${JOBIDS[@]}"; do
             *)           ROW_CLASS=""; all_done=false ;;
         esac
     fi
-
     C1=$(echo "$ROW" | cut -d'|' -f1)
     C2=$(echo "$ROW" | cut -d'|' -f2)
     C3=$(echo "$ROW" | cut -d'|' -f3)

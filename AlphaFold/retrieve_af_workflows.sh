@@ -2,7 +2,7 @@
 # Returns a JSON array of AlphaFold runs from the job history DB,
 # formatted for use as a dynamicSelect option list.
 
-JSON_DATA=$($DRONA_RUNTIME_DIR/db_access/drona_db_retriever.py -e Alphafold 2>/dev/null)
+JSON_DATA=$($DRONA_RUNTIME_DIR/db_access/drona_db_retriever.py -e AlphaFold 2>/dev/null)
 export JSON_DATA
 
 python3 <<'EOF'
