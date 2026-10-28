@@ -47,6 +47,15 @@ def _wants_gpu(gpu, slurm_box):
     return gpu not in ("", "none")
 
 
+def _resolve_gpu_count(gpu, numgpu):
+    """GPUs requested for this run. Zero means CPU. A selected accelerator is at least 1."""
+    gpu = _normalize_select_value(gpu)
+    if gpu in ("", "none"):
+        return 0
+    count = _resolve_int(numgpu, 1)
+    return count if count > 0 else 1
+
+
 def _is_drona_var(val):
     if not val:
         return False
@@ -142,6 +151,18 @@ def _inject_tf32_matmul_precision(train_script, enable_tf32):
             + '    torch.set_float32_matmul_precision("high")',
             1,
         )
+    return train_script
+
+
+def _inject_ddp_strategy(train_script, num_nodes=1):
+    """Bind Trainer to the processes srun already started, one per GPU."""
+    if not train_script:
+        return train_script
+    extra = '\n        strategy="ddp",'
+    if num_nodes > 1:
+        extra += f"\n        num_nodes={num_nodes},"
+    for needle in ("devices=devices,", "devices=DEVICES,"):
+        train_script = train_script.replace(needle, needle + extra)
     return train_script
 
 
@@ -644,10 +665,14 @@ def retrieve_tasks_and_other_resources(mode, nodes, tasks, cpus, mem, gpu, numgp
         account = ""
         extra = ""
     numgpunum = 1
-    if gpu != "" and gpu != "none":
-        numgpunum = 1 if numgpu == "" else int(numgpu)
     tasknum = int(tasks)
-    nodenum = 0 if nodes == "" else int(nodes)
+    nodenum = _resolve_int(nodes, 0)
+    if gpu != "" and gpu != "none":
+        # One task per GPU. #GPUs is the count on each node; #Nodes scales the job.
+        numgpunum = _resolve_gpu_count(gpu, numgpu)
+        if nodenum < 1:
+            nodenum = 1
+        tasknum = numgpunum * nodenum
     cpunum = 1 if cpus == "" else int(cpus)
     totalmemnum = 0 if mem == "" else int(mem[:-1])
     timestring = "02:00" if walltime == "" else walltime
@@ -807,6 +832,8 @@ def generate_lightning_script_if_run(
     audioTransformType="mel_spectrogram",
     cvImageSize="0",
     cvChannels="3",
+    numgpu="",
+    nodes="",
 ):
     try:
         if _is_valid_user_location(job_location):
@@ -872,6 +899,8 @@ def generate_lightning_script_if_run(
         audioTransformType,
         cvImageSize,
         cvChannels,
+        numgpu,
+        nodes,
     )
 
 
@@ -946,6 +975,8 @@ def generate_lightning_script(
     audioTransformType="mel_spectrogram",
     cvImageSize="0",
     cvChannels="3",
+    numgpu="",
+    nodes="",
 ):
     # ── Parse & validate shared params ────────────────────────────────────────
     category = (modelCategory or "computer_vision").strip()
@@ -968,7 +999,10 @@ def generate_lightning_script(
     log_dir = _resolve_val(logDir, "./lightning_logs")
 
     acc = "gpu" if _wants_gpu(gpu, slurmBox) else "cpu"
-    dev = "1"
+    dev = str(_resolve_gpu_count(gpu, numgpu)) if acc == "gpu" else "1"
+    node_count = _resolve_int(nodes, 1) if acc == "gpu" else 1
+    if node_count < 1:
+        node_count = 1
     prec, enable_tf32 = _resolve_precision(precision)
 
     tb_on   = True
@@ -1139,64 +1173,67 @@ def generate_lightning_script(
         return ""  # error already added by sub-generator
 
     train_script = _inject_tf32_matmul_precision(train_script, enable_tf32)
+    if acc == "gpu" and _resolve_int(dev, 1) * node_count > 1:
+        train_script = _inject_ddp_strategy(train_script, node_count)
 
     if _checkbox_on(exportOnnx) and category != "gnn":
         onnx_export_code = '''    trainer.fit(model, datamodule=datamodule)
 
     # Export final model to ONNX
-    try:
-        import onnx
-        import inspect
-        model.eval()
-        
-        # Setup datamodule and get a sample batch
-        datamodule.setup("fit")
-        dl = datamodule.train_dataloader()
-        batch = next(iter(dl))
-        
-        sig = inspect.signature(model.forward)
-        
-        if "edge_index" in sig.parameters:
-            x = getattr(batch, 'x', None)
-            edge_index = getattr(batch, 'edge_index', None)
-            if x is not None and edge_index is not None:
-                input_sample = (x, edge_index)
+    if trainer.global_rank == 0:
+        try:
+            import onnx
+            import inspect
+            model.eval()
+
+            # Setup datamodule and get a sample batch
+            datamodule.setup("fit")
+            dl = datamodule.train_dataloader()
+            batch = next(iter(dl))
+
+            sig = inspect.signature(model.forward)
+
+            if "edge_index" in sig.parameters:
+                x = getattr(batch, 'x', None)
+                edge_index = getattr(batch, 'edge_index', None)
+                if x is not None and edge_index is not None:
+                    input_sample = (x, edge_index)
+                else:
+                    in_channels = getattr(model.hparams, 'in_channels', 64)
+                    input_sample = (torch.randn(10, in_channels), torch.zeros((2, 20), dtype=torch.long))
             else:
-                in_channels = getattr(model.hparams, 'in_channels', 64)
-                input_sample = (torch.randn(10, in_channels), torch.zeros((2, 20), dtype=torch.long))
-        else:
-            if isinstance(batch, (tuple, list)):
-                x = batch[0]
-            else:
-                x = batch
-                
-            if isinstance(x, torch.Tensor):
-                input_sample = x[:1]
-            else:
-                input_sample = x
-        
-        device = next(model.parameters()).device
-        dtype = next(model.parameters()).dtype
-        
-        if isinstance(input_sample, tuple):
-            input_sample = tuple(
-                t.to(device=device, dtype=dtype) if isinstance(t, torch.Tensor) and t.dtype.is_floating_point else t.to(device=device)
-                for t in input_sample
-            )
-        elif isinstance(input_sample, torch.Tensor):
-            if input_sample.dtype.is_floating_point:
-                input_sample = input_sample.to(device=device, dtype=dtype)
-            else:
-                input_sample = input_sample.to(device=device)
-                
-        onnx_path = os.path.join(LOG_DIR, "final_model.onnx")
-        os.makedirs(os.path.dirname(onnx_path), exist_ok=True)
-        model.to_onnx(onnx_path, input_sample, export_params=True)
-        print(f"Successfully exported ONNX model at: {onnx_path}")
-    except ImportError:
-        print("ERROR: ONNX package not available. Please ensure 'module load GCC/12.3.0 ONNX/1.15.0' is loaded.")
-    except Exception as e:
-        print(f"Could not export model to ONNX: {e}")'''
+                if isinstance(batch, (tuple, list)):
+                    x = batch[0]
+                else:
+                    x = batch
+
+                if isinstance(x, torch.Tensor):
+                    input_sample = x[:1]
+                else:
+                    input_sample = x
+
+            device = next(model.parameters()).device
+            dtype = next(model.parameters()).dtype
+
+            if isinstance(input_sample, tuple):
+                input_sample = tuple(
+                    t.to(device=device, dtype=dtype) if isinstance(t, torch.Tensor) and t.dtype.is_floating_point else t.to(device=device)
+                    for t in input_sample
+                )
+            elif isinstance(input_sample, torch.Tensor):
+                if input_sample.dtype.is_floating_point:
+                    input_sample = input_sample.to(device=device, dtype=dtype)
+                else:
+                    input_sample = input_sample.to(device=device)
+
+            onnx_path = os.path.join(LOG_DIR, "final_model.onnx")
+            os.makedirs(os.path.dirname(onnx_path), exist_ok=True)
+            model.to_onnx(onnx_path, input_sample, export_params=True)
+            print(f"Successfully exported ONNX model at: {onnx_path}")
+        except ImportError:
+            print("ERROR: ONNX package not available. Please ensure 'module load GCC/12.3.0 ONNX/1.15.0' is loaded.")
+        except Exception as e:
+            print(f"Could not export model to ONNX: {e}")'''
         train_script = train_script.replace("    trainer.fit(model, datamodule=datamodule)", onnx_export_code)
 
     # ── Write generated files directly to job folder (only when valid) ───────

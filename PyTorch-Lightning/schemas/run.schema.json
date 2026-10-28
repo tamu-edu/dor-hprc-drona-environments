@@ -997,7 +997,18 @@
         "label": "#GPUs",
         "name": "numgpu",
         "value": "1",
-        "condition": " !gpu.none && !gpu. "
+        "condition": " !gpu.none && !gpu. ",
+        "help": "GPUs on each node. One Slurm task is created per GPU. #CPUs/task is the number of cores for each of those tasks."
+      },
+      "nodes": {
+        "type": "number",
+        "label": "#Nodes",
+        "name": "nodes",
+        "value": "1",
+        "min": "1",
+        "max": "8",
+        "condition": " !gpu.none && !gpu. ",
+        "help": "Number of nodes. Each node receives #GPUs, and the job runs one task per GPU across those nodes. The default is 1."
       }
     }
   },

@@ -14,13 +14,20 @@ def cluster_slurm_checks(nodenum,tasknum,cpunum,totalmemnum,gpu,numgpunum,timest
    partition=""
    sbatchgpustring=""
 
+   gpu_job = gpu != "" and gpu != "none"
+   if gpu_job and numgpunum < 1:
+      numgpunum=1
+
     # make sure the number of cpus requested fits on a single node
    if cpunum > maxcpunode:
        drona_add_message("Requested #cpus_per_task cannot be more than total cores on a node. Reducing #cpus_per_task ", "warning")
        cpunum=maxcpunode
-   
-   # if nodes is not set, match the number of nodes based on requested tasks and cpus
-   if nodenum == 0:
+
+   # --gres is the GPU count on each node. Total tasks are GPUs per node times nodes.
+   if gpu_job:
+      if nodenum < 1:
+         nodenum = 1
+   elif nodenum == 0:
       nodenum = (cpunum*tasknum // maxcpunode) if  (cpunum*tasknum % maxcpunode) == 0 else (cpunum*tasknum // maxcpunode)+1
    else:
       # check for
@@ -55,6 +62,7 @@ def cluster_slurm_checks(nodenum,tasknum,cpunum,totalmemnum,gpu,numgpunum,timest
          drona_add_message("GPU jobs have walltime limit of 48 hours. Your job will not run.", "error")
       if numgpunum > 32:
          drona_add_message("Max limit of 32 GPUs, you requested "+str(numgpunum) + ". Setting number of GPUs to 32.", "warning")
+         numgpunum=32
       sbatchgpustring=" --gres=gpu:"+gpu+":"+str(numgpunum)
    elif gpu != "" and gpu != "none":
       partition="gpu"
@@ -66,6 +74,21 @@ def cluster_slurm_checks(nodenum,tasknum,cpunum,totalmemnum,gpu,numgpunum,timest
         if total_hours > 72:
            drona_add_message("CPU jobs have walltime limit of 72 hours. Your job will not run.", "error")
            numgpunum=32
+
+   # One task per GPU on every node. CPUs are checked per node, not across the whole job.
+   if gpu_job:
+      if nodenum < 1:
+         nodenum=1
+      tasknum=numgpunum * nodenum
+      if cpunum * numgpunum > maxcpunode:
+         reduced=max(1, maxcpunode // numgpunum)
+         drona_add_message("Requested #cpus_per_task ("+str(cpunum)+") times #GPUs per node ("+str(numgpunum)+") exceeds "+str(maxcpunode)+" cores on a node. Reducing #cpus_per_task to "+str(reduced)+".", "warning")
+         cpunum=reduced
+      if totalmemnum == 0:
+         cpn = cpunum * numgpunum
+         memnum = int((maxmemnode/maxcpunode)*cpn)
+         if memnum > maxmemnode:
+            memnum = maxmemnode
 
    # add all the mappings
    drona_add_mapping("TASKS",str(tasknum))
