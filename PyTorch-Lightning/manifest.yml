@@ -1,0 +1,5 @@
+name: "PyTorch-Lightning"
+description: "PyTorch Lightning training using cluster module Lightning/2.5.6-CUDA-12.6.0"
+category: "ML"
+version: "1.0.0"
+author: ""

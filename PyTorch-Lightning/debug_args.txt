@@ -1,0 +1,12 @@
+mode: run
+modelCategory: gnn
+name: lightning_run
+datasetType: builtin
+builtinDataset: MNIST
+customDataPath: 
+graphDatasetType: builtin
+graphBuiltinDataset: QM9
+graphDataPath: 
+gnnHiddenDim: 128
+gnnNumLayers: 3
+gnnLayerType: gat
