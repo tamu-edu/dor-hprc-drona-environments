@@ -1,57 +1,26 @@
 {
 
-   "configure" : {
-    "type" : "hidden",
-    "label" : "configured",
-    "name" : "configured",
+  "configure": {
+    "type": "hidden",
+    "label": "configured",
+    "name": "drona_create_manage_configured",
     "isDynamic": true,
-    "retriever" : "drona_info_configure.sh"
+    "retriever": "drona_info_configure.sh"
   },
-
-  "ManageCreateContainer" : {
-    "type" : "rowContainer",
-    "condition": "configured.CONFIGURED",
-    "elements" : {
-
-      "mode" : {
-        "type": "radioGroup",
-        "style": "button",
-        "label": "Mode",
-        "name": "mode",
-        "condition": "configured.CONFIGURED",
-        "options": [
-          { "label": "Create", "value": "create" },
-          { "label": "Manage", "value": "manage" }
-        ]
-      }
-
-    }
-  },
-
-
 
   "ConfigureContainer": {
     "type": "container",
     "elements": {
-      "$ref": "schemas/configure.schema.json"
+      "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_configure_run.json"
     },
-    "condition": "configured.NOTCONFIGURED"
+    "condition": "drona_create_manage_configured.NOTCONFIGURED"
   },
 
-
-  "CreateContainer": {
+  "CreateManageContainer": {
     "type": "container",
     "elements": {
-      "$ref": "schemas/create.schema.json"
+      "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_create_manage-table.json"
     },
-    "condition": "mode.create"
-  },
-
-  "ManageContainer": {
-    "type": "container",
-    "elements": {
-      "$ref": "schemas/manage.schema.json"
-    },
-    "condition": "mode.manage"
+    "condition": "drona_create_manage_configured.CONFIGURED"
   }
 }

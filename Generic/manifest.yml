@@ -1,5 +1,6 @@
 name: "Generic"
-description: "Generic environment"
+description: "Generic Slurm environment with shared create/manage, job/node picker, CPU/GPU monitoring, processes and job state panels"
 category: "generic"
-version: "1.0.0"
+version: "3.0.0"
 author: ""
+requires_drona: ">=2.0"

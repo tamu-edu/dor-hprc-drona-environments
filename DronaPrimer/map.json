@@ -1,9 +1,0 @@
-{
-  "TASKS" : "$tasks",
-  "CPUS" : "$cpus",
-  "JOBNAME" :"$name",
-  "flocation": "$location",
-  "fmainscript": "$mainscript"
-}
-
-

@@ -9,6 +9,11 @@
 module purge
 module load WebProxy [MODULES]
 cd [flocation]
+[GPU_MONITOR_START]
+[CPU_MONITOR_START]
 # ADD YOUR COMMANDS BELOW
 
 [IMPORTSCRIPT]
+
+[GPU_MONITOR_STOP]
+[CPU_MONITOR_STOP]

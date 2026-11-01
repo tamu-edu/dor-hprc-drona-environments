@@ -13,13 +13,16 @@ module load foss/2025
 mv modules.sqlite3 ../modules/modules-foss-2025.sqlite
 
 
-Step 2: Add toolchain to module element in schema
-=================================================
+Step 2: Add toolchain to the shared Module form component
+===========================================================
 
-cd ../schemas
-vi create.schema.json
+The Module element is defined once, in the shared component
+$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json, and
+referenced by create.schema.json via $ref. Edit it there:
 
-in Module element, under toolchains, add :
+vi $DRONA_RUNTIME_DIR/form_components/drona_module_picker.json
+
+under toolchains, add :
 
       {
         "label": "foss/2025",
