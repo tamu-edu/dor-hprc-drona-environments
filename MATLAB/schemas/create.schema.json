@@ -1,0 +1,141 @@
+{
+  "workflowCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "WORKFLOW OPTIONS",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "WORKFLOW OPTIONS",
+      "dot": false
+    },
+    "elements": {
+      "runDestinationFinal": {
+        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_job_destination.json#/drona_runDestinationFinal"
+      },
+      "versionDropdown": {
+        "type": "select",
+        "label": "Matlab version",
+        "name": "version",
+        "help": "You can select your preferred Matlab version here. Typically, we recommend using the latest version",
+        "options": [
+          {
+            "value": "R2023b",
+            "label": "Matlab/R2023b"
+          },
+          {
+            "value": "R2024a",
+            "label": "Matlab/R2024a"
+          },
+          {
+            "value": "R2024b",
+            "label": "Matlab/R2024b"
+          }
+        ]
+      },
+      "ContainerScripts": {
+        "type": "rowContainer",
+        "label": "Additional",
+        "elements": {
+          "mainscriptPicker": {
+            "type": "picker",
+            "label": "Main Matlab script",
+            "name": "mainscript",
+            "help": "You can select the main script from your local machine or laptop or a location on the cluster. The main script has to be a Matlab file with the .m extension that contains the code you want to run. The script can call Matlab functions defined in other Matlab files",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "showHidden": "false",
+            "allowedFileTypes": "m"
+          },
+          "drona_fileUploader": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_import_upload.json#/drona_ImportUpload/elements/drona_fileUploader",
+            "label": "Upload additional scripts and data",
+            "help": "OPTIONAL: You can upload input data or other Matlab scripts (e.g., functions called from the main Matlab script) here."
+          },
+          "matlabpathPicker": {
+            "type": "picker",
+            "label": "Optional MATLABPATH",
+            "name": "matlabpath",
+            "help": "OPTIONAL: Matlab will search directories defined by environmental variable MATLABPATH for function definitions. If you have directories with Matlab functions your code is using, you can select them here. You can add more than one directory.",
+            "localLabel": "select",
+            "multiple": "true"
+          }
+        }
+      }
+    }
+  },
+  "resourcesCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "MATLAB RESOURCES",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "MATLAB RESOURCES",
+      "dot": false
+    },
+    "elements": {
+      "ContainerResources": {
+        "type": "rowContainer",
+        "elements": {
+          "workers": {
+            "type": "number",
+            "label": "#workers for parallel processing",
+            "name": "workers",
+            "help": "OPTIONAL: If your code uses any Matlab parallel coding constructs (e.g. parfor, spmd, distributed) or calls toolbox functions that do (those function calls typically include a parameter useParallel), you can select the number of workers you want to use here. If you are not sure, leave this value as 0. If you set the number of workers, Drona composer will automatically create a parallel pool for you. Workers and threads have to fit on a single node; they are reduced automatically if they don't.",
+            "value": "0"
+          },
+          "threads": {
+            "type": "number",
+            "label": "#comp threads",
+            "name": "threads",
+            "help": "OPTIONAL: Matlab automatically executes a large number of Matlab operators and functions (e.g., + *, element-wise operators, etc.) in parallel. If you believe your code can significantly benefit from multi-threading, you can set the number of computational threads here. If you are not sure, just leave the value as 1. Workers x threads cannot exceed the number of cores on a node.",
+            "value": "1"
+          }
+        }
+      },
+      "ContainerGPU": {
+        "type": "rowContainer",
+        "elements": {
+          "gpuDropdown": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU/elements/drona_gpuDropdown",
+            "label": "Use GPU",
+            "help": "OPTIONAL: Matlab provides functionality to offload Matlab code to the GPUs. If your code utilizes this functionality, select the type of GPU to use here. If you are not sure, don't select a GPU. ANY GPU requests a GPU of any available type."
+          },
+          "numgpus": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU/elements/drona_numgpus"
+          }
+        }
+      },
+      "ContainerAdditional": {
+        "type": "rowContainer",
+        "elements": {
+          "memory": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
+            "label": "Memory",
+            "help": "OPTIONAL: Provide the total amount of memory you need to estimate the job needs. It's best to be conservative and request more. If your job tries to use more memory than requested, your job will be killed immediately, and you might lose all intermediate results. The composer will use a default value if you don't enter any value."
+          },
+          "Walltime": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
+            "label": "Expected time needed to run",
+            "help": "OPTIONAL: Provide the time you estimate the job will need. It's best to be conservative when requesting wall time. If your job exceeds the requested wall time, your job will be killed immediately, and you might lose all intermediate results. If you don't enter a value, composer will use a default value of 2 hours."
+          }
+        }
+      },
+      "ContainerAccount": {
+        "type": "rowContainer",
+        "elements": {
+          "account": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
+          },
+          "extraText": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
+          }
+        }
+      }
+    }
+  },
+  "monitoring": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_monitoring.json#/drona_monitoringCollapse"
+  }
+}

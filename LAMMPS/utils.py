@@ -1,225 +1,146 @@
-import argparse
-import json
-import sys
 import os
+import subprocess
+from pathlib import Path
+
+from drona_utils import drona_add_additional_file, drona_add_message
+from drona_runtime_utils import (retrieve_gpu_monitor_start_nvml, retrieve_gpu_monitor_stop,
+                                 retrieve_slurm_params)
+
+from lammps_report import main
+
+# Defaults used when the Resources fields are left empty (same as the 1.x environment)
+DEFAULT_MEMORY = "40G"
+DEFAULT_WALLTIME = "02:00"
+# NVIDIA accelerators; the shared GPU monitor uses NVML, so it does not cover PVC
+NVIDIA_GPUS = ("h100", "a30")
 
 
-def main(tool, input_data_str, verbose=False):
-    # Print the values of the arguments.
-    if verbose:
-        print(f"Tool: {tool}")
-        print(f"Input data: {input_data_str}")
-        print("=======")
+def retrieve_driver_contents(mode, cancel_jobs=""):
+    """Create mode submits jobscripts/lammps-job.slurm with the shared sbatch driver, manage mode runs
+    the cancel/delete actions. An unselected mode (None, "" or the unmapped "$name") gets the create driver."""
+    base = Path(__file__).resolve().parent
 
-    try:
-        # Attempt to parse the input string as JSON.
-        input_data = json.loads(input_data_str)
-    except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON input.  Details: {e}")
-        sys.exit(1)
-
-    if "value" in input_data.keys():
-        input_data=input_data["value"]
-    
-    if tool == 'summary-html':
-        if 'summary-html' in input_data.keys():
-            summary_value = input_data['summary-html']
-            return summary_value
-        else:
-            print("Error: 'summary' field not found for the selected acceleration strategy.")
-            sys.exit(1)
-    if tool == 'summary-txt':
-        if 'summary-txt' in input_data.keys():
-            summary_value = input_data['summary-txt']
-            return summary_value
-        else:
-            print("Error: 'summary' field not found for the selected acceleration strategy.")
-            sys.exit(1)
-    if tool == 'gpu-type':
-        if 'data' in input_data.keys():
-            if "accelerator" in input_data['data'].keys() and input_data['data']["accelerator"]:
-                if input_data['data']["accelerator"] != "n/a":
-                    return input_data['data']["accelerator"]
-            return "cpu"
-        else:
-            print("Error: 'data' field not found for the selected acceleration strategy.")
-            sys.exit(1)
-    if tool == 'data':
-        if 'data' in input_data.keys():
-            data_value = input_data['data']
-            return data_value
-        else:
-            print("Error: 'data' field not found for the selected acceleration strategy.")
-            sys.exit(1)
+    if mode == "manage":
+        file_path = base / "drivers/driver-manage.sh"
     else:
-        print(f"Error: Tool '{tool}' not recognized.")
-        sys.exit(1)
-    
+        file_path = base / "drivers/driver-create.sh"
+        drona_add_additional_file("jobscripts/lammps-job.slurm", "Job Script")
+        drona_add_message("Add your required package-specific and accelerator-specific optimizations to the lammps command", "note")
+
+    with open(file_path, 'r') as file:
+        return file.read()
+
+
+def _count(value, default):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _accelerator(json_input):
+    if not json_input:
+        return ""
+    return (main("data", json_input).get("accelerator") or "").lower()
+
+
+def retrieve_lammps_slurm_params(mode, json_input, gpu_count, cpu_count, memory, walltime, account, extra):
+    """Turn the selected acceleration strategy into Slurm resources and let the shared cluster checks
+    add the mappings (TASKS, NODES, CPUS, MEM, TIME, PARTITION, EXTRA).
+    GPU strategies: one MPI task per CPU count (default: one per GPU). CPU strategies: one task with
+    cpu_count threads. PVC jobs with 2 or 4 PVCs also get the matching xelink constraint.
+    Manage mode (cancel/remove) submits no job script, so nothing is checked there."""
+    if mode == "manage":
+        return ""
+    if not json_input:
+        drona_add_message("No acceleration strategy selected.", "error")
+        return ""
+
+    x = _count(gpu_count, 1)
+    y = _count(cpu_count, x)
+    accelerator = _accelerator(json_input)
+
+    gpu, numgpu = "", ""
+    tasks, cpus = y, 1
+    if accelerator == "cpu" or not accelerator or accelerator == "n/a":
+        tasks, cpus = 1, y
+    else:
+        gpu, numgpu = accelerator, str(x)
+        if accelerator == "pvc" and x in (2, 4):
+            extra = f"{extra} --constraint=xelink{x}".strip()
+
+    return retrieve_slurm_params("1", str(tasks), str(cpus), memory or DEFAULT_MEMORY, gpu, numgpu,
+                                 walltime or DEFAULT_WALLTIME, account, extra)
+
+
+def retrieve_lammps_gpu_monitor_start(gpu_type, monitor_enabled):
+    if gpu_type not in NVIDIA_GPUS:
+        return ""
+    return retrieve_gpu_monitor_start_nvml(gpu_type, monitor_enabled)
+
+
+def retrieve_lammps_gpu_monitor_stop(gpu_type, monitor_enabled):
+    if gpu_type not in NVIDIA_GPUS:
+        return ""
+    return retrieve_gpu_monitor_stop(gpu_type, monitor_enabled)
+
+
 def get_selected_lmp_cmd(json_input, gpu_count, cpu_count):
     if not json_input:
         return "lmp command: Error (No acceleration strategy detected)"
-    data=main("data", json_input)
-    try:
-        x=int(gpu_count)
-    except:
-        x=1
-    try:
-        y=int(cpu_count)
-    except:
-        y=x
-    mpi_exe="mpirun"
-    lmp_exe="lmp"
-    prefix=""
-    if "mpi_exe" in data.keys() and data["mpi_exe"]:
-        mpi_exe=data["mpi_exe"]
-    if "lmp_exe" in data.keys() and data["lmp_exe"]:
-        lmp_exe=data["lmp_exe"]
-    if "prefix" in data.keys() and data["prefix"]:
-        prefix=data["prefix"]+" "
-    if "framework" in data.keys() and data["framework"]:
-        if data["framework"] == "kokkos":
-            mpi_cmd=""
-            if y>1:
-                mpi_cmd=f"{mpi_exe} -np {y} "
-            return f"{prefix}{mpi_cmd}{lmp_exe} -k on g {x} -sf kk -pk kokkos gpu/aware on -in $INFILE"
-        elif data["framework"] == "gpu":
-            mpi_cmd=""
-            if x>1:
-                mpi_cmd=f"{mpi_exe} -np {x} "
-            return f"{prefix}{mpi_cmd}{lmp_exe} -sf gpu -pk gpu {x} -in $INFILE"
-        elif data["framework"] == "openmp":
-            return f"{prefix}{lmp_exe} -sf omp -pk omp {y} -in $INFILE"
-    else:
-        return f"{prefix}{lmp_exe} -in $INFILE # (no acceleration framework detected)"
+    data = main("data", json_input)
+    x = _count(gpu_count, 1)
+    y = _count(cpu_count, x)
+    mpi_exe = data.get("mpi_exe") or "mpirun"
+    lmp_exe = data.get("lmp_exe") or "lmp"
+    prefix = data["prefix"] + " " if data.get("prefix") else ""
+    framework = data.get("framework")
+    if framework == "kokkos":
+        mpi_cmd = f"{mpi_exe} -np {y} " if y > 1 else ""
+        return f"{prefix}{mpi_cmd}{lmp_exe} -k on g {x} -sf kk -pk kokkos gpu/aware on -in $INFILE"
+    if framework == "gpu":
+        mpi_cmd = f"{mpi_exe} -np {x} " if x > 1 else ""
+        return f"{prefix}{mpi_cmd}{lmp_exe} -sf gpu -pk gpu {x} -in $INFILE"
+    if framework == "openmp":
+        return f"{prefix}{lmp_exe} -sf omp -pk omp {y} -in $INFILE"
+    return f"{prefix}{lmp_exe} -in $INFILE # (no acceleration framework detected)"
+
 
 def get_selected_setup(json_input):
     if not json_input:
         return ": Error (No acceleration strategy detected)"
-    data=main("data", json_input)
-    if "setup" in data.keys() and data["setup"]:
+    data = main("data", json_input)
+    if data.get("setup"):
         return data["setup"]
-    elif "module" in data.keys() and data["module"]:
-        return "module load LAMMPS/"+data["module"]
-        return "module list"
-    else:
-        return "# (no software module detected)"
+    if data.get("module"):
+        return "module load LAMMPS/" + data["module"]
+    return "# (no software module detected)"
+
 
 def get_selected_summary(json_input):
     if not json_input:
         return "module: Error (No acceleration strategy detected)"
     return main("summary-txt", json_input)
 
-def debug_args(*args):
-    if args:
-        n=len(args)
-    else:
-        n=0
-    return f"# debug print {n} args:\n# "+"\n# ".join(["arg "+str(i)+": "+str(arg) for i, arg in enumerate(args)])
-
-def set_slurm_opts(json_input, gpu_count, cpu_count):
-    """
-    Sets variables to be used like this:
-    #SBATCH --job-name=[JOBNAME]
-    #SBATCH --time=[TIME] --mem=[MEM]
-    #SBATCH --ntasks=[TASKS] --nodes=[NODES] --cpus-per-task=[CPUS]
-    #SBATCH --output=out.%j --error=error.%j
-    [EXTRA]
-    """
-    if not json_input:
-        return "#SBATCH: Error (No acceleration strategy detected)"
-    extra=""
-    try:
-        x=int(gpu_count)
-    except:
-        x=1
-    try:
-        y=int(cpu_count)
-    except:
-        y=x
-    ntasks=y
-    cpu_per_task=1
-    
-    data=main("data", json_input)
-    if "accelerator" in data.keys() and data["accelerator"]:
-        if data["accelerator"].lower() == "cpu":
-            ntasks=1
-            cpu_per_task=y
-        elif data["accelerator"].lower() == "pvc":
-            extra+=f"#SBATCH --partition pvc --gres=gpu:pvc:{x}\n"
-            if x in (2, 4):
-                extra+=f"#SBATCH --constraint=xelink{x}\n"
-        else:
-            gpu_t=data["accelerator"]
-            extra+=f"#SBATCH --partition gpu --gres=gpu:{gpu_t}:{x}\n"
-    
-    drona_add_mapping("JOBNAME","LAMMPS")
-    drona_add_mapping("TIME", "120") # to-do: argument
-    drona_add_mapping("NODES","1")
-    drona_add_mapping("CPUS",str(cpu_per_task))
-    drona_add_mapping("TASKS",str(ntasks))
-    drona_add_mapping("MEM",str(40)+"G") # to-do: argument
-    
-    return extra
 
 def compute_workdir(path_to_file):
     return os.path.dirname(path_to_file)
 
-def generate_full_report(filename):
+
+def generate_full_report(mode, filename):
+    """Acceleration report for the Create preview; skipped in manage mode (no input file there)."""
+    if mode == "manage":
+        return ""
     drona_add_additional_file("report.txt", preview_name="Acceleration report")
-    from subprocess import run
     try:
-        data = run(
-            [
-                "/usr/bin/bash",
-                "-c",
-                f"""
-                source /sw/hprc/sw/lammps-validator/env.sh && \
-                /sw/hprc/sw/lammps-validator/main.py \
-                --format None --verbose Info --file {filename}
-                """
-            ], capture_output=True, text=True)
+        data = subprocess.run(
+            ["/usr/bin/bash", "-c",
+             "source /sw/hprc/sw/lammps-validator/env.sh && "
+             '/sw/hprc/sw/lammps-validator/main.py --format None --verbose Info --file "$1"',
+             "bash", filename],
+            capture_output=True, text=True)
     except Exception as e:
-        return "Error, unable to generate report because:\n{e}"
+        return f"Error, unable to generate report because:\n{e}"
     if data.stderr:
-        return "stderr:\n"+data.stderr+"\nstdout:\n"+data.stdout
-    else:
-        return data.stdout
-
-if __name__ == "__main__":
-    #  This ensures that the main() function is called when the script is executed
-    #  from the command line.  It is a common practice in Python scripting.
-    """
-    This script demonstrates how to use argparse to create a command-line interface (CLI)
-    with required arguments: --tool <string> and --input <string>.
-    The input is expected to be a JSON string.
-    """
-    # Create an ArgumentParser object.
-    # The description argument provides a brief overview of what the script does.
-    parser = argparse.ArgumentParser(description="Extract specific fields from the input.  Input is expected to be a JSON string.")
-
-    parser.add_argument('--tool',
-                        dest='tool_name',
-                        type=str,
-                        required=True,
-                        help='The name of the tool to use.')
-
-    parser.add_argument('--input',
-                        dest='input_data',  # Changed dest name to reflect JSON data
-                        type=str,
-                        required=True,
-                        help='The input data as a JSON string.')
-                        
-    parser.add_argument('--verbose',
-                        dest='verbose',  # Changed dest name to reflect JSON data
-                        type=bool,
-                        required=False,
-                        help='Extra print statements for debugging.')
-
-    # Parse the command-line arguments.
-    args = parser.parse_args()
-
-    tool = args.tool_name
-    input_data_str = args.input_data  # Changed variable name
-    verbose = args.verbose
-    result = main(tool, input_data_str, verbose=verbose)
-    print(result)
+        return "stderr:\n" + data.stderr + "\nstdout:\n" + data.stdout
+    return data.stdout

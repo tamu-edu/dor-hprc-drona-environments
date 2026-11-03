@@ -1,10 +1,17 @@
 {
+  "$include": ["drona_cancel_jobs", "drona_cpu_monitor"],
+  "JOBNAME": "$name",
+  "DRIVER": "!retrieve_driver_contents($drona_create_manage_mode, $drona_cancel_jobs)",
+  "CREATE_DIR": "$location",
+  "MANAGE_DIR": "$drona_job_dir",
+  "MANAGE": "!retrieve_workflow_actions($drona_create_manage_mode, $drona_delete_workflow, $drona_delete_files, $drona_create_manage_allworkflows, $drona_job_dir)",
+  "DUMMY": "!retrieve_lammps_slurm_params($drona_create_manage_mode, $reportjson, $gpu_count, $cpu_count, $drona_memory, $drona_walltime, $drona_account, $drona_extra_slurm)",
+  "GPU_MONITOR_START": "!retrieve_lammps_gpu_monitor_start($gpu_type, $drona_gpu_monitor)",
+  "GPU_MONITOR_STOP": "!retrieve_lammps_gpu_monitor_stop($gpu_type, $drona_gpu_monitor)",
   "inputfile": "$filepicker",
-  "EXTRA"  : "!set_slurm_opts($reportjson, $gpu_count, $cpu_count)",
   "summary": "!get_selected_summary($reportjson)",
   "lmp_cmd": "!get_selected_lmp_cmd($reportjson, $gpu_count, $cpu_count)",
   "setup": "!get_selected_setup($reportjson)",
-  "report":"!generate_full_report($filepicker)",
-  "flocation": "$location",
-  "workdir":"!compute_workdir($filepicker)"
+  "report": "!generate_full_report($drona_create_manage_mode, $filepicker)",
+  "workdir": "!compute_workdir($filepicker)"
 }

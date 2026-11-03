@@ -1,0 +1,205 @@
+{
+  "hidden_jobs_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_jobs.json#/drona_hidden_jobs_check"
+  },
+  "hidden_status_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_status.json#/drona_hidden_selected_job_status_check"
+  },
+  "hidden_jobdir_path": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_jobdir.json#/drona_hidden_jobdir_path"
+  },
+  "hidden_gpu_monitor_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_gpu_chart.json#/drona_hidden_gpu_chart_check"
+  },
+  "hidden_cpu_monitor_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_cpu_chart.json#/drona_hidden_cpu_chart_check"
+  },
+  "workflowActions": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_manage_actions.json#/drona_workflowActions"
+  },
+  "cancel_jobs": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_jobs_panel.json#/drona_slurmPanel/elements/drona_cancel_jobs",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_status.DONE",
+    "layout": [
+      {
+        "preset": "card",
+        "title": "Cancel Job"
+      },
+      "list",
+      {
+        "maxHeight": "220px",
+        "overflowY": "auto"
+      }
+    ]
+  },
+  "workingDirectory": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_jobdir_view.json#/drona_workingDirectory"
+  },
+  "job_container": {
+    "type": "container",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "layout": {
+      "preset": "bar",
+      "title": "Job Scope:"
+    },
+    "elements": {
+      "drona_job_scope": {
+        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_scopes.json#/drona_job_scope"
+      }
+    }
+  },
+  "lammps_status_strip": {
+    "type": "staticText",
+    "name": "lammps_status_strip",
+    "useLabel": false,
+    "isDynamic": true,
+    "condition": "!drona_create_manage_allworkflows. && !drona_job_scope. && !drona_job_dir.",
+    "retriever": "retrieve_lammps_status_strip.sh",
+    "retrieverParams": {
+      "JOBDIR": "$drona_job_dir",
+      "JOBID": "$drona_job_scope",
+      "_STATUS": "$drona_status"
+    },
+    "refreshInterval": "30",
+    "refreshWhile": "!drona_status.DONE",
+    "allowHtml": true
+  },
+  "lammps_run_report": {
+    "type": "staticText",
+    "name": "lammps_run_report",
+    "useLabel": false,
+    "isDynamic": true,
+    "condition": "!drona_create_manage_allworkflows. && !drona_job_scope. && !drona_job_dir.",
+    "retriever": "retrieve_lammps_run_report.sh",
+    "retrieverParams": {
+      "JOBDIR": "$drona_job_dir",
+      "JOBID": "$drona_job_scope"
+    },
+    "refreshInterval": "60",
+    "refreshWhile": "!drona_status.DONE",
+    "showRefreshButton": true,
+    "allowHtml": true,
+    "layout": {
+      "preset": "card",
+      "title": "LAMMPS Run Report · Job $drona_job_scope"
+    }
+  },
+  "lammps_plots_section": {
+    "type": "collapsibleRowContainer",
+    "title": "LAMMPS THERMO PLOTS",
+    "default_state": "expanded",
+    "condition": "!drona_create_manage_allworkflows. && !drona_job_scope. && !drona_job_dir.",
+    "layout": {
+      "preset": "card",
+      "title": "LAMMPS THERMO PLOTS",
+      "dot": false
+    },
+    "elements": {
+      "lammps_filteropts_prefetch": {
+        "type": "hidden",
+        "name": "lammps_filteropts_prefetch",
+        "label": "LAMMPS Plot Filter Options Prefetch",
+        "isDynamic": true,
+        "refreshInterval": "29",
+        "refreshWhile": "!drona_status.DONE",
+        "condition": "!drona_job_scope. && !drona_job_dir.",
+        "retrieverParams": {
+          "JOBDIR": "$drona_job_dir",
+          "JOBID": "$drona_job_scope"
+        },
+        "retriever": "retrieve_lammps_filteropts.sh"
+      },
+      "lammps_filteropts": {
+        "type": "dynamicCheckboxGroup",
+        "name": "lammps_filteropts",
+        "label": "Show only",
+        "isDynamic": true,
+        "condition": "!drona_job_scope. && !drona_job_dir.",
+        "help": "Thermo keywords found in out.<jobid>. Leave all unchecked to plot every keyword. Plots need YAML thermo output (thermo_style yaml or thermo_modify line yaml).",
+        "retrieverParams": {
+          "JOBDIR": "$drona_job_dir",
+          "JOBID": "$drona_job_scope",
+          "_PREFETCH": "$lammps_filteropts_prefetch"
+        },
+        "retriever": "retrieve_lammps_filteropts.sh"
+      },
+      "lammps_thermo_chart": {
+        "type": "chart",
+        "name": "lammps_thermo_chart",
+        "label": "",
+        "condition": "!drona_job_scope. && !drona_job_dir.",
+        "retriever": "retrieve_lammps_chart_data.sh",
+        "retrieverParams": {
+          "JOBDIR": "$drona_job_dir",
+          "JOBID": "$drona_job_scope",
+          "FILTEROPTS": "$lammps_filteropts",
+          "MAX_POINTS": 400
+        },
+        "refreshInterval": 30,
+        "refreshWhile": "!drona_status.DONE",
+        "maxDataPoints": 400,
+        "xAxis": {
+          "key": "Step",
+          "label": "Step"
+        },
+        "series": "auto",
+        "seriesLabelMap": {
+          "Temp": "Temp",
+          "Press": "Press",
+          "PotEng": "PotEng",
+          "KinEng": "KinEng",
+          "TotEng": "TotEng",
+          "E_pair": "E_pair",
+          "E_mol": "E_mol",
+          "E_vdwl": "E_vdwl",
+          "E_coul": "E_coul",
+          "E_long": "E_long",
+          "E_bond": "E_bond",
+          "E_angle": "E_angle",
+          "E_dihed": "E_dihed",
+          "E_impro": "E_impro",
+          "Volume": "Volume",
+          "Density": "Density",
+          "Enthalpy": "Enthalpy",
+          "Econserve": "Econserve",
+          "CPU": "CPU",
+          "TPS": "TPS",
+          "CPULeft": "CPULeft",
+          "Lx": "Lx",
+          "Ly": "Ly",
+          "Lz": "Lz",
+          "Pxx": "Pxx",
+          "Pyy": "Pyy",
+          "Pzz": "Pzz",
+          "Pxy": "Pxy",
+          "Pxz": "Pxz",
+          "Pyz": "Pyz"
+        },
+        "seriesPerPanel": 1,
+        "showLegend": false,
+        "height": 200,
+        "expandable": true,
+        "expandedHeight": 420,
+        "enableZoom": "drona_status.DONE",
+        "zoomRetrieverParams": {
+          "MAX_POINTS": 20000
+        },
+        "showTable": true,
+        "emptyMessage": "No YAML thermo output yet (needs thermo_style yaml or thermo_modify line yaml)"
+      }
+    }
+  },
+  "job_resources": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_job_resources.json#/drona_job_resources"
+  },
+  "job_logs": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_logs.json#/drona_logCollapse/elements/drona_log_tabs",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_job_scope.",
+    "layout": {
+      "preset": "card",
+      "title": "Job Logs · Job $drona_job_scope",
+      "dot": false,
+      "collapsed": true
+    }
+  }
+}

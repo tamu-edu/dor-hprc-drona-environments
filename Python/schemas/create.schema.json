@@ -1,0 +1,140 @@
+{
+  "workflowCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "WORKFLOW OPTIONS",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "WORKFLOW OPTIONS",
+      "dot": false
+    },
+    "elements": {
+      "runDestinationFinal": {
+        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_job_destination.json#/drona_runDestinationFinal"
+      },
+      "ContainerVersion": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "versionSelect": {
+            "type": "select",
+            "label": "Python Environment",
+            "name": "versionSelect",
+            "help": "Select the environment type.",
+            "options": [
+              {
+                "value": "private",
+                "label": "Private virtual env"
+              },
+              {
+                "value": "create",
+                "label": "Create new private virtual env"
+              },
+              {
+                "value": "shared",
+                "label": "Shared virtual env"
+              },
+              {
+                "value": "module",
+                "label": "Module (latest)"
+              }
+            ]
+          },
+          "createEnvName": {
+            "type": "text",
+            "label": "Name of virtual env",
+            "name": "createEnvName",
+            "help": "Enter a unique name for your new environment. Use only letters, numbers, hyphens, or underscores. Spaces and special characters are not allowed.",
+            "value": "",
+            "condition": "versionSelect.create"
+          },
+          "pythonVersionDropdown": {
+            "type": "select",
+            "label": "Python Version",
+            "name": "pythonVersionDropdown",
+            "help": "Choose a Python version to load from the available options. The selected version will automatically load the required GCCcore and Python module.",
+            "condition": "versionSelect.create",
+            "options": [
+              {
+                "value": "module load GCCcore/13.3.0 Python/3.12.3",
+                "label": "Python 3.12.3"
+              },
+              {
+                "value": "module load GCCcore/13.2.0 Python/3.11.5",
+                "label": "Python 3.11.5"
+              },
+              {
+                "value": "module load GCCcore/11.3.0 Python/3.10.4",
+                "label": "Python 3.10.4"
+              },
+              {
+                "value": "module load GCCcore/11.2.0 Python/3.9.6",
+                "label": "Python 3.9.6"
+              },
+              {
+                "value": "module load GCCcore/10.2.0 Python/3.8.6",
+                "label": "Python 3.8.6"
+              },
+              {
+                "value": "module load GCCcore/7.3.0 Python/3.7.0",
+                "label": "Python 3.7.0"
+              }
+            ]
+          },
+          "currentEnvDropdown": {
+            "type": "dynamicSelect",
+            "label": "My environments",
+            "name": "currentEnvDropdown",
+            "help": "Choose from your currently existing environments.",
+            "condition": "versionSelect.private",
+            "retriever": "get_current_env.sh"
+          },
+          "sharedEnvDropdown": {
+            "type": "dynamicSelect",
+            "label": "Shared environments",
+            "name": "sharedEnvDropdown",
+            "help": "Shared environments.",
+            "condition": "versionSelect.shared",
+            "retriever": "get_python_versions.sh"
+          }
+        }
+      },
+      "ContainerScripts": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "mainscriptPicker": {
+            "type": "picker",
+            "label": "Main Python script",
+            "name": "mainscript",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "help": "The Python script you want to run. Select it on the cluster or upload it from your local machine. If you don't select a file here, you can still enter it in the generated job script.",
+            "files": "True"
+          },
+          "drona_fileUploader": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_import_upload.json#/drona_ImportUpload/elements/drona_fileUploader"
+          }
+        }
+      }
+    }
+  },
+  "slurmCollapse": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse",
+    "layout": {
+      "preset": "card",
+      "title": "SLURM OPTIONS",
+      "dot": false
+    }
+  },
+  "monitoringCollapse": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_monitoring.json#/drona_monitoringCollapse",
+    "title": "MONITORING OPTIONS",
+    "layout": {
+      "preset": "card",
+      "title": "MONITORING OPTIONS",
+      "dot": false
+    }
+  }
+}

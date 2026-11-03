@@ -3,6 +3,7 @@
 #SBATCH --time=[TIME] --mem=[MEM]
 #SBATCH --ntasks=[TASKS] --nodes=[NODES] --cpus-per-task=[CPUS]
 #SBATCH --output=out.%j --error=error.%j
+[PARTITION]
 [EXTRA]
 
 module purge
@@ -11,4 +12,12 @@ module load WebProxy
 [setupEnv]
 
 cd [flocation]
-python3 [fmainscript] 
+[GPU_MONITOR_START]
+[CPU_MONITOR_START]
+
+python3 [fmainscript]
+DRONA_EXIT=$?
+
+[GPU_MONITOR_STOP]
+[CPU_MONITOR_STOP]
+exit $DRONA_EXIT

@@ -16,9 +16,9 @@ def retrieve_loaded_modules(modules=""):
 def retrieve_driver_contents(mode, cancel_jobs=""):
     base = Path(__file__).resolve().parent
     
-    # An unmapped mode (hidden until configured) arrives as "" (None / "$drona_create_manage_mode" on older Drona)
+    # No mode selected arrives as "" (None / "$drona_create_manage_mode" on older Drona)
     if mode is None or mode == "$drona_create_manage_mode" or mode == "":
-        file_path = base / "configuration/configure.sh"
+        return 'echo "No workflow mode selected: choose Create or Manage." >&2\nexit 1\n'
     elif mode == "create":
         file_path = base / "drivers/driver-create.sh"
         drona_add_additional_file("jobscripts/generic-job.slurm", "Job Script")

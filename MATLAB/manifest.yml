@@ -1,5 +1,6 @@
 name: "MATLAB"
-description: "Environment assists users in generating and submitting Matlal jobs. This environment uses matlabsubmit as the submission tool"
+description: "Generates and submits MATLAB jobs (single node, optional parallel pool and GPU). Manage mode like Generic: workflow actions, job/node picker, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs."
 category: "Scientific"
-version: "1.0.0"
+version: "2.0.0"
+requires_drona: ">=2.0"
 author: "Marinus Pennings"

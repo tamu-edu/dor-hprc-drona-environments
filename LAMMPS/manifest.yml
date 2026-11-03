@@ -1,0 +1,6 @@
+name: "LAMMPS"
+description: "Analyzes a LAMMPS input file, suggests compatible LAMMPS modules and acceleration strategies, and generates the batch job. Manage mode shows a status strip, a run report, live charts of YAML thermo output, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs. Currently only available on the TAMU ACES cluster."
+category: "Scientific"
+version: "2.0.0"
+requires_drona: ">=2.0"
+author: "Richard Lawrence"

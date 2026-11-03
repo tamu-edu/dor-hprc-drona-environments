@@ -1,6 +1,6 @@
 name: "WorkflowHistory"
 description: "Browse the workflows of all environments recorded in the Drona database"
-category: "generic"
+category: "General"
 version: "1.0.0"
 author: ""
 requires_drona: ">=2.0"

@@ -1,0 +1,6 @@
+name: "Python"
+description: "Sets up a Python environment (module, private, new or shared virtual env, managed with ModuLair) and runs a Python script. Shared create/manage pages like Generic: Slurm checks, workflow actions, job/node picker, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs."
+category: "General"
+version: "2.0.0"
+requires_drona: ">=2.0"
+author: ""

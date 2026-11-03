@@ -15,10 +15,36 @@
     "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_cpu_chart.json#/drona_hidden_cpu_chart_check"
   },
   "workflowActions": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_manage_actions.json#/drona_workflowActions"
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_manage_actions.json#/drona_workflowActions",
+    "layout": {
+      "preset": "card",
+      "title": "WORKFLOW ACTIONS",
+      "dot": false,
+      "collapsed": true
+    }
   },
   "workingDirectory": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_jobdir_view.json#/drona_workingDirectory"
+    "type": "container",
+    "condition": "!drona_info_jobs.",
+    "layout": {
+      "preset": "bar",
+      "title": "Workflow Directory:"
+    },
+    "elements": {
+      "drona_jobDirLabel": {
+        "type": "staticText",
+        "useLabel": false,
+        "name": "drona_job_dir_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "condition": "!drona_job_dir.",
+        "retrieverParams": {
+          "JOB_DIR": "$drona_job_dir",
+          "WORKDIR_STYLE": "inline"
+        },
+        "retriever": "drona_info_jobdir_html.sh"
+      }
+    }
   },
   "slurmPanel": {
     "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_jobs_panel.json#/drona_slurmPanel"
@@ -36,48 +62,17 @@
       }
     }
   },
-  "seff_section": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_seff.json#/drona_job_summary_section"
-  },
-  "sstat_section": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_sstat.json#/drona_sstat_section"
-  },
   "job_logs": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_logs.json#/drona_logCollapse",
-    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_job_scope."
-  },
-  "node_container": {
-    "type": "container",
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_logs.json#/drona_logCollapse/elements/drona_log_tabs",
     "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_job_scope.",
-    "layout": [
-      {
-        "preset": "bar",
-        "title": "Node Scope:",
-        "badge": "Job $drona_job_scope"
-      },
-      {
-        "marginTop": "0.5rem"
-      }
-    ],
-    "elements": {
-      "drona_node_scope": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_scopes.json#/drona_node_scope"
-      }
+    "layout": {
+      "preset": "card",
+      "title": "Job Logs · Job $drona_job_scope",
+      "dot": false,
+      "collapsed": true
     }
   },
-  "cpu_chart": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_cpu_chart.json#/drona_cpu_chart",
-    "enableZoom": "drona_status.DONE",
-    "zoomRetrieverParams": { "MAX_POINTS": 0 },
-    "condition": "!drona_node_scope. && drona_cpu_monitor_active.ACTIVE"
-  },
-  "gpu_chart": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_gpu_chart.json#/drona_gpu_chart",
-    "enableZoom": "drona_status.DONE",
-    "zoomRetrieverParams": { "MAX_POINTS": 0 },
-    "condition": "!drona_node_scope. && drona_gpu_monitor_active.ACTIVE"
-  },
-  "processes_section": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_processes.json#/drona_processes_section"
+  "job_resources": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_job_resources.json#/drona_job_resources"
   }
 }

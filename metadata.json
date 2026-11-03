@@ -1,11 +1,12 @@
 {
   "MATLAB": {
     "name": "MATLAB",
-    "description": "Environment assists users in generating and submitting MATLAB jobs. This environment uses matlabsubmit as the submission tool",
+    "description": "Generates and submits MATLAB jobs (single node, optional parallel pool and GPU). Manage mode like Generic: workflow actions, job/node picker, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs.",
     "category": "Scientific",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "author": "Marinus Pennings",
-    "last_updated": "2025-02-03"
+    "last_updated": "2026-11-03",
+    "requires_drona": ">=2.0"
   },
   "tamulauncher": {
     "name": "tamulauncher",
@@ -18,13 +19,13 @@
   },
   "Generic": {
     "name": "Generic",
-    "description": "Generic Slurm environment. Shared create/manage pages, common Slurm parameters, module picker, job/node picker, CPU/GPU monitoring, processes, logs and job state panels. Should work on any cluster running Slurm.",
+    "description": "Generic Slurm environment that should work on any cluster running Slurm. Shared create/manage pages, common Slurm parameters, module picker, workflow actions (rerun/cancel), job/node picker, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs.",
     "category": "General",
     "cluster": "",
     "organization": "TAMU",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "author": "Marinus Pennings",
-    "last_updated": "2026-11-01",
+    "last_updated": "2026-11-03",
     "requires_drona": ">=2.0"
   },
   "AlphaFold": {
@@ -39,13 +40,14 @@
   },
   "LAMMPS": {
     "name": "LAMMPS",
-    "description": "This EXPERIMENTAL LAMMPS environment automatically generates a LAMMPS job by analyzing the LAMMPS input file. It will provide the researcher a list of accelerator strategies and LAMMMPS modules compatible with the input file. This environment is currently only available for the TAMU ACES cluster.",
+    "description": "Analyzes a LAMMPS input file, suggests compatible LAMMPS modules and acceleration strategies, and generates the batch job. Manage mode shows a status strip, a run report, live charts of YAML thermo output, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs. Currently only available on the TAMU ACES cluster.",
     "category": "Scientific",
     "cluster": "ACES",
     "organization": "TAMU",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "author": "Richard Lawrence",
-    "last_updated": "2025-08-18"
+    "last_updated": "2026-11-03",
+    "requires_drona": ">=2.0"
   },
   "Parabricks": {
     "name": "Parabricks",
@@ -59,13 +61,14 @@
   },
   "Python": {
     "name": "Python",
-    "description": "Sets up Python environment for use on all TAMU clusters. This environment should be able to be used on non-TAMU clusters with few modifications. This environment uses ModuLair to manage virtual envs.",
+    "description": "Sets up a Python environment (module, private, new or shared virtual env, managed with ModuLair) and runs a Python script. Shared create/manage pages like Generic: Slurm checks, workflow actions, job/node picker, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs.",
     "category": "General",
     "cluster": "",
     "organization": "TAMU",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "author": "",
-    "last_updated": "2025-08-16"
+    "last_updated": "2026-11-03",
+    "requires_drona": ">=2.0"
   },
   "R-ACES": {
     "name": "R-ACES",

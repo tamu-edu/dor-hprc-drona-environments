@@ -1,35 +1,34 @@
+Module database for the Module picker (admin task)
+==================================================
 
-If you use a hierarchical module system, you can add additional toolchains manually.
+The Generic environment no longer has a configure step. The Module picker
+reads its databases from the shared location set as "module_db_root" in
+schemas/create.schema.json (and in the shared component
+$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json):
 
+  /var/www/ood/apps/sys/dor-hprc-drona-composer-prod/environments/Generic/modules
 
-Step 1: create new module data base
-===================================
+The file for a toolchain is <module_db_root>/<toolchain value>.sqlite3,
+e.g. modules.sqlite3 for "No toolchain (default)".
 
-Suppose you want to create a database of modules under toolchain foss/2025
+An admin builds or refreshes these files by hand with generate_modules_db.py,
+in a scratch directory, then copies them into place:
 
-cd $DRONA_ENV_DIR/configuration
-module load foss/2025
-./generate_modules_db.py -b
-mv modules.sqlite3 ../modules/modules-foss-2025.sqlite
+  # default (no toolchain)
+  ./generate_modules_db.py -b            # writes modules.sqlite3 here
 
+  # a toolchain, e.g. foss/2025a
+  ./generate_modules_db.py -b -t foss/2025a
 
-Step 2: Add toolchain to the shared Module form component
-===========================================================
+The script names a toolchain file modules-foss_2025a.sqlite3, but the picker
+looks for <module_db_root>/<toolchain value>.sqlite3, i.e. with value
+"modules-foss/2025a" the path modules-foss/2025a.sqlite3. Copy it into place
+under that name:
 
-The Module element is defined once, in the shared component
-$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json, and
-referenced by create.schema.json via $ref. Edit it there:
+  mkdir -p <module_db_root>/modules-foss
+  cp modules-foss_2025a.sqlite3 <module_db_root>/modules-foss/2025a.sqlite3
 
-vi $DRONA_RUNTIME_DIR/form_components/drona_module_picker.json
+To offer a new toolchain, add it under "toolchains" in
+$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json:
 
-under toolchains, add :
-
-      {
-        "label": "foss/2025",
-        "value": "modules-foss-2025"
-      }
-
-
-Since this is a JSON formatted file, don't forget to add a comma between the old label/value element and the newly added label/value element.
-
-The newlyy  added toolchain will be available in the dropdown. You can add as many toolchains as needed. 
+      { "label": "foss/2025a", "value": "modules-foss/2025a" }

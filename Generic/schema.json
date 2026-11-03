@@ -1,26 +1,8 @@
 {
-
-  "configure": {
-    "type": "hidden",
-    "label": "configured",
-    "name": "drona_create_manage_configured",
-    "isDynamic": true,
-    "retriever": "drona_info_configure.sh"
-  },
-
-  "ConfigureContainer": {
-    "type": "container",
-    "elements": {
-      "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_configure_run.json"
-    },
-    "condition": "drona_create_manage_configured.NOTCONFIGURED"
-  },
-
   "CreateManageContainer": {
     "type": "container",
     "elements": {
       "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_create_manage-table.json"
-    },
-    "condition": "drona_create_manage_configured.CONFIGURED"
+    }
   }
 }
