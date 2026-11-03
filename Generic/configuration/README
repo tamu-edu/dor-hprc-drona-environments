@@ -2,33 +2,45 @@ Module database for the Module picker (admin task)
 ==================================================
 
 The Generic environment no longer has a configure step. The Module picker
-reads its databases from the shared location set as "module_db_root" in
-schemas/create.schema.json (and in the shared component
-$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json):
+reads its databases from the directory set as "module_db_root" in
+schemas/create.schema.json (the shared component
+$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json has no default;
+each environment that uses it sets its own):
 
   /var/www/ood/apps/sys/dor-hprc-drona-composer-prod/environments/Generic/modules
 
-The file for a toolchain is <module_db_root>/<toolchain value>.sqlite3,
-e.g. modules.sqlite3 for "No toolchain (default)".
+Layout. A toolchain is named by its module, and its database file uses the
+same name:
 
-An admin builds or refreshes these files by hand with generate_modules_db.py,
-in a scratch directory, then copies them into place:
+  <module_db_root>/modules.sqlite3        default (no toolchain)
+  <module_db_root>/foss/2024a.sqlite3     toolchain foss/2024a
+  <module_db_root>/intel/2024a.sqlite3    toolchain intel/2024a
 
-  # default (no toolchain)
-  ./generate_modules_db.py -b            # writes modules.sqlite3 here
+Building. An admin builds or refreshes the files with generate_modules_db.py,
+on a node where "module avail" shows what users of that cluster see. -o is
+the module_db_root; the script writes the file into place, creating the
+toolchain directory:
 
-  # a toolchain, e.g. foss/2025a
-  ./generate_modules_db.py -b -t foss/2025a
+  # default (no toolchain): <module_db_root>/modules.sqlite3
+  ./generate_modules_db.py -b -o <module_db_root>
 
-The script names a toolchain file modules-foss_2025a.sqlite3, but the picker
-looks for <module_db_root>/<toolchain value>.sqlite3, i.e. with value
-"modules-foss/2025a" the path modules-foss/2025a.sqlite3. Copy it into place
-under that name:
+  # a toolchain: <module_db_root>/foss/2024a.sqlite3
+  ./generate_modules_db.py -b -t foss/2024a -o <module_db_root>
 
-  mkdir -p <module_db_root>/modules-foss
-  cp modules-foss_2025a.sqlite3 <module_db_root>/modules-foss/2025a.sqlite3
+  # refresh an existing database (add new modules, drop removed ones)
+  ./generate_modules_db.py -u -t foss/2024a -o <module_db_root>
 
-To offer a new toolchain, add it under "toolchains" in
-$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json:
+Without -o the file goes next to the script. Building into a scratch
+directory and copying the tree into place works too, as long as the layout
+above is kept.
 
-      { "label": "foss/2025a", "value": "modules-foss/2025a" }
+The toolchain dropdown is built from the files present: modules.sqlite3 and
+every non-empty <family>/<version>.sqlite3 under <module_db_root> on that
+cluster's OOD host. To offer a new toolchain, build its database; no JSON
+edit is needed. To withdraw one, delete its file. (A schema may still pin a
+fixed list with a "toolchains" array on the module element; each value is
+the toolchain module name, "" for none.)
+
+Older layout. Databases in modules-<family>/<version>.sqlite3 (the layout
+before 2026-11-03) are still found and listed under <family>/<version>, so
+existing directories keep working. New builds should use the layout above.

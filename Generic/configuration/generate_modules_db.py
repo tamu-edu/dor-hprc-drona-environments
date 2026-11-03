@@ -213,16 +213,24 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = "Module indexing utilities for fast_ml.")
     parser.add_argument('-b', '--build', action='store_true', help="Build modules database from the ground up with specified toolchain.")
     parser.add_argument('-u', '--update', action='store_true', help="Update the database (add new modules + remove obsolete ones.)")
-    parser.add_argument('-t', '--toolchain', help="Specify the toolchain (e.g., intel/2020b)")
+    parser.add_argument('-t', '--toolchain', help="Specify the toolchain (e.g., foss/2024a). Omit for the default database.")
+    parser.add_argument('-o', '--output-dir', default=CWD_PATH,
+                        help="The module_db_root to write into (default: this script's directory). "
+                             "Writes <dir>/modules.sqlite3, or <dir>/<toolchain>.sqlite3 with -t "
+                             "(e.g. <dir>/foss/2024a.sqlite3), which is where the Module picker looks.")
     args = parser.parse_args()
 
-    toolchain = args.toolchain if args.toolchain else None
+    toolchain = args.toolchain.strip().strip('/') if args.toolchain else None
 
     if toolchain:
-        # Renaming the database name for the chosen toolchain
-        DATABASE_FILE = os.path.join(CWD_PATH, f"modules-{toolchain.replace('/', '_')}.sqlite3")
+        if any(part in ('', '.', '..') for part in toolchain.split('/')):
+            parser.error(f"invalid toolchain name: {args.toolchain}")
+        # The file name is the toolchain value the picker uses: foss/2024a -> foss/2024a.sqlite3
+        DATABASE_FILE = os.path.join(args.output_dir, f"{toolchain}.sqlite3")
     else:
-        DATABASE_FILE = os.path.join(CWD_PATH, "modules.sqlite3")
+        DATABASE_FILE = os.path.join(args.output_dir, "modules.sqlite3")
+    os.makedirs(os.path.dirname(DATABASE_FILE), exist_ok=True)
+    print(f"Database: {DATABASE_FILE}")
 
     if args.build:
         rebuild_db(DATABASE_FILE)

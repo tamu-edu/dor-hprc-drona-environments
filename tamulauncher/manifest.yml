@@ -1,5 +1,6 @@
 name: "tamulauncher"
-description: "Tool to run a large number of sequential or multi-threaded commands in a single job"
+description: "Runs a large number of sequential or multi-threaded commands (one per line in a commands file) in a single job, spread over one or more nodes. Manage mode like Generic: workflow actions, a command progress card, job/node picker, a Job Resources card (sstat/seff, CPU monitoring charts, processes) and logs."
 category: "Scientific"
-version: "1.0.0"
+version: "2.0.0"
 author: "Marinus Pennings"
+requires_drona: ">=2.0"

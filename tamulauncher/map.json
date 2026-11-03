@@ -1,8 +1,13 @@
 {
-  "JOBNAME" :"$name",
-  "SLURM": "!retrieve_slurm($nodes,$commandspernode,$threads,$memory,$walltime,$account)",
+  "$include": ["drona_cancel_jobs", "drona_cpu_monitor"],
+  "JOBNAME": "$name",
+  "DRIVER": "!retrieve_driver_contents($drona_create_manage_mode, $drona_cancel_jobs)",
+  "CREATE_DIR": "$location",
+  "MANAGE_DIR": "$drona_job_dir",
+  "MANAGE": "!retrieve_workflow_actions($drona_create_manage_mode, $drona_delete_workflow, $drona_delete_files, $drona_create_manage_allworkflows, $drona_job_dir)",
+  "DUMMY": "!retrieve_tamulauncher_slurm_params($nodes, $commandspernode, $threads, $drona_memory, $drona_walltime, $drona_account, $drona_extra_slurm)",
   "flocation": "$location",
-  "MODULES": "!retrieve_loaded_modules($module_list)",
-  "NORESTART": "!set_norestart($norestart)",
+  "MODULES": "!retrieve_module_lines($drona_module_list)",
+  "NORESTART": "!retrieve_norestart($norestart)",
   "COMMANDFILE": "!retrieve_commandsfile($commandfile)"
 }

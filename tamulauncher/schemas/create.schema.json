@@ -1,0 +1,123 @@
+{
+  "workflowCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "WORKFLOW OPTIONS",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "WORKFLOW OPTIONS",
+      "dot": false
+    },
+    "elements": {
+      "runDestinationFinal": {
+        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_job_destination.json#/drona_runDestinationFinal"
+      },
+      "commandfilePicker": {
+        "type": "picker",
+        "label": "Commands file",
+        "name": "commandfile",
+        "help": "A text file with one command per line. tamulauncher runs these commands concurrently, spread over the requested nodes. A line can hold several commands separated by ; (they run one after the other).",
+        "localLabel": "select",
+        "showFiles": "True",
+        "files": "True",
+        "showHidden": "false"
+      },
+      "Modules": {
+        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json#/drona_Modules",
+        "module_db_root": "/var/www/ood/apps/sys/dor-hprc-drona-composer-prod/environments/Generic/modules",
+        "help": "Modules the commands need. They are loaded once at the start of the job, before tamulauncher runs the commands."
+      }
+    }
+  },
+  "launcherCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "TAMULAUNCHER OPTIONS",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "TAMULAUNCHER OPTIONS",
+      "dot": false
+    },
+    "elements": {
+      "ContainerLauncher": {
+        "type": "rowContainer",
+        "elements": {
+          "nodes": {
+            "type": "number",
+            "label": "Number of nodes",
+            "name": "nodes",
+            "help": "Number of nodes the commands are distributed over.",
+            "value": "1"
+          },
+          "commandspernode": {
+            "type": "number",
+            "label": "Commands per node (optional)",
+            "name": "commandspernode",
+            "help": "OPTIONAL: number of commands each node runs at the same time. Leave empty to run as many as fit on a node (cores per node divided by threads per command).",
+            "value": ""
+          },
+          "threads": {
+            "type": "number",
+            "label": "Threads per command",
+            "name": "threads",
+            "help": "If your commands are multi-threaded, the number of threads each command uses (sets OMP_NUM_THREADS). Commands per node x threads per command cannot exceed the cores on a node.",
+            "value": "1"
+          }
+        }
+      },
+      "norestart": {
+        "type": "checkbox",
+        "label": "No restart",
+        "name": "norestart",
+        "help": "By default tamulauncher keeps track of finished commands, and a rerun continues where the previous run left off. Check this to run all commands again from the start.",
+        "style": "button",
+        "value": "yes"
+      }
+    }
+  },
+  "slurmCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "SLURM OPTIONS",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "SLURM OPTIONS",
+      "dot": false
+    },
+    "elements": {
+      "ContainerAdditional": {
+        "type": "rowContainer",
+        "elements": {
+          "memory": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
+            "help": "OPTIONAL: total memory for the job, over all nodes. If empty, Drona requests memory in proportion to the cores used. If the commands use more memory than requested, the job is killed."
+          },
+          "Walltime": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
+            "help": "OPTIONAL: time the whole job needs (default 2 hours). If the job runs out of time, rerun the workflow: tamulauncher skips the commands that already finished."
+          }
+        }
+      },
+      "ContainerAccount": {
+        "type": "rowContainer",
+        "elements": {
+          "account": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
+          },
+          "extraText": {
+            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
+          }
+        }
+      }
+    }
+  },
+  "monitoringCollapse": {
+    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_monitoring.json#/drona_monitoringCollapse",
+    "title": "MONITORING OPTIONS",
+    "layout": {
+      "preset": "card",
+      "title": "MONITORING OPTIONS",
+      "dot": false
+    }
+  }
+}

@@ -1,90 +1,100 @@
-import subprocess
-import math
-import os
+import shlex
+from pathlib import Path
 
-def set_norestart(norestart=""):
-    if norestart == "":
+from drona_utils import drona_add_additional_file, drona_add_mapping, drona_add_message
+from drona_runtime_utils import cluster_max_cores, retrieve_slurm_params
+
+
+def _value(v):
+    """Field value, or "" when the field is unset (None, "" or the unmapped "$name")."""
+    if v is None:
         return ""
+    v = str(v).strip()
+    return "" if v.startswith("$") else v
+
+
+def _int(v, default):
+    v = _value(v)
+    return int(v) if v.isdigit() else default
+
+
+def retrieve_driver_contents(mode, cancel_jobs=""):
+    """Create mode submits jobscripts/tamulauncher-job.slurm with the shared sbatch driver,
+    manage mode runs the cancel/delete actions."""
+    base = Path(__file__).resolve().parent
+
+    if _value(mode) == "":
+        return 'echo "No workflow mode selected: choose Create or Manage." >&2\nexit 1\n'
+    if mode == "create":
+        file_path = base / "drivers/driver-create.sh"
+        drona_add_additional_file("jobscripts/tamulauncher-job.slurm", "Job Script")
     else:
-        return "--norestart"
+        file_path = base / "drivers/driver-manage.sh"
 
-def retrieve_slurm(nodes,tasks,threads,memory,walltime,account):
-    cluster=str(subprocess.run(['/sw/local/bin/clustername' ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower())
-    maxcpu=0
-    mempercore=0
-    if cluster == "grace":
-        maxcpu=48
-        mempercore=7.5
-    elif cluster == "faster":
-        maxcpu=64
-        mempercore=3.75
-    elif cluster ==  "aces":
-        maxcpu=96
-        mempercore=5
-    elif cluster == "launch":
-        maxcpu=192
-        mempercore=1.88
-
-    drona_add_mapping("NODES",nodes)
-    threadnum=int(threads)
-    tasknum=0 if tasks=="" else int(tasks)
-
-    # verify the number of threads
-    if threadnum > maxcpu:
-        drona_add_warning("Warning, #threads cannot exceed max cores on a node. Reducing to max")
-        trheadnum = maxcpu
-
-    # verify the number of threads
-    if tasknum > maxcpu:
-        drona_add_warning("Warning, #command per node cannot exceed max cores on a node. Reducing to max")
-        tasknum = maxcpu
+    with open(file_path, 'r') as file:
+        return file.read()
 
 
-    # compute taskls per node
-    if tasknum == 0:
-        # if task not set, set it to make sure as many cores are being used per node
-        tasknum = maxcpu // threadnum
-    elif tasknum*threadnum > maxcpu: 
-        # if task is set, make sure tasknum*threadnum <= maxcpu
-        # if so, adjuist the number of threads
-        drona_add_warning("commands per node mulitplied by threads per command, cannot exceeed "+ str(maxcpu)+". Adjusting #threads")
-        threadnum= maxcpu // tasknum
+def retrieve_tamulauncher_slurm_params(nodes, commandspernode, threads, memory, walltime, account, extra):
+    """One launcher task per node with commands-per-node x threads-per-command cores.
 
-    
-    # set the timestring
-    timestring = "02:00" if walltime == "" else walltime
+    Commands per node defaults to as many as fit on a node. Threads are capped at the cores per node,
+    and reduced when commands x threads does not fit. Adds CPN/CPUPT for the job script; the shared
+    cluster checks add TASKS/NODES/CPUS/MEM/TIME/PARTITION."""
+    n = max(_int(nodes, 1), 1)
+    t = max(_int(threads, 1), 1)
+    c = _int(commandspernode, 0)
 
-    memnum=0
-    # if memory not set, compute based on mempercore
-    mtotal = 0 if memory =="" else int(memory[:-1])
+    maxcores = cluster_max_cores()
+    if maxcores:
+        if t > maxcores:
+            drona_add_message(f"#threads per command reduced from {t} to {maxcores} (cores per node).", "warning")
+            t = maxcores
+        if c > maxcores:
+            drona_add_message(f"#commands per node reduced from {c} to {maxcores} (cores per node).", "warning")
+            c = maxcores
+        if c == 0:
+            c = maxcores // t
+        elif c * t > maxcores:
+            newt = max(maxcores // c, 1)
+            drona_add_message(f"commands per node x threads per command cannot exceed {maxcores} cores per node. "
+                              f"Reducing #threads per command from {t} to {newt}.", "warning")
+            t = newt
+    elif c == 0:
+        drona_add_message("Cores per node unknown on this cluster: running 1 command per node. "
+                          "Set #commands per node to run more.", "warning")
+        c = 1
 
-    if mtotal==0:
-        memnum = mempercore * threadnum*tasknum
-    else:
-       memnum = int(totalmemnum // nodes)
+    drona_add_mapping("CPN", str(c))
+    drona_add_mapping("CPUPT", str(t))
 
-    drona_add_mapping("CPUPT",str(threadnum))
-    drona_add_mapping("MEM",str(int(memnum))+"G")
-    drona_add_mapping("CPUS",str(tasknum*threadnum))
-    drona_add_mapping("CPN",str(tasknum))
-    drona_add_mapping("TIME",timestring)
-    return f""
+    return retrieve_slurm_params(str(n), str(n), str(c * t), _value(memory), "", "", _value(walltime),
+                                 _value(account), _value(extra))
 
 
 def retrieve_commandsfile(cfile=""):
+    """Commands file path for tamulauncher (quoted), with a check that it exists and is not empty."""
+    cfile = _value(cfile)
     if cfile == "":
-        drona_add_warning("ERROR: no commandsfile specified. Your job will fail. Please provide commands file in preview or form)")
-    return cfile
+        drona_add_message("No commands file selected. The job will fail; select one in the form or edit the job script.", "error")
+        return ""
+    try:
+        with open(cfile, errors="replace") as f:
+            ncommands = sum(1 for line in f if line.strip())
+        if ncommands == 0:
+            drona_add_message(f"Commands file {cfile} is empty.", "error")
+    except OSError:
+        drona_add_message(f"Cannot read commands file {cfile}. Check that it exists on the cluster.", "warning")
+    return shlex.quote(cfile)
 
 
-
-def retrieve_loaded_modules(modules=""):
-    if modules == "":
-        return f""
-    else:
-        return f" foss/2023b " + modules  
+def retrieve_norestart(norestart=""):
+    return "--norestart" if _value(norestart) else ""
 
 
+def retrieve_module_lines(modules=""):
+    """The job script's module load line: WebProxy plus the modules picked in the form.
 
-
-
+    The picker's list starts with the chosen toolchain, if any (e.g.
+    "foss/2024a OpenMPI/4.1.6"), so one `module load` loads them as one stack."""
+    return " ".join(["module load WebProxy"] + _value(modules).split())
