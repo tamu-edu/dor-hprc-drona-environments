@@ -32,7 +32,23 @@
     }
   },
   "slurmCollapse": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse",
+    "type": "collapsibleRowContainer",
+    "title": "SLURM OPTIONS",
+    "default_state": "expanded",
+    "elements": {
+      "drona_ContainerTasks": {
+        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerTasks"
+      },
+      "drona_ContainerGPU": {
+        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU"
+      },
+      "drona_ContainerAdditional": {
+        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional"
+      },
+      "drona_ContainerTraining": {
+        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_ContainerTraining"
+      }
+    },
     "layout": {
       "preset": "card",
       "title": "SLURM OPTIONS",

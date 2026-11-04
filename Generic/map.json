@@ -1,5 +1,6 @@
 {
-  "$include": ["drona_cancel_jobs", "drona_cpu_monitor", "drona_gpu_monitor_nvml", "drona_slurm_params"],
+  "$include": ["drona_cancel_jobs", "drona_cpu_monitor", "drona_gpu_monitor_nvml"],
+  "DUMMY": "!retrieve_slurm_params_training($drona_nodes,$drona_tasks,$drona_cpus,$drona_memory,$drona_gpu,$drona_numgpu,$drona_walltime,$drona_account,$drona_extra_slurm,$drona_training,$drona_reservation,$drona_training_gpu,$drona_training_partition,$drona_training_numgpu)",
   "JOBNAME" :"$name",
   "DRIVER" : "!retrieve_driver_contents( $drona_create_manage_mode, $drona_cancel_jobs )",
   "CREATE_DIR": "$location",
