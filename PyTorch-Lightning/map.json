@@ -2,7 +2,7 @@
   "$include": [
     "drona_cancel_jobs",
     "drona_cpu_monitor",
-    "drona_gpu_monitor"
+    "drona_gpu_monitor_nvml"
   ],
   "JOBNAME": "!sanitize_job_name($name)",
   "DRIVER": "!retrieve_driver_contents($drona_create_manage_mode, $drona_cancel_jobs)",
