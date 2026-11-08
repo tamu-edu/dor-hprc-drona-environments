@@ -1,0 +1,5 @@
+#!/bin/bash
+# GPU types for the re-run card: "keep the job file's GPU" first, then the Create list.
+list=$(bash "$(dirname "$0")/retrieve_gpus")
+keep='{ "value": "keep", "label": "Same as before" }'
+if [ "$list" = "[]" ] || [ -z "$list" ]; then echo "[ $keep ]"; else echo "[ $keep, ${list#[}"; fi

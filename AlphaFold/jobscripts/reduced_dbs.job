@@ -1,0 +1,41 @@
+#!/bin/bash
+#SBATCH --job-name=alphafold-[JOBNAME]
+#SBATCH --time=[TIME]
+#SBATCH --nodes=[NODES] --ntasks-per-node=1 --cpus-per-task=[CPUS] --mem=[MEM]
+[PARTITION]
+#SBATCH --output=out.%j --error=error.%j
+#DRONA label: MSA + prediction (GPU)
+[EXTRA]
+[email]
+
+module purge
+[ALPHAFOLDMODULES]
+
+[CPU_MONITOR_START]
+[GPU_MONITOR_START]
+
+ALPHAFOLD_DATA_DIR=[datadir]
+
+run_alphafold.py \
+--use_gpu_relax \
+--data_dir=$ALPHAFOLD_DATA_DIR \
+--uniref90_database_path=$ALPHAFOLD_DATA_DIR/uniref90/uniref90.fasta \
+--mgnify_database_path=$ALPHAFOLD_DATA_DIR/mgnify/mgy_clusters_2022_05.fa \
+--small_bfd_database_path=$ALPHAFOLD_DATA_DIR/small_bfd/bfd-first_non_consensus_sequences.fasta \
+--model_preset=[modelpreset] \
+--pdb70_database_path=$ALPHAFOLD_DATA_DIR/pdb70/pdb70 \
+--template_mmcif_dir=$ALPHAFOLD_DATA_DIR/pdb_mmcif/mmcif_files \
+--obsolete_pdbs_path=$ALPHAFOLD_DATA_DIR/pdb_mmcif/obsolete.dat \
+--max_template_date=[maxtemplate] \
+--db_preset=[dbpreset] \
+--output_dir=[outputdir] \
+--fasta_paths=[proteinfasta]
+af_status=$?
+
+[GPU_MONITOR_STOP]
+[CPU_MONITOR_STOP]
+
+[AUTOBUNDLE]
+
+exit $af_status
+

@@ -1,0 +1,53 @@
+#!/bin/bash
+# GPU types AlphaFold can use on this cluster. First "any": an untyped GPU request (cluster profile), so the
+# job starts on whichever GPU is free first; then the GPU types (keep in step with utils.CLUSTER_GPU_TYPES).
+# Each label shows the current queue, from plain Slurm commands: free GPUs (sinfo) and pending jobs
+# asking for that GPU type (squeue), e.g. "H100 · 0 free · 455 jobs waiting".
+# Cluster name as in drona_cluster_name(): DRONA_CLUSTER (set by the app), else Slurm's ClusterName.
+cluster="${DRONA_CLUSTER:-$(scontrol show config 2>/dev/null | awk '/^ClusterName/ {print $3}')}"
+cluster="${cluster,,}"
+case $cluster in
+    aces)   types="h100:H100 a30:A30" ;;
+    grace)  types="t4:T4 a40:A40 rtx:RTX" ;;
+    faster) types="t4:T4 a40:A40 a30:A30 a10:A10" ;;
+    *)      echo "[]"; exit 0 ;;
+esac
+
+# free GPUs per type from Slurm: total minus allocated GRES on idle/mixed nodes (not drained, down,
+# reserved or planned for a queued job "-"); one line per node
+declare -A free
+if command -v sinfo >/dev/null 2>&1; then
+    while read -r t n; do
+        [ -n "$t" ] && free[$t]=$n
+    done < <(timeout 10 sinfo -h -N -O "NodeHost:40,StateCompact:20,Gres:80,GresUsed:120" 2>/dev/null | sort -u | awk '
+        tolower($2) ~ /^(idle|mix)$/ && match(tolower($3), /gpu:[a-z0-9_]+:[0-9]+/) {
+            split(substr(tolower($3), RSTART, RLENGTH), g, ":"); used = 0
+            if (match(tolower($4), /gpu:[a-z0-9_]+:[0-9]+/)) { split(substr(tolower($4), RSTART, RLENGTH), u, ":"); used = u[3] }
+            if (g[3] - used > 0) c[g[2]] += g[3] - used
+        }
+        END { for (t in c) print t, c[t] }')
+    have_free=1
+fi
+
+# pending jobs per type: squeue %b is e.g. "gres/gpu:h100:1" (jobs without a type are not counted)
+declare -A waiting
+if command -v squeue >/dev/null 2>&1; then
+    while read -r t n; do
+        [ -n "$t" ] && waiting[$t]=$n
+    done < <(timeout 10 squeue -h -t PD -o "%b" 2>/dev/null | awk '
+        match(tolower($0), /gpu:[a-z0-9_]+:[0-9]+/) {
+            split(substr(tolower($0), RSTART, RLENGTH), p, ":"); c[p[2]]++
+        }
+        END { for (t in c) print t, c[t] }')
+    have_queue=1
+fi
+
+out='{ "value": "any", "label": "Any GPU (first available)" }'
+for entry in $types; do
+    value="${entry%%:*}"; label="${entry#*:}"
+    info=""
+    [ -n "$have_free" ] && info="$info · ${free[$value]:-0} free"
+    [ -n "$have_queue" ] && { w=${waiting[$value]:-0}; info="$info · $w job$([ "$w" = 1 ] || echo s) waiting"; }
+    out="$out, { \"value\": \"$value\", \"label\": \"$label$info\" }"
+done
+echo "[ $out ]"

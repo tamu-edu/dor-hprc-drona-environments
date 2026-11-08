@@ -35,9 +35,21 @@ function plddtToHex(b) {
   return 0xFF7D45;
 }
 
-// Parse per-residue pLDDT from base64-encoded PDB (CA B-factors)
-function parsePlddtFromPDB(b64) {
-  const text = atob(b64);
+// Structures come as plain text (structure_encoding "text") or, from older retrievers, base64
+const structText = s => (data.structure_encoding === 'text' ? s : atob(s));
+const structSource = s => (data.structure_encoding === 'text'
+  ? new Blob([s], { type: 'text/plain' }) : 'data:text/plain;base64,' + s);
+
+// Structures by key ("rank_N" / "sample_N"), sorted by number. A promise, so structures could later be
+// fetched on demand (needs DynamicViewer support: the sandboxed iframe may not connect to the server).
+const keyNum = k => parseInt(k.replace(/^\D+_/, ''), 10);
+function fetchStructure(store, key) {
+  return store[key] ? Promise.resolve(store[key]) : Promise.reject(new Error('structure ' + key + ' not found'));
+}
+
+// Parse per-residue pLDDT from a PDB (CA B-factors)
+function parsePlddtFromPDB(pdb) {
+  const text = structText(pdb);
   const vals = []; const seen = new Set();
   for (const line of text.split('\n')) {
     if (!line.startsWith('ATOM')) continue;
@@ -120,7 +132,8 @@ const rightCtrl = document.createElement('div');
 rightCtrl.style.cssText = 'display:flex;align-items:center;gap:8px;flex-shrink:0';
 rightCtrl.innerHTML = '<span style="font-weight:600;font-size:12px;color:#444">3D Structure</span>';
 
-const availableRanks = Object.keys(pdbs || {}).sort();
+const pdbStore = pdbs || {};
+const availableRanks = Object.keys(pdbStore).sort((a, b) => keyNum(a) - keyNum(b));
 if (availableRanks.length > 1) {
   const rankSel = document.createElement('select');
   rankSel.style.cssText = 'padding:2px 6px;border:1px solid #ced4da;border-radius:4px;font-size:12px';
@@ -152,14 +165,23 @@ container.appendChild(mainRow);
 
 // ── NGL ───────────────────────────────────────────────────────────────────────
 const stage = new NGL.Stage(nglDiv, { backgroundColor: 'white' });
-let baseRep = null, currentComp = null;
+// Load errors go in an overlay, so the NGL canvas survives and the next pick still works
+const nglError = document.createElement('div');
+nglError.style.cssText = 'position:absolute;top:0;left:0;right:0;padding:10px;color:#dc3545;font-size:12px;display:none';
+nglDiv.appendChild(nglError);
+function showNglError(msg) { nglError.textContent = msg; nglError.style.display = msg ? 'block' : 'none'; }
+let baseRep = null, currentComp = null, loadToken = 0;
 
 function loadRank(rankKey) {
+  const token = ++loadToken;
+  showNglError('');
   stage.removeAllComponents();
   currentComp = null; baseRep = null;
-  const b64 = pdbs && pdbs[rankKey];
-  if (!b64) { nglDiv.innerHTML = '<div style="padding:10px;color:#dc3545;font-size:12px">PDB not found</div>'; return; }
-  stage.loadFile('data:text/plain;base64,' + b64, { ext: 'pdb' }).then(comp => {
+  fetchStructure(pdbStore, rankKey).then(text => {
+    if (token !== loadToken) return null;   // another rank was picked meanwhile
+    return stage.loadFile(structSource(text), { ext: 'pdb' });
+  }).then(comp => {
+    if (!comp || token !== loadToken) return;
     currentComp = comp;
     baseRep = comp.addRepresentation('cartoon', {
       colorScheme: 'bfactor',
@@ -168,7 +190,7 @@ function loadRank(rankKey) {
     });
     comp.autoView();
   }).catch(err => {
-    nglDiv.innerHTML = `<div style="padding:10px;color:#dc3545;font-size:12px">Error: ${err.message}</div>`;
+    if (token === loadToken) showNglError('Error: ' + err.message);
   });
 }
 
@@ -176,16 +198,22 @@ if (availableRanks.length > 0) setTimeout(() => loadRank(availableRanks[0]), 50)
 
 // ── Plotly — PAE heatmap ──────────────────────────────────────────────────────
 const residueNums = Array.from({ length: n }, (_, i) => i + 1);
+// Large inputs: the retriever shrinks the matrix to blocks of matStep residues (max per block)
+const matStep = data.matrix_step || 1;
+const matAxis = data.matrix_axis || residueNums;
+const matCustom = matStep > 1 ? matrix.map(row => row.map((_, c) => Math.min(matAxis[c] + matStep - 1, n))) : undefined;
 const paeColorscale = Array.from({ length: 11 }, (_, i) => {
   const [r, g, b] = paeRGB(i * matMax / 10);
   return [i / 10, `rgb(${r},${g},${b})`];
 });
 
 const paeTrace = {
-  type: 'heatmap', z: matrix, x: residueNums, y: residueNums,
+  type: 'heatmap', z: matrix, x: matAxis, y: matAxis, customdata: matCustom,
   colorscale: paeColorscale, zmin: 0, zmax: matMax,
   hoverongaps: false,
-  hovertemplate: 'Scored: %{x}<br>Aligned to: %{y}<br>%{z:.1f} Å<extra></extra>',
+  hovertemplate: (matStep > 1
+    ? `Scored: %{x}–%{customdata}<br>Aligned to: %{y} (block of ${matStep})<br>max %{z:.1f} Å<extra></extra>`
+    : 'Scored: %{x}<br>Aligned to: %{y}<br>%{z:.1f} Å<extra></extra>'),
   colorbar: {
     title: { text: 'Å', side: 'right', font: { size: 10 } },
     thickness: 12, len: 0.85, tickfont: { size: 9 },
@@ -203,8 +231,9 @@ const paeLayout = {
 const rankColors = ['#3498db', '#e67e22', '#2ecc71', '#e74c3c', '#9b59b6'];
 
 const rankTraces = (all_models || []).map((m, i) => {
-  const b64 = pdbs && pdbs[`rank_${m.rank}`];
-  const vals = b64 ? parsePlddtFromPDB(b64) : (i === 0 ? plddt_per_residue || [] : []);
+  const key = `rank_${m.rank}`;
+  const vals = (data.rank_plddts && data.rank_plddts[key])
+    || (pdbStore[key] ? parsePlddtFromPDB(pdbStore[key]) : (i === 0 ? plddt_per_residue || [] : []));
   return {
     type: 'scatter', mode: 'lines',
     name: `Rank ${m.rank}`,
@@ -234,6 +263,12 @@ const rankLayout = {
   paper_bgcolor: 'white', plot_bgcolor: 'white',
 };
 
+// Toolbar on: zoom / pan / reset axes / save PNG (double-click also resets).
+const plotConfig = {
+  responsive: true, displaylogo: false, displayModeBar: true,
+  modeBarButtonsToRemove: ['select2d', 'lasso2d', 'autoScale2d'],
+};
+
 // ── Toggle logic ──────────────────────────────────────────────────────────────
 let activeTab = 'pae';
 let plotlyReady = false;
@@ -252,11 +287,11 @@ function setActiveTab(tab) {
   if (!plotlyReady) {
     Plotly.newPlot(plotDiv, isPane ? [paeTrace] : rankTraces,
                              isPane ? paeLayout  : rankLayout,
-                   { responsive: true, displayModeBar: false })
+                   plotConfig)
       .then(() => { plotlyReady = true; });
   } else {
     Plotly.react(plotDiv, isPane ? [paeTrace] : rankTraces,
-                          isPane ? paeLayout  : rankLayout);
+                          isPane ? paeLayout  : rankLayout, plotConfig);
   }
 }
 

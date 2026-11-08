@@ -1,0 +1,444 @@
+{
+  "versionCard": {
+    "type": "container",
+    "layout": {
+      "preset": "card",
+      "title": "VERSION",
+      "dot": false,
+      "compact": true
+    },
+    "elements": {
+      "versionRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "AlphaFoldVersionRadio": {
+            "type": "radioGroup",
+            "name": "alphafoldversion",
+            "label": "Version",
+            "options": [
+              {
+                "label": "AlphaFold 3",
+                "value": "alphafold3"
+              },
+              {
+                "label": "AlphaFold 2",
+                "value": "alphafold2"
+              }
+            ],
+            "value": "alphafold3",
+            "style": "button",
+            "help": "AlphaFold 3: proteins, nucleic acids, ligands and ions; JSON input; needs your own model parameters. AlphaFold 2: proteins only; FASTA input; uses the shared model parameters."
+          },
+          "pipelineNoteTwo": {
+            "type": "staticText",
+            "name": "pipelineNoteTwo",
+            "label": "",
+            "value": "<div style='background:#f1f3f5;border-left:3px solid #500000;padding:4px 10px;border-radius:4px;font-size:0.85em;'>2 jobs: CPU (MSA, templates) → GPU (prediction)</div>",
+            "allowHtml": true,
+            "useLabel": false,
+            "condition": "alphafoldversion.alphafold3 || (alphafoldversion.alphafold2 && !dbpreset.reduced_dbs)"
+          },
+          "pipelineNoteOne": {
+            "type": "staticText",
+            "name": "pipelineNoteOne",
+            "label": "",
+            "value": "<div style='background:#f1f3f5;border-left:3px solid #500000;padding:4px 10px;border-radius:4px;font-size:0.85em;'>1 GPU job (reduced databases)</div>",
+            "allowHtml": true,
+            "useLabel": false,
+            "condition": "alphafoldversion.alphafold2 && dbpreset.reduced_dbs"
+          }
+        },
+        "alignItems": "center"
+      }
+    }
+  },
+  "jobDestination": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_destination.json#/drona_runDestinationFinal"
+  },
+  "inputCard": {
+    "type": "container",
+    "layout": {
+      "preset": "card",
+      "title": "INPUT",
+      "dot": false,
+      "compact": true
+    },
+    "condition": "alphafoldversion.alphafold3 || alphafoldversion.alphafold2",
+    "elements": {
+      "inputAF3Row": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "alphafoldversion.alphafold3",
+        "elements": {
+          "JSON": {
+            "type": "picker",
+            "label": "Input JSON",
+            "name": "jsoninput",
+            "help": "AlphaFold 3 input file (.json) with the sequences and settings. Leave empty to start from a skeleton you can edit in the preview.",
+            "localLabel": "select",
+            "showFiles": "True",
+            "files": "True",
+            "defaultPaths": {
+              "HOME": "$HOME",
+              "SCRATCH": "/scratch/user/$USER",
+              "Examples": "/scratch/data/bio/alphafold3/examples/"
+            },
+            "useHPCDefaultPaths": "False"
+          },
+          "MODEL": {
+            "type": "picker",
+            "label": "Model parameters directory",
+            "name": "modelinput",
+            "help": "Select the directory that contains af3.bin (or af3.bin.zst), the model parameters you received from Google DeepMind after registering for AlphaFold 3.",
+            "localLabel": "Select",
+            "showFiles": "False",
+            "files": "False",
+            "defaultPaths": {
+              "HOME": "$HOME",
+              "SCRATCH": "/scratch/user/$USER"
+            },
+            "useHPCDefaultPaths": "False"
+          }
+        }
+      },
+      "inputAF3NoteRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "alphafoldversion.alphafold3",
+        "elements": {
+          "disclaimer": {
+            "type": "staticText",
+            "name": "disclaimer",
+            "label": "",
+            "value": "<div style='background:#f1f3f5;border-left:3px solid #500000;padding:4px 10px;border-radius:4px;font-size:0.85em;'>No af3.bin yet? Request the AlphaFold 3 weights with the <a href='https://docs.google.com/forms/d/e/1FAIpQLSfWZAgo1aYk0O4MuAXZj8xRQ8DafeFJnldNOnh_13qAx2ceZw/viewform' target='_blank'>AlphaFold 3 Google Form</a>.</div>",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "inputAF2Row": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "alphafoldversion.alphafold2",
+        "elements": {
+          "FASTA": {
+            "type": "picker",
+            "label": "Protein FASTA",
+            "name": "proteinfasta",
+            "help": "FASTA file with the protein sequence(s). Pick a file on the cluster, or one on your computer (it is uploaded).",
+            "remoteLabel": "Local",
+            "localLabel": "Cluster",
+            "showFiles": "True",
+            "files": "True",
+            "defaultPaths": {
+              "HOME": "$HOME",
+              "SCRATCH": "/scratch/user/$USER",
+              "Examples": "/scratch/data/bio/alphafold/example_data/"
+            },
+            "useHPCDefaultPaths": "False"
+          }
+        }
+      }
+    }
+  },
+  "settingsCard": {
+    "type": "container",
+    "layout": {
+      "preset": "card",
+      "title": "SETTINGS",
+      "dot": false,
+      "compact": true
+    },
+    "condition": "alphafoldversion.alphafold3 || alphafoldversion.alphafold2",
+    "elements": {
+      "settingsRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "RECYCLES": {
+            "type": "number",
+            "label": "Recycles",
+            "name": "recycles",
+            "value": "10",
+            "help": "Number of recycling iterations of the model. AlphaFold 3 default is 10; fewer is faster but less accurate.",
+            "condition": "alphafoldversion.alphafold3"
+          },
+          "SEEDS": {
+            "type": "number",
+            "label": "Seeds",
+            "name": "seeds",
+            "value": "",
+            "help": "Number of random seeds (AlphaFold 3 --num_seeds). Each seed gives 5 diffusion samples and the best is ranked first; GPU time grows with the number of seeds. More seeds is the usual way to improve a low-confidence prediction. Leave empty to use the seed(s) in the input. Only possible when the input lists one seed.",
+            "condition": "alphafoldversion.alphafold3"
+          },
+          "ModelPresetDropdown": {
+            "type": "select",
+            "label": "Model preset",
+            "name": "modelpreset",
+            "options": [
+              {
+                "value": "monomer",
+                "label": "monomer"
+              },
+              {
+                "value": "monomer_casp14",
+                "label": "monomer_casp14"
+              },
+              {
+                "value": "monomer_ptm",
+                "label": "monomer_ptm"
+              },
+              {
+                "value": "multimer",
+                "label": "multimer"
+              }
+            ],
+            "value": "monomer",
+            "help": "monomer: single chain (no PAE). monomer_casp14: CASP14 setup, 8x ensembling, slower (no PAE). monomer_ptm: single chain with pTM and PAE. multimer: complexes of several chains (PAE, ipTM).",
+            "condition": "alphafoldversion.alphafold2"
+          },
+          "DBPresetDropdown": {
+            "type": "radioGroup",
+            "name": "dbpreset",
+            "label": "Databases",
+            "style": "button",
+            "options": [
+              {
+                "label": "Full",
+                "value": "full_dbs"
+              },
+              {
+                "label": "Reduced",
+                "value": "reduced_dbs"
+              }
+            ],
+            "value": "full_dbs",
+            "help": "Full: complete genetic databases, most accurate, runs as a CPU job + GPU job. Reduced: smaller databases, faster, one GPU job, slightly less accurate.",
+            "condition": "alphafoldversion.alphafold2"
+          },
+          "DATEText": {
+            "type": "text",
+            "label": "Max template date",
+            "name": "maxtemplate",
+            "value": "",
+            "help": "Only templates released on or before this date are used (YYYY-MM-DD). Leave empty for today.",
+            "placeholder": "YYYY-MM-DD (default: today)"
+          }
+        }
+      },
+      "settingsAF2NoteRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "alphafoldversion.alphafold2 && (modelpreset.monomer || modelpreset.monomer_casp14)",
+        "elements": {
+          "presetPaeNote": {
+            "type": "staticText",
+            "name": "presetPaeNote",
+            "label": "",
+            "value": "<div style='background:#f1f3f5;border-left:3px solid #500000;padding:6px 10px;border-radius:4px;font-size:0.9em;'>The <b>monomer</b> and <b>monomer_casp14</b> presets do not compute PAE (predicted aligned error); the results show an expected-distance map instead. Choose <b>monomer_ptm</b> for PAE at about the same cost.</div>",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "settingsAF2PickleRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "alphafoldversion.alphafold2",
+        "elements": {
+          "pickleCheckbox": {
+            "type": "checkbox",
+            "label": "AlphaPickle plots",
+            "name": "pickle",
+            "value": "true",
+            "help": "Make pLDDT plots (and PAE plots for monomer_ptm / multimer) with AlphaPickle after the run. Not available on Grace.",
+            "condition": "alphafoldversion.alphafold2",
+            "style": "button",
+            "compact": true
+          }
+        }
+      },
+      "settingsAdvanced": {
+        "type": "collapsibleRowContainer",
+        "title": "ADVANCED",
+        "default_state": "collapsed",
+        "condition": "alphafoldversion.alphafold2",
+        "layout": {
+          "preset": "card",
+          "title": "ADVANCED",
+          "compact": true,
+          "summary": "databases $datadir"
+        },
+        "elements": {
+          "advancedRow": {
+            "type": "rowContainer",
+            "label": "",
+            "elements": {
+              "datadir": {
+                "type": "picker",
+                "label": "Database directory",
+                "name": "datadir",
+                "help": "OPTIONAL: AlphaFold 2 genetic databases and parameters. Default: /scratch/data/bio/alphafold/2.3.2",
+                "localLabel": "select",
+                "default": "/scratch/data/bio/alphafold/2.3.2",
+                "defaultPaths": {
+                  "HOME": "$HOME",
+                  "SCRATCH": "/scratch/user/$USER",
+                  "Examples": "/scratch/data/bio/alphafold/2.3.2"
+                },
+                "useHPCDefaultPaths": "False"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "resourcesCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "RESOURCES",
+    "default_state": "collapsed",
+    "condition": "alphafoldversion.alphafold3 || alphafoldversion.alphafold2",
+    "layout": {
+      "preset": "card",
+      "title": "RESOURCES",
+      "dot": false,
+      "summary": "CPU stage $drona_walltime · GPU $gpu · GPU stage $walltimegpu · account $drona_account · email $email · extra $drona_extra_slurm",
+      "compact": true
+    },
+    "elements": {
+      "resourcesCpuRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "Walltime": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
+            "label": "Walltime: CPU stage",
+            "help": "OPTIONAL: time the CPU part (MSA and template search) will need; for reduced_dbs, the whole run. If the job exceeds it, it is killed and intermediate results may be lost, so be conservative. Default: 2 days."
+          },
+          "cpu_stage_cores": {
+            "type": "number",
+            "label": "Cores: CPU stage",
+            "name": "cpu_stage_cores",
+            "value": "8",
+            "help": "Cores for the CPU job (MSA and template search). AlphaFold runs one search at a time with at most 8 threads (jackhmmer 8, HHblits 4), so more cores do not make it faster.",
+            "condition": "alphafoldversion.alphafold2 && !dbpreset.reduced_dbs"
+          },
+          "cpu_stage_mem": {
+            "type": "number",
+            "label": "Memory (GB): CPU stage",
+            "name": "cpu_stage_mem",
+            "value": "488",
+            "help": "Memory for the CPU job in GB. Very long sequences and large complexes produce large alignments and need more memory; small proteins need far less (a 20-residue test used 41 GB).",
+            "condition": "alphafoldversion.alphafold2 && !dbpreset.reduced_dbs"
+          }
+        }
+      },
+      "resourcesGpuRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "gpuDropdown": {
+            "type": "dynamicSelect",
+            "label": "GPU type",
+            "help": "GPU for the structure prediction job. Any GPU starts on whichever GPU is free first (the job adapts its settings to the GPU it gets); pick a type to wait for that GPU. The labels show free GPUs and jobs waiting now.",
+            "name": "gpu",
+            "retriever": "retriever_scripts/retrieve_gpus"
+          },
+          "Walltimegpu": {
+            "type": "time",
+            "label": "Walltime: GPU stage",
+            "help": "OPTIONAL: time the GPU part (structure prediction) will need. If the job exceeds it, it is killed and intermediate results may be lost, so be conservative. Default: 1 day.",
+            "name": "walltimegpu",
+            "condition": "alphafoldversion.alphafold3 || !dbpreset.reduced_dbs",
+            "value": ""
+          }
+        }
+      },
+      "resourcesAccountRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "account": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
+          },
+          "email": {
+            "type": "select",
+            "label": "Email notifications",
+            "help": "Select if you want to be notified when your job changes status.",
+            "name": "email",
+            "options": [
+              {
+                "value": "none",
+                "label": "NONE"
+              },
+              {
+                "value": "begin",
+                "label": "BEGIN"
+              },
+              {
+                "value": "end",
+                "label": "END"
+              },
+              {
+                "value": "all",
+                "label": "ALL"
+              }
+            ]
+          },
+          "EMAILText": {
+            "type": "text",
+            "label": "Email address",
+            "name": "emailaddress",
+            "value": "",
+            "help": "Provide email address to send status updates to. Default user is current user.",
+            "condition": "email.begin || email.end || email.all"
+          }
+        }
+      },
+      "resourcesExtraRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "extraText": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText",
+            "help": "OPTIONAL: extra Slurm parameters (advanced), added to every job of the pipeline."
+          }
+        }
+      }
+    }
+  },
+  "monitoringCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "MONITORING",
+    "default_state": "collapsed",
+    "condition": "alphafoldversion.alphafold3 || alphafoldversion.alphafold2",
+    "layout": {
+      "preset": "card",
+      "title": "MONITORING",
+      "dot": false,
+      "summary": "CPU $drona_cpu_monitor · GPU $drona_gpu_monitor",
+      "compact": true
+    },
+    "elements": {
+      "monitoringRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "cpuMonitorEnable": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse/elements/drona_monitoringRow/elements/drona_cpuMonitorEnable"
+          },
+          "gpuMonitorEnable": {
+            "type": "checkbox",
+            "name": "drona_gpu_monitor",
+            "label": "Monitor GPU",
+            "help": "Collect GPU utilization and memory use of the GPU job in the background while it runs, viewable as a live chart under Manage.",
+            "style": "button",
+            "value": "yes"
+          }
+        }
+      }
+    }
+  }
+}

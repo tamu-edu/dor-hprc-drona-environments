@@ -1,0 +1,6 @@
+name: "AlphaFold"
+description: "AlphaFold 2 (ParaFold full_dbs or reduced_dbs) and AlphaFold 3 structure prediction, run as a CPU job (MSA) followed by a GPU job. Manage mode shows the Slurm jobs, pipeline timeline, logs and, once finished, the PAE / structure viewers."
+category: "Bio"
+version: "2.0.0"
+author: "Marinus Pennings"
+requires_drona: ">=2.0"

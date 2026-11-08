@@ -15,6 +15,16 @@ const n      = n_residues;
 const matMax = matrix_max || 31.75;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+// Structures come as plain text (structure_encoding "text") or, from older retrievers, base64
+const structSource = s => (data.structure_encoding === 'text'
+  ? new Blob([s], { type: 'text/plain' }) : 'data:text/plain;base64,' + s);
+
+// Structures by key ("rank_N" / "sample_N"), sorted by number. A promise, so structures could later be
+// fetched on demand (needs DynamicViewer support: the sandboxed iframe may not connect to the server).
+const keyNum = k => parseInt(k.replace(/^\D+_/, ''), 10);
+function fetchStructure(store, key) {
+  return store[key] ? Promise.resolve(store[key]) : Promise.reject(new Error('structure ' + key + ' not found'));
+}
 function paeRGB(val) {
   const t = Math.min(Math.max(val / matMax, 0), 1);
   let r, g, b;
@@ -93,7 +103,8 @@ const rightCtrl = document.createElement('div');
 rightCtrl.style.cssText = 'display:flex;align-items:center;gap:8px;flex-shrink:0';
 rightCtrl.innerHTML = '<span style="font-weight:600;font-size:12px;color:#444">3D Structure</span>';
 
-const availableSamples = Object.keys(cifs || {}).sort();
+const cifStore = cifs || {};
+const availableSamples = Object.keys(cifStore).sort((a, b) => keyNum(a) - keyNum(b));
 if (availableSamples.length > 1) {
   const sel = document.createElement('select');
   sel.style.cssText = 'padding:2px 6px;border:1px solid #ced4da;border-radius:4px;font-size:12px';
@@ -129,15 +140,22 @@ container.appendChild(mainRow);
 
 // ── NGL ───────────────────────────────────────────────────────────────────────
 const stage = new NGL.Stage(nglDiv, { backgroundColor: 'white' });
+// Load errors go in an overlay, so the NGL canvas survives and the next pick still works
+const nglError = document.createElement('div');
+nglError.style.cssText = 'position:absolute;top:0;left:0;right:0;padding:10px;color:#dc3545;font-size:12px;display:none';
+nglDiv.appendChild(nglError);
+function showNglError(msg) { nglError.textContent = msg; nglError.style.display = msg ? 'block' : 'none'; }
 
+let loadToken = 0;
 function loadSample(sampleKey) {
+  const token = ++loadToken;
+  showNglError('');
   stage.removeAllComponents();
-  const b64 = cifs && cifs[sampleKey];
-  if (!b64) {
-    nglDiv.innerHTML = '<div style="padding:10px;color:#dc3545;font-size:12px">CIF not found</div>';
-    return;
-  }
-  stage.loadFile('data:text/plain;base64,' + b64, { ext: 'cif' }).then(comp => {
+  fetchStructure(cifStore, sampleKey).then(text => {
+    if (token !== loadToken) return null;   // another sample was picked meanwhile
+    return stage.loadFile(structSource(text), { ext: 'cif' });
+  }).then(comp => {
+    if (!comp || token !== loadToken) return;
     comp.addRepresentation('cartoon', {
       colorScheme: 'bfactor',
       colorScale:  ['#FF7D45', '#FFDB13', '#65CBF3', '#0053D6'],
@@ -145,7 +163,7 @@ function loadSample(sampleKey) {
     });
     comp.autoView();
   }).catch(err => {
-    nglDiv.innerHTML = `<div style="padding:10px;color:#dc3545;font-size:12px">Error: ${err.message}</div>`;
+    if (token === loadToken) showNglError('Error: ' + err.message);
   });
 }
 
@@ -154,16 +172,22 @@ if (availableSamples.length > 0) setTimeout(() => loadSample(defaultSample), 50)
 
 // ── Plotly — PAE heatmap ──────────────────────────────────────────────────────
 const residueNums = Array.from({ length: n }, (_, i) => i + 1);
+// Large inputs: the retriever shrinks the matrix to blocks of matStep residues (max per block)
+const matStep = data.matrix_step || 1;
+const matAxis = data.matrix_axis || residueNums;
+const matCustom = matStep > 1 ? matrix.map(row => row.map((_, c) => Math.min(matAxis[c] + matStep - 1, n))) : undefined;
 const paeColorscale = Array.from({ length: 11 }, (_, i) => {
   const [r, g, b] = paeRGB(i * matMax / 10);
   return [i / 10, `rgb(${r},${g},${b})`];
 });
 
 const paeTrace = {
-  type: 'heatmap', z: matrix, x: residueNums, y: residueNums,
+  type: 'heatmap', z: matrix, x: matAxis, y: matAxis, customdata: matCustom,
   colorscale: paeColorscale, zmin: 0, zmax: matMax,
   hoverongaps: false,
-  hovertemplate: 'Scored: %{x}<br>Aligned to: %{y}<br>%{z:.1f} Å<extra></extra>',
+  hovertemplate: (matStep > 1
+    ? `Scored: %{x}–%{customdata}<br>Aligned to: %{y} (block of ${matStep})<br>max %{z:.1f} Å<extra></extra>`
+    : 'Scored: %{x}<br>Aligned to: %{y}<br>%{z:.1f} Å<extra></extra>'),
   colorbar: {
     title: { text: 'Å', side: 'right', font: { size: 10 } },
     thickness: 12, len: 0.85, tickfont: { size: 9 },
@@ -207,6 +231,12 @@ const rankLayout = {
   paper_bgcolor: 'white', plot_bgcolor: 'white',
 };
 
+// Toolbar on: zoom / pan / reset axes / save PNG (double-click also resets).
+const plotConfig = {
+  responsive: true, displaylogo: false, displayModeBar: true,
+  modeBarButtonsToRemove: ['select2d', 'lasso2d', 'autoScale2d'],
+};
+
 // ── Toggle logic ──────────────────────────────────────────────────────────────
 let activeTab = 'pae';
 let plotlyReady = false;
@@ -222,11 +252,11 @@ function setActiveTab(tab) {
   if (!plotlyReady) {
     Plotly.newPlot(plotDiv, isPAE ? [paeTrace] : rankTraces,
                             isPAE ? paeLayout  : rankLayout,
-                   { responsive: true, displayModeBar: false })
+                   plotConfig)
       .then(() => { plotlyReady = true; });
   } else {
     Plotly.react(plotDiv, isPAE ? [paeTrace] : rankTraces,
-                          isPAE ? paeLayout  : rankLayout);
+                          isPAE ? paeLayout  : rankLayout, plotConfig);
   }
 }
 

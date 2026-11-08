@@ -1,0 +1,31 @@
+#!/bin/bash
+#SBATCH --job-name=parafold-[JOBNAME]
+#SBATCH --time=[TIME]
+#SBATCH --nodes=[NODES] --ntasks-per-node=1 --cpus-per-task=[CPUS] --mem=[MEM]
+[PARTITION]
+#SBATCH --output=out.%j --error=error.%j
+#DRONA label: Prediction (GPU)
+[EXTRA]
+[email]
+
+module purge
+[ALPHAFOLDMODULES]
+[ALPHAPICKLEMODULE]
+
+protein_fasta=[proteinfasta]
+
+[CPU_MONITOR_START]
+[GPU_MONITOR_START]
+
+run_alphafold.sh -g -u 0 -d [datadir] -o [outputdir] -p [modelpreset] -i $protein_fasta -t [maxtemplate]
+af_status=$?
+
+[pickle]
+
+[GPU_MONITOR_STOP]
+[CPU_MONITOR_STOP]
+
+[AUTOBUNDLE]
+
+exit $af_status
+

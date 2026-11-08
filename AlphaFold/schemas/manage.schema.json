@@ -1,0 +1,435 @@
+{
+  "hidden_jobs_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobs.json#/drona_hidden_jobs_check"
+  },
+  "hidden_status_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_status.json#/drona_hidden_selected_job_status_check"
+  },
+  "hidden_workflow_status_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_status.json#/drona_hidden_workflow_status_check"
+  },
+  "hidden_jobdir_path": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobdir.json#/drona_hidden_jobdir_path"
+  },
+  "hidden_gpu_monitor_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_gpu_chart.json#/drona_hidden_gpu_chart_check"
+  },
+  "hidden_cpu_monitor_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_cpu_chart.json#/drona_hidden_cpu_chart_check"
+  },
+  "af_version_hidden": {
+    "type": "hidden",
+    "name": "af_version",
+    "isDynamic": true,
+    "condition": "!drona_job_dir.",
+    "retrieverParams": {
+      "JOB_DIR": "$drona_job_dir"
+    },
+    "retriever": "retriever_scripts/retrieve_af_version.sh"
+  },
+  "af_status_hidden": {
+    "type": "hidden",
+    "name": "af_status",
+    "isDynamic": true,
+    "refreshInterval": "30",
+    "condition": "!drona_job_dir.",
+    "retrieverParams": {
+      "LOCATION": "$drona_job_dir",
+      "DRONA_ID": "$drona_create_manage_allworkflows"
+    },
+    "retriever": "retriever_scripts/retrieve_af_slurm_status.sh"
+  },
+  "af_rerun_state_hidden": {
+    "type": "hidden",
+    "name": "af_rerun_state",
+    "isDynamic": true,
+    "refreshInterval": "60",
+    "refreshWhile": "!af_status.DONE && !af_status.FAILED",
+    "condition": "!drona_create_manage_allworkflows.",
+    "retriever": "retriever_scripts/retrieve_af_rerun_state.sh",
+    "retrieverParams": {
+      "DRONA_ID": "$drona_create_manage_allworkflows"
+    }
+  },
+  "workflowActions": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_manage_actions.json#/drona_workflowActions",
+    "layout": {
+      "preset": "card",
+      "title": "WORKFLOW ACTIONS",
+      "dot": false,
+      "collapsed": true
+    }
+  },
+  "slurmJobsTable": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_jobs_table.json#/drona_slurmJobsTable"
+  },
+  "cancel_jobs": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_jobs_panel.json#/drona_slurmPanel/elements/drona_cancel_jobs",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_workflow_status.DONE",
+    "layout": [
+      {
+        "preset": "card",
+        "title": "Cancel Job"
+      },
+      "inline",
+      {
+        "maxHeight": "220px",
+        "overflowY": "auto"
+      }
+    ]
+  },
+  "workingDirectory": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobdir_view.json#/drona_workingDirectoryBar"
+  },
+  "af_summary_card": {
+    "type": "staticText",
+    "name": "af_summary",
+    "useLabel": false,
+    "isDynamic": true,
+    "condition": "(af_version.alphafold2 || af_version.alphafold3) && af_status.DONE",
+    "retriever": "retriever_scripts/retrieve_af_summary.sh",
+    "retrieverParams": {
+      "LOCATION": "$drona_job_dir",
+      "DRONA_ID": "$drona_create_manage_allworkflows",
+      "AF_VERSION": "$af_version"
+    },
+    "showRefreshButton": true,
+    "allowHtml": true,
+    "layout": {
+      "preset": "card",
+      "title": "RESULTS SUMMARY",
+      "dot": false
+    }
+  },
+  "af_combined_viewer": {
+    "type": "dynamicViewer",
+    "name": "af_combined_monitor_viewer",
+    "condition": "af_version.alphafold2 && af_status.DONE",
+    "useLabel": false,
+    "retriever": "retriever_scripts/retrieve_af_combined.sh",
+    "retrieverParams": {
+      "LOCATION": "$drona_job_dir"
+    },
+    "value": {
+      "title": "AlphaFold Results",
+      "description": "PAE heatmap, model rankings and 3D structure",
+      "cdnLibraries": [
+        "https://cdn.plot.ly/plotly-2.27.0.min.js",
+        "https://cdn.jsdelivr.net/npm/ngl@2.0.0-dev.37/dist/ngl.js"
+      ],
+      "height": "450px",
+      "initCode": "af_viewer.js"
+    }
+  },
+  "af3_combined_viewer": {
+    "type": "dynamicViewer",
+    "name": "af3_combined_monitor_viewer",
+    "condition": "af_version.alphafold3 && af_status.DONE",
+    "useLabel": false,
+    "retriever": "retriever_scripts/retrieve_af3_combined.sh",
+    "retrieverParams": {
+      "LOCATION": "$drona_job_dir"
+    },
+    "value": {
+      "title": "AlphaFold 3 Results",
+      "description": "PAE heatmap, sample rankings and 3D structure",
+      "cdnLibraries": [
+        "https://cdn.plot.ly/plotly-2.27.0.min.js",
+        "https://cdn.jsdelivr.net/npm/ngl@2.0.0-dev.37/dist/ngl.js"
+      ],
+      "height": "450px",
+      "initCode": "af3_viewer.js"
+    }
+  },
+  "af_pickle_plots_card": {
+    "type": "staticText",
+    "name": "af_pickle_plots",
+    "useLabel": false,
+    "isDynamic": true,
+    "condition": "af_version.alphafold2 && af_status.DONE",
+    "retriever": "retriever_scripts/retrieve_af_pickle_plots.sh",
+    "retrieverParams": {
+      "LOCATION": "$drona_job_dir"
+    },
+    "showRefreshButton": true,
+    "allowHtml": true,
+    "layout": {
+      "preset": "card",
+      "title": "ALPHAPICKLE PLOTS",
+      "dot": false
+    }
+  },
+  "af_rerun_card": {
+    "type": "collapsibleRowContainer",
+    "title": "RE-RUN PREDICTION",
+    "default_state": "collapsed",
+    "condition": "(af_version.alphafold2 || af_version.alphafold3) && (af_rerun_state.failed || (af_rerun_state.done && af_version.alphafold3))",
+    "layout": {
+      "preset": "card",
+      "title": "RE-RUN PREDICTION",
+      "compact": true,
+      "summary": "GPU stage only · uses the finished CPU stage output"
+    },
+    "elements": {
+      "rerunNoteRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "rerunNoteFailed": {
+            "type": "staticText",
+            "name": "rerunNoteFailed",
+            "label": "",
+            "useLabel": false,
+            "allowHtml": true,
+            "condition": "af_rerun_state.failed",
+            "value": "<div style='background:#f1f3f5;border-left:3px solid #500000;padding:4px 10px;border-radius:4px;font-size:0.85em;'>The GPU stage did not finish. Re-run it on the finished CPU stage output (MSA and templates are not recomputed); change the settings below if needed. The previous job's out/error files are kept.</div>"
+          },
+          "rerunNoteDone": {
+            "type": "staticText",
+            "name": "rerunNoteDone",
+            "label": "",
+            "useLabel": false,
+            "allowHtml": true,
+            "condition": "af_rerun_state.done",
+            "value": "<div style='background:#f1f3f5;border-left:3px solid #500000;padding:4px 10px;border-radius:4px;font-size:0.85em;'>The prediction has finished. Re-run it on the same CPU stage output to try to improve it: more <b>seeds</b> (5 samples each, the usual way to improve a low-confidence prediction), more <b>recycles</b> (runs before 2026-11-06 used 3, the default is 10), or other <b>model parameters</b>. The same settings give the same result. The new results go to a new directory; the current ones are kept.</div>"
+          }
+        }
+      },
+      "rerunRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "rerun_gpu": {
+            "type": "dynamicSelect",
+            "name": "rerun_gpu",
+            "label": "GPU type",
+            "retriever": "retriever_scripts/retrieve_rerun_gpus",
+            "help": "Same as before keeps the GPU of the previous attempt. A larger GPU helps after an out-of-memory failure."
+          },
+          "rerun_walltime": {
+            "type": "time",
+            "name": "rerun_walltime",
+            "label": "Walltime",
+            "value": "",
+            "help": "Leave empty to keep the previous walltime. Increase it after a TIMEOUT."
+          },
+          "rerun_recycles": {
+            "type": "number",
+            "name": "rerun_recycles",
+            "label": "Recycles",
+            "value": "",
+            "condition": "af_version.alphafold3",
+            "help": "Leave empty to keep the previous value (AlphaFold 3 default: 10)."
+          },
+          "rerun_seeds": {
+            "type": "number",
+            "name": "rerun_seeds",
+            "label": "Seeds",
+            "value": "",
+            "condition": "af_version.alphafold3",
+            "help": "Number of random seeds (AlphaFold 3 --num_seeds); each seed gives 5 samples and the best is ranked first. Leave empty to keep the input's seed. Only possible when the input lists one seed."
+          }
+        }
+      },
+      "rerunModelRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "af_version.alphafold3",
+        "elements": {
+          "rerun_modeldir": {
+            "type": "picker",
+            "name": "rerun_modeldir",
+            "label": "Model parameters directory",
+            "help": "Leave empty to keep the previous one. The directory must contain af3.bin (or af3.bin.zst).",
+            "localLabel": "Select",
+            "showFiles": "False",
+            "files": "False",
+            "defaultPaths": {
+              "HOME": "$HOME",
+              "SCRATCH": "/scratch/user/$USER"
+            },
+            "useHPCDefaultPaths": "False"
+          }
+        }
+      },
+      "rerunGoRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "rerun_enable": {
+            "type": "checkbox",
+            "style": "button",
+            "name": "rerun_enable",
+            "label": "Re-run GPU stage",
+            "value": "yes",
+            "compact": true,
+            "help": "Submit the GPU job again when you click Submit. Nothing is submitted without this."
+          }
+        }
+      }
+    }
+  },
+  "af_download_card": {
+    "type": "collapsibleRowContainer",
+    "title": "DOWNLOAD RESULTS",
+    "default_state": "expanded",
+    "condition": "(af_version.alphafold2 || af_version.alphafold3) && af_status.DONE",
+    "layout": {
+      "preset": "card",
+      "title": "DOWNLOAD RESULTS",
+      "dot": false,
+      "compact": true,
+      "summary": "structures, scores and plots as one zip"
+    },
+    "elements": {
+      "bundleLinkRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "af_bundle": {
+            "type": "staticText",
+            "name": "af_bundle",
+            "useLabel": false,
+            "isDynamic": true,
+            "retriever": "retriever_scripts/retrieve_af_bundle.sh",
+            "retrieverParams": {
+              "LOCATION": "$drona_job_dir"
+            },
+            "showRefreshButton": true,
+            "allowHtml": true
+          }
+        }
+      },
+      "bundleActionRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "bundle_create": {
+            "type": "checkbox",
+            "style": "button",
+            "name": "bundle_create",
+            "label": "Create bundle",
+            "value": "yes",
+            "compact": true,
+            "help": "Zip the results when you click Run (replaces an existing bundle of the same prediction). Refresh this card afterwards to get the download link."
+          }
+        }
+      }
+    }
+  },
+  "af_cleanup_card": {
+    "type": "collapsibleRowContainer",
+    "title": "FREE UP SPACE",
+    "default_state": "collapsed",
+    "condition": "(af_version.alphafold2 || af_version.alphafold3) && af_status.DONE",
+    "layout": {
+      "preset": "card",
+      "title": "FREE UP SPACE",
+      "dot": false,
+      "compact": true,
+      "summary": "remove large intermediate files"
+    },
+    "elements": {
+      "cleanupInfoRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "af_cleanup_info": {
+            "type": "staticText",
+            "name": "af_cleanup_info",
+            "useLabel": false,
+            "isDynamic": true,
+            "retriever": "retriever_scripts/retrieve_af_cleanup_info.sh",
+            "retrieverParams": {
+              "LOCATION": "$drona_job_dir",
+              "AF_VERSION": "$af_version"
+            },
+            "showRefreshButton": true,
+            "allowHtml": true
+          }
+        }
+      },
+      "cleanupActionRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "cleanup_enable": {
+            "type": "checkbox",
+            "style": "button",
+            "name": "cleanup_enable",
+            "label": "Remove intermediate files",
+            "value": "yes",
+            "compact": true,
+            "help": "When you click Run: make the download bundle if missing, save the viewer data, then delete the intermediate files. The preview lists what will be removed. Cannot be undone."
+          }
+        }
+      }
+    }
+  },
+  "af_timeline_row": {
+    "type": "rowContainer",
+    "label": "Pipeline Timeline",
+    "condition": "af_version.alphafold2 && !af_status.",
+    "elements": {
+      "af_timeline": {
+        "type": "staticText",
+        "name": "af_timeline_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "30",
+        "refreshWhile": "!af_status.DONE && !af_status.FAILED",
+        "retrieverParams": {
+          "LOCATION": "$drona_job_dir",
+          "DRONA_ID": "$drona_create_manage_allworkflows"
+        },
+        "retriever": "retriever_scripts/retrieve_af_timeline.sh"
+      }
+    }
+  },
+  "af3_timeline_row": {
+    "type": "rowContainer",
+    "label": "Pipeline Timeline",
+    "condition": "af_version.alphafold3 && !af_status.",
+    "elements": {
+      "af3_timeline": {
+        "type": "staticText",
+        "name": "af3_timeline_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "30",
+        "refreshWhile": "!af_status.DONE && !af_status.FAILED",
+        "retrieverParams": {
+          "LOCATION": "$drona_job_dir",
+          "DRONA_ID": "$drona_create_manage_allworkflows"
+        },
+        "retriever": "retriever_scripts/retrieve_af3_timeline.sh"
+      }
+    }
+  },
+  "job_container": {
+    "type": "container",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "layout": {
+      "preset": "bar",
+      "title": "Stage:"
+    },
+    "elements": {
+      "drona_job_scope": {
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_scopes.json#/drona_job_scope"
+      }
+    }
+  },
+  "job_resources": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_resources.json#/drona_job_resources"
+  },
+  "job_logs": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_logs.json#/drona_logCollapse/elements/drona_log_tabs",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_job_scope.",
+    "layout": {
+      "preset": "card",
+      "title": "Job Logs · Job $drona_job_scope",
+      "dot": false,
+      "collapsed": true
+    }
+  }
+}

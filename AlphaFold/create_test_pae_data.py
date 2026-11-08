@@ -203,9 +203,9 @@ print(f"""
 Done!  Test directory: {OUTPUT_DIR}
 Protein: {UNIPROT_ID}  ({N} residues, true PAE {pae_n}×{pae_n})
 
-Test retrieve_af_pae.sh:
+Test retrieve_af_combined.sh:
     cd {os.path.abspath(os.path.dirname(__file__))}
-    LOCATION='{OUTPUT_DIR}' bash retrieve_af_pae.sh | python3 -m json.tool | head -40
+    LOCATION='{OUTPUT_DIR}' bash retrieve_af_combined.sh | head -40
 
 Test retrieve_af_combined.sh:
     LOCATION='{OUTPUT_DIR}' bash retrieve_af_combined.sh | python3 -m json.tool | head -40

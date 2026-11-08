@@ -32,13 +32,14 @@
   },
   "AlphaFold": {
     "name": "AlphaFold",
-    "description": "This env allows researchers to generate and submit AlphaFold workflows. It can generate both AlphaFold2 and AlphaFold3 jobs.  ",
+    "description": "AlphaFold 2 (ParaFold full_dbs or reduced_dbs) and AlphaFold 3 structure prediction, run as a CPU job (MSA) followed by a GPU job. Manage mode shows the Slurm jobs, pipeline timeline, logs, results summary, PAE / structure viewers, download bundle and a GPU-stage re-run.",
     "category": "Bio",
     "cluster": "TAMU",
     "organization": "TAMU",
     "version": "2.0.0",
     "author": "Marinus Pennings",
-    "last_updated": "2025-07-18"
+    "last_updated": "2026-11-07",
+    "requires_drona": ">=2.0"
   },
   "LAMMPS": {
     "name": "LAMMPS",

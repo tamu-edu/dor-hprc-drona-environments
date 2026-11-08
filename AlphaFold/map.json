@@ -1,16 +1,23 @@
-
 {
-  "flocation": "$location",
+  "$include": [
+    "drona_cancel_jobs",
+    "drona_cpu_monitor"
+  ],
+  "GPU_MONITOR_START": "!retrieve_gpu_monitor_start_nvml('gpu', $drona_gpu_monitor)",
+  "GPU_MONITOR_STOP": "!retrieve_gpu_monitor_stop('gpu', $drona_gpu_monitor)",
+  "JOBNAME": "$name",
+  "DRIVER": "!retrieve_driver_contents($drona_create_manage_mode, $drona_cancel_jobs)",
+  "CREATE_DIR": "$location",
+  "MANAGE": "!retrieve_workflow_actions($drona_create_manage_mode, $drona_delete_workflow, $drona_delete_files, $drona_create_manage_allworkflows, $drona_job_dir)",
+  "SLURM": "!retrieve_af_slurm_params($drona_create_manage_mode, $alphafoldversion, $dbpreset, $gpu, $drona_walltime, $walltimegpu, $drona_account, $drona_extra_slurm, $jsoninput)",
   "maxtemplate": "!retrieve_maxtemplate($maxtemplate)",
-  "outputdir" : "parafold_output_dir",
-  "gpu" : "!retrieve_gpu($gpu)",
-  "email" : "!retrieve_mail($email, $emailaddress)",
-  "time" : "!retrieve_walltime($walltime)",
-  "gputime" : "!retrieve_gpuwalltime($walltimegpu)",
-  "account" : "!retrieve_account($account)",
-  "alphafold2" : "!process_alpahfold2($alphafoldversion,$dbpreset,$proteinfasta,$modelpreset,$datadir,$pickle,$outputdir)",
-  "alphafold3" : "!process_alpahfold3($alphafoldversion,$jsoninput,$modelinput,$recycles,$location,$name)"
+  "outputdir": "parafold_output_dir",
+  "email": "!retrieve_mail($email, $emailaddress)",
+  "alphafold2": "!process_alphafold2($alphafoldversion,$dbpreset,$proteinfasta,$modelpreset,$datadir,$pickle,$outputdir,$cpu_stage_cores,$cpu_stage_mem)",
+  "alphafold3": "!process_alphafold3($alphafoldversion,$jsoninput,$modelinput,$recycles,$location,$name,$seeds)",
+  "PRECHECK": "!af3_submit_check($drona_create_manage_mode, $alphafoldversion)",
+  "AUTOBUNDLE": "!af_auto_bundle($drona_create_manage_mode, $alphafoldversion)",
+  "CLEANUP": "!clean_intermediates($drona_create_manage_mode, $cleanup_enable, $af_version, $drona_job_dir, $af_status)",
+  "BUNDLE": "!make_bundle($drona_create_manage_mode, $bundle_create, $af_version, $drona_job_dir, $af_status)",
+  "RERUN": "!rerun_gpu_stage($drona_create_manage_mode, $rerun_enable, $af_version, $drona_job_dir, $drona_create_manage_allworkflows, $af_rerun_state, $rerun_gpu, $rerun_walltime, $rerun_recycles, $rerun_modeldir, $rerun_seeds)"
 }
-
-
-
