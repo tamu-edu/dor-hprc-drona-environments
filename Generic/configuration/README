@@ -4,7 +4,7 @@ Module database for the Module picker (admin task)
 The Generic environment no longer has a configure step. The Module picker
 reads its databases from the directory set as "module_db_root" in
 schemas/create.schema.json (the shared component
-$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json has no default;
+$DRONA_RUNTIME_DIR/forms/drona_module_picker.json has no default;
 each environment that uses it sets its own):
 
   /var/www/ood/apps/sys/dor-hprc-drona-composer-prod/environments/Generic/modules

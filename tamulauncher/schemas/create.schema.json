@@ -10,7 +10,7 @@
     },
     "elements": {
       "runDestinationFinal": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_job_destination.json#/drona_runDestinationFinal"
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_destination.json#/drona_runDestinationFinal"
       },
       "commandfilePicker": {
         "type": "picker",
@@ -23,7 +23,7 @@
         "showHidden": "false"
       },
       "Modules": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json#/drona_Modules",
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_module_picker.json#/drona_Modules",
         "module_db_root": "/var/www/ood/apps/sys/dor-hprc-drona-composer-prod/environments/Generic/modules",
         "help": "Modules the commands need. They are loaded once at the start of the job, before tamulauncher runs the commands."
       }
@@ -89,11 +89,11 @@
         "type": "rowContainer",
         "elements": {
           "memory": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
             "help": "OPTIONAL: total memory for the job, over all nodes. If empty, Drona requests memory in proportion to the cores used. If the commands use more memory than requested, the job is killed."
           },
           "Walltime": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
             "help": "OPTIONAL: time the whole job needs (default 2 hours). If the job runs out of time, rerun the workflow: tamulauncher skips the commands that already finished."
           }
         }
@@ -102,17 +102,17 @@
         "type": "rowContainer",
         "elements": {
           "account": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
           },
           "extraText": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
           }
         }
       }
     }
   },
   "monitoringCollapse": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_monitoring.json#/drona_monitoringCollapse",
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse",
     "title": "MONITORING OPTIONS",
     "layout": {
       "preset": "card",

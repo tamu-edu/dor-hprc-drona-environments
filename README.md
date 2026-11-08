@@ -10,7 +10,7 @@ readable by the OOD host, that holds the module databases. Drona has no default
 for it. With the shared component, set the key next to the `$ref`:
 
     "Modules": {
-      "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json#/drona_Modules",
+      "$ref": "$DRONA_RUNTIME_DIR/forms/drona_module_picker.json#/drona_Modules",
       "module_db_root": "/path/readable/by/ood/modules"
     }
 

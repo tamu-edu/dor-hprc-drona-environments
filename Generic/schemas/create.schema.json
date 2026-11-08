@@ -10,10 +10,10 @@
     },
     "elements": {
       "runDestinationFinal": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_job_destination.json#/drona_runDestinationFinal"
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_destination.json#/drona_runDestinationFinal"
       },
       "Modules": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_module_picker.json#/drona_Modules",
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_module_picker.json#/drona_Modules",
         "module_db_root": "/var/www/ood/apps/sys/dor-hprc-drona-composer-prod/environments/Generic/modules"
       },
       "ImportUpload": {
@@ -21,11 +21,11 @@
         "label": "",
         "elements": {
           "drona_Script": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_import_upload.json#/drona_ImportUpload/elements/drona_Script",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_import_upload.json#/drona_ImportUpload/elements/drona_Script",
             "showHidden": "false"
           },
           "drona_fileUploader": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_import_upload.json#/drona_ImportUpload/elements/drona_fileUploader"
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_import_upload.json#/drona_ImportUpload/elements/drona_fileUploader"
           }
         }
       }
@@ -37,16 +37,16 @@
     "default_state": "expanded",
     "elements": {
       "drona_ContainerTasks": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerTasks"
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerTasks"
       },
       "drona_ContainerGPU": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU"
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU"
       },
       "drona_ContainerAdditional": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional"
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional"
       },
       "drona_ContainerTraining": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_ContainerTraining"
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_ContainerTraining"
       }
     },
     "layout": {
@@ -56,7 +56,7 @@
     }
   },
   "monitoringCollapse": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_monitoring.json#/drona_monitoringCollapse",
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse",
     "title": "MONITORING OPTIONS",
     "layout": {
       "preset": "card",

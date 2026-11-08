@@ -4,7 +4,6 @@
   "JOBNAME" :"$name",
   "DRIVER" : "!retrieve_driver_contents( $drona_create_manage_mode, $drona_cancel_jobs )",
   "CREATE_DIR": "$location",
-  "MANAGE_DIR": "$drona_job_dir",
   "JOBS": "$drona_info_jobs",
   "STATUS": "$drona_status",
   "flocation": "$location",

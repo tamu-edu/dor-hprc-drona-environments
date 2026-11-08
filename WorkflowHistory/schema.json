@@ -47,16 +47,16 @@
     }
   },
   "hidden_jobs_check": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_jobs.json#/drona_hidden_jobs_check"
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobs.json#/drona_hidden_jobs_check"
   },
   "hidden_status_check": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_status.json#/drona_hidden_selected_job_status_check"
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_status.json#/drona_hidden_selected_job_status_check"
   },
   "hidden_jobdir_path": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_jobdir.json#/drona_hidden_jobdir_path"
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobdir.json#/drona_hidden_jobdir_path"
   },
   "workingDirectory": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_info_jobdir_view.json#/drona_workingDirectory"
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobdir_view.json#/drona_workingDirectory"
   },
   "slurmInfo": {
     "type": "container",

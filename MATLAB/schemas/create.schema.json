@@ -10,7 +10,7 @@
     },
     "elements": {
       "runDestinationFinal": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_job_destination.json#/drona_runDestinationFinal"
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_destination.json#/drona_runDestinationFinal"
       },
       "versionDropdown": {
         "type": "select",
@@ -49,7 +49,7 @@
             "allowedFileTypes": "m"
           },
           "drona_fileUploader": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_import_upload.json#/drona_ImportUpload/elements/drona_fileUploader",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_import_upload.json#/drona_ImportUpload/elements/drona_fileUploader",
             "label": "Upload additional scripts and data",
             "help": "OPTIONAL: You can upload input data or other Matlab scripts (e.g., functions called from the main Matlab script) here."
           },
@@ -98,12 +98,12 @@
         "type": "rowContainer",
         "elements": {
           "gpuDropdown": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU/elements/drona_gpuDropdown",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU/elements/drona_gpuDropdown",
             "label": "Use GPU",
             "help": "OPTIONAL: Matlab provides functionality to offload Matlab code to the GPUs. If your code utilizes this functionality, select the type of GPU to use here. If you are not sure, don't select a GPU. ANY GPU requests a GPU of any available type."
           },
           "numgpus": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU/elements/drona_numgpus"
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU/elements/drona_numgpus"
           }
         }
       },
@@ -111,12 +111,12 @@
         "type": "rowContainer",
         "elements": {
           "memory": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
             "label": "Memory",
             "help": "OPTIONAL: Provide the total amount of memory you need to estimate the job needs. It's best to be conservative and request more. If your job tries to use more memory than requested, your job will be killed immediately, and you might lose all intermediate results. The composer will use a default value if you don't enter any value."
           },
           "Walltime": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
             "label": "Expected time needed to run",
             "help": "OPTIONAL: Provide the time you estimate the job will need. It's best to be conservative when requesting wall time. If your job exceeds the requested wall time, your job will be killed immediately, and you might lose all intermediate results. If you don't enter a value, composer will use a default value of 2 hours."
           }
@@ -126,16 +126,16 @@
         "type": "rowContainer",
         "elements": {
           "account": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
           },
           "extraText": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
           }
         }
       }
     }
   },
   "monitoring": {
-    "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_monitoring.json#/drona_monitoringCollapse"
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse"
   }
 }

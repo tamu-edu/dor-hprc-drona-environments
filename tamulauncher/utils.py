@@ -72,8 +72,11 @@ def retrieve_tamulauncher_slurm_params(nodes, commandspernode, threads, memory, 
                                  _value(account), _value(extra))
 
 
-def retrieve_commandsfile(cfile=""):
-    """Commands file path for tamulauncher (quoted), with a check that it exists and is not empty."""
+def retrieve_commandsfile(cfile="", mode=""):
+    """Commands file path for tamulauncher (quoted), with a check that it exists and is not empty.
+    Manage mode has no commands file, so nothing is checked there."""
+    if _value(mode) == "manage":
+        return ""
     cfile = _value(cfile)
     if cfile == "":
         drona_add_message("No commands file selected. The job will fail; select one in the form or edit the job script.", "error")

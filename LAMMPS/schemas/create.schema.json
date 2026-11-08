@@ -23,7 +23,7 @@
     },
     "elements": {
       "runDestinationFinal": {
-        "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_job_destination.json#/drona_runDestinationFinal"
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_destination.json#/drona_runDestinationFinal"
       },
       "InputPicker": {
         "type": "picker",
@@ -257,11 +257,11 @@
         "type": "rowContainer",
         "elements": {
           "memory": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
             "help": "OPTIONAL: Total memory for the job. If you leave this empty, 40G is used."
           },
           "Walltime": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
             "help": "OPTIONAL: Time the job needs. If you leave this empty, 2 hours is used. GPU and PVC jobs are limited to 48 hours."
           }
         }
@@ -270,10 +270,10 @@
         "type": "rowContainer",
         "elements": {
           "account": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
           },
           "extraText": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
           }
         }
       }
@@ -293,10 +293,10 @@
         "type": "rowContainer",
         "elements": {
           "cpuMonitorEnable": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_monitoring.json#/drona_monitoringCollapse/elements/drona_monitoringRow/elements/drona_cpuMonitorEnable"
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse/elements/drona_monitoringRow/elements/drona_cpuMonitorEnable"
           },
           "gpuMonitorEnable": {
-            "$ref": "$DRONA_RUNTIME_DIR/form_components/drona_monitoring.json#/drona_monitoringCollapse/elements/drona_monitoringRow/elements/drona_gpuMonitorEnable",
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse/elements/drona_monitoringRow/elements/drona_gpuMonitorEnable",
             "help": "Collect NVIDIA GPU utilization/memory usage in the background while the job runs, viewable as a live chart under Manage. Not available for PVC.",
             "condition": "!reportjson. && (gpu_type.h100 || gpu_type.a30)"
           }
