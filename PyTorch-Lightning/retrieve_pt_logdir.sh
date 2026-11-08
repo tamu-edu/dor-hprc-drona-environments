@@ -10,18 +10,24 @@ import re
 job_dir = """${JOB_DIR}""".strip()
 log_dir_name = "lightning_logs"
 
-if job_dir:
-    train_py = os.path.join(job_dir, "train.py")
-    if os.path.isfile(train_py):
+# Settings file (newer workflows: "  log_dir: ./x" in config.yaml), else LOG_DIR = "./x" in train.py
+SOURCES = [
+    ("config.yaml", r'^\s+log_dir:\s*["\']?([^"\'#\n]+?)["\']?\s*(?:#.*)?$'),
+    ("train.py", r'^LOG_DIR\s*=\s*["\']([^"\']+)["\']'),
+]
+for fname, pattern in (SOURCES if job_dir else []):
+    path = os.path.join(job_dir, fname)
+    if os.path.isfile(path):
         try:
-            with open(train_py, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 content = f.read()
-            match = re.search(r'LOG_DIR\s*=\s*["\']([^"\']+)["\']', content)
+            match = re.search(pattern, content, re.MULTILINE)
             if match:
                 val = match.group(1)
                 if val.startswith("./"):
                     val = val[2:]
                 log_dir_name = val
+                break
         except Exception:
             pass
 

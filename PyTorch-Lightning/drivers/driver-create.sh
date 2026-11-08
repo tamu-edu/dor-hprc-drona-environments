@@ -3,4 +3,4 @@ source /etc/profile
 
 cd [flocation]
 
-$DRONA_RUNTIME_DIR/driver_scripts/drona_wf_driver_sbatch lightning-job.slurm
+$DRONA_RUNTIME_DIR/schedulers/slurm/drona_wf_driver_sbatch lightning-job.slurm

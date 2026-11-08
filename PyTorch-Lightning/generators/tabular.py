@@ -20,7 +20,8 @@ def _gen_tabular_script(
 ):
     """Returns (train_script, None)."""
     use_builtin = (tab_ds_type == "builtin")
-    data_dir = "./data"
+    # Custom data: data.data_dir in config.yaml is the dataset path; example data: download/cache folder
+    data_dir = tab_path if not use_builtin and tab_path else "./data"
 
     if not use_builtin and not tab_path:
         _drona_msg("Custom Tabular dataset path is required.", "error")
@@ -37,7 +38,7 @@ def _gen_tabular_script(
         n_features = 15
         X = np.random.randn(n_samples, n_features).astype(np.float32)
         
-        is_classification = "{tab_task}" == "classification"
+        is_classification = TASK_TYPE == "classification"
         if is_classification:
             # Generate binary classification labels (0 or 1) based on random hyperplanes
             y = (X[:, 0] + X[:, 1] - X[:, 2] > 0.0).astype(np.int64)
@@ -72,7 +73,7 @@ def _gen_tabular_script(
         import numpy as np
         import pandas as pd
         
-        csv_file = "{_py_str(tab_path)}"
+        csv_file = DATA_DIR
         if not os.path.exists(csv_file):
             raise FileNotFoundError(f"Custom CSV file not found: {{csv_file}}")
             
@@ -86,7 +87,7 @@ def _gen_tabular_script(
         y_raw = df[target_col].values
         X_raw = df.drop(columns=[target_col]).select_dtypes(include=[np.number]).values.astype(np.float32)
         
-        is_classification = "{tab_task}" == "classification"
+        is_classification = TASK_TYPE == "classification"
         if is_classification:
             unique_labels = sorted(list(set(y_raw)))
             label_map = {{lbl: i for i, lbl in enumerate(unique_labels)}}

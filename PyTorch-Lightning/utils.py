@@ -2,7 +2,6 @@ import json
 import math
 import os
 import re
-import subprocess
 from pathlib import Path
 
 from generators import (
@@ -195,6 +194,8 @@ def setup_pytorch_modules(
     gpu="",
     graph_dataset_type="builtin",
     export_onnx="No",
+    seq_dataset_type="builtin",
+    gen_dataset_type="builtin",
 ):
     """Return module load commands for the given model category and dataset."""
     ds_t = (dataset_type or "builtin").strip()
@@ -208,6 +209,10 @@ def setup_pytorch_modules(
         ds_t = (audio_dataset_type or "builtin").strip()
     elif model_category == "gnn":
         ds_t = (graph_dataset_type or "builtin").strip()
+    elif model_category == "sequential":
+        ds_t = (seq_dataset_type or "builtin").strip()
+    elif model_category == "generative":
+        ds_t = (gen_dataset_type or "builtin").strip()
 
     if ds_t == "builtin":
         if model_category == "computer_vision":
@@ -258,13 +263,15 @@ def setup_pytorch_modules_if_run(
     gpu="",
     graph_dataset_type="builtin",
     export_onnx="No",
+    seq_dataset_type="builtin",
+    gen_dataset_type="builtin",
 ):
     if mode == "manage":
         return "# manage mode — no training job"
     return setup_pytorch_modules(
         model_category, dataset_type, builtin_dataset, seq_dataset, graph_dataset, gen_dataset,
         nlp_dataset_type, nlp_builtin_dataset, tab_dataset_type, tab_builtin_dataset, audio_dataset_type, audio_builtin_dataset,
-        gpu, graph_dataset_type, export_onnx
+        gpu, graph_dataset_type, export_onnx, seq_dataset_type, gen_dataset_type
     )
 
 
@@ -277,6 +284,7 @@ def retrieve_driver_contents(mode, cancel_jobs=""):
         file_path = base / "drivers" / "driver-create.sh"
         if mode == "create":
             drona_add_additional_file("jobscripts/lightning-job.slurm", "Job Script")
+            drona_add_additional_file("jobscripts/env.sh", "env.sh")
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
@@ -340,87 +348,14 @@ def _normalize_location(location):
     return loc
 
 
-def _is_valid_user_location(job_location):
-    loc = _normalize_location(job_location)
-    if not loc:
-        return False
-    try:
-        p = Path(loc).resolve()
-        env_p = _get_env_dir().resolve()
-        if not p.is_absolute():
-            return False
-        if p == env_p or env_p in p.parents or p in env_p.parents:
-            return False
-        if p == Path(".").resolve() or str(p) in ("/", "\\"):
-            return False
-        return True
-    except Exception:
-        return False
-
-
 def _write_staged_file(env_dir, job_location, filename, content, show_in_preview=True, preview_order=None):
-    """Write a generated file directly into the job folder if location is valid. Never write to '.' or 'env_dir'."""
-    if _is_valid_user_location(job_location):
-        loc = _normalize_location(job_location)
-        dest = Path(loc) / filename
-        try:
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            with open(dest, "w", encoding="utf-8", newline="\n") as f:
-                f.write(content)
-        except OSError as exc:
-            drona_add_message(
-                f"Could not write {filename} to job directory ({loc}): {exc}",
-                "warning",
-            )
-        if show_in_preview:
-            actual_path = str(dest.resolve())
-            try:
-                if preview_order is not None:
-                    drona_add_additional_file(actual_path, filename, preview_order)
-                else:
-                    drona_add_additional_file(actual_path, filename)
-            except Exception:
-                pass
-    else:
-        # Location is not yet available/valid (e.g. during UI preview)
-        # Do NOT write to '.' or 'env_dir'. Provide in-memory preview if supported.
-        if show_in_preview:
-            try:
-                if preview_order is not None:
-                    drona_add_additional_file(content, filename, preview_order)
-                else:
-                    drona_add_additional_file(content, filename)
-            except Exception:
-                pass
-
-
-def build_monitor_preview_html(mode, job_dir):
-    """Manage-mode Preview tab: a snapshot of the PyTorch-Lightning dashboard (same script as the form widget)."""
-    if mode != "manage":
-        return ""
-    location = _normalize_location(job_dir)
-    if not location:
-        return ""
-    script_path = _get_env_dir() / "retrieve_pt_monitor_dashboard.sh"
-    run_env = os.environ.copy()
-    run_env["LOCATION"] = location
-    try:
-        body = subprocess.check_output(
-            ["bash", str(script_path)], env=run_env, stderr=subprocess.DEVNULL, universal_newlines=True
-        ).strip()
-    except (OSError, subprocess.CalledProcessError):
-        body = "<p><em>Could not load the dashboard.</em></p>"
-    location_esc = location.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    html = (
-        "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">"
-        "<title>PyTorch-Lightning Monitor</title></head><body>\n"
-        "<h3>Training run monitor</h3>\n"
-        f"<p>Workflow: <code>{location_esc}</code></p>\n"
-        f"{body}\n"
-        "</body></html>\n"
-    )
-    drona_add_additional_file(html, "Monitor", 0)
-    return ""
+    """Add a generated file to the preview. Nothing is written now: Drona writes it into the
+    workflow directory at submit, so a preview never overwrites files the user edited there.
+    filename may be a relative path (e.g. ".drona/helper.py"); hidden files use preview_order=-1."""
+    if preview_order is None:
+        preview_order = 0 if show_in_preview else -1
+    drona_add_additional_file(content=content, name=filename, preview_name=filename,
+                              preview_order=preview_order)
 
 
 def retrieve_workflow_actions(mode, delete_workflow, delete_files, allworkflows, job_dir=""):
@@ -444,7 +379,15 @@ def retrieve_workflow_actions(mode, delete_workflow, delete_files, allworkflows,
             f"{cmd} && echo 'Done.' || echo 'FAILED: exit code '$?'.'"
         )
 
-    cleanup = step("Cleaning up the record of this manage run ($DRONA_WF_ID)", "$DRONA_WF_ID")
+    # Left out for a run on an existing workflow (no throwaway record; DRONA_WF_ID is the
+    # workflow itself). The DRONA_RUN_DIR test guards scripts generated the old way.
+    import drona_utils.core as _du
+    on_target = getattr(_du, "drona_get_run_target", lambda: None)()
+    cleanup = "" if on_target else (
+        'if [ -z "${DRONA_RUN_DIR:-}" ]; then\n'
+        + step("Cleaning up the record of this manage run ($DRONA_WF_ID)", "$DRONA_WF_ID")
+        + "\nfi"
+    )
 
     # Checkbox values arrive as "" when unchecked, or an unresolved "$name" when never rendered
     def checked(v):
@@ -501,60 +444,52 @@ except ImportError:
 '''
 
 
-_FIND_FREE_TB_PORT_SCRIPT = '''#!/bin/bash
-# find_free_tb_port.sh — prints a free port to stdout for TensorBoard on this node.
-# Tries TensorBoard convention range (6006-6050) first, then scans high ports.
-
-TB_PORT=""
-for port in $(seq 6006 6050); do
-  if ! ss -tuln 2>/dev/null | grep -q ":${port} "; then
-    TB_PORT=$port
-    break
-  fi
-done
-
-if [ -z "$TB_PORT" ]; then
-  # Try selecting a random free port in the range 6051 to 65535.
-  # We combine two $RANDOM calls to generate a range beyond the 32767 limit of $RANDOM.
-  # Modulo 59485 covers the range size (65535 - 6051 + 1 = 59485).
-  for i in $(seq 1 1000); do
-    rand_val=$(( (RANDOM << 15) | RANDOM ))
-    port=$(( 6051 + (rand_val % 59485) ))
-    if ! ss -tuln 2>/dev/null | grep -q ":${port} "; then
-      TB_PORT=$port
-      break
-    fi
-  done
-
-  # Fall back to a sequential scan of high ports if no random port was found free
-  if [ -z "$TB_PORT" ]; then
-    for port in $(seq 6051 65535); do
-      if ! ss -tuln 2>/dev/null | grep -q ":${port} "; then
-        TB_PORT=$port
-        break
-      fi
-    done
-  fi
-fi
-
-if [ -z "$TB_PORT" ]; then
-  echo "ERROR: No free port found on node $(hostname)" >&2
-  exit 1
-fi
-
-echo "$TB_PORT"
-'''
-
-
-
-
-
-
 # Script generators are imported from the generators package.
 
 
 
 # ── Main dispatcher ────────────────────────────────────────────────────────────
+
+def externalize_settings(train_script, header=""):
+    """generators/config_file.py, loaded by path: the app keeps one `generators` package in
+    sys.modules for all environments, so an import could pick up another env's copy."""
+    import importlib.util
+    path = Path(__file__).resolve().parent / "generators" / "config_file.py"
+    spec = importlib.util.spec_from_file_location("_drona_pl_config_file", str(path))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.externalize_settings(train_script, header)
+
+
+_CONFIG_HEADER = """\
+# Settings for this training run, generated by Drona from the form.
+# Edit the values here and resubmit; train.py reads this file at start.
+# One-off change without editing:  python3 train.py --set training.max_epochs=20
+# What is not here (dataset choice, network layout) is in data.py and model.py."""
+
+_CONFIG_OUTPUTS = """\
+  # Keep the best (lowest val_loss) and last checkpoint, plus a .pt copy of the weights
+  checkpoint: {checkpoint}
+  # Export the trained model to ONNX (log_dir/final_model.onnx)
+  export_onnx: {export_onnx}
+"""
+
+
+def split_into_files(train_script):
+    """generators/split_files.py, loaded by path (same reason as externalize_settings)."""
+    import importlib.util
+    path = Path(__file__).resolve().parent / "generators" / "split_files.py"
+    spec = importlib.util.spec_from_file_location("_drona_pl_split_files", str(path))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.split_script(train_script)
+
+
+def _static_file(name):
+    """A file from files/ in this environment, e.g. the shared train.py."""
+    with open(Path(__file__).resolve().parent / "files" / name, encoding="utf-8") as f:
+        return f.read()
+
 
 def generate_lightning_script_if_run(
     mode,
@@ -938,8 +873,91 @@ def generate_lightning_script(
     if train_script is None:
         return ""  # error already added by sub-generator
 
-    if _checkbox_on(exportOnnx) and category != "gnn":
-        onnx_export_code = '''    trainer.fit(model, datamodule=datamodule)
+    export_onnx = _checkbox_on(exportOnnx) and category != "gnn"
+    # The Custom task has no validation step, so there is no val_loss to pick checkpoints by
+    checkpoint = ckpt_on and category != "custom"
+
+    # ── Files: config.yaml + train.py (the same for every task) + data.py + model.py ──
+    # Nothing is written now: Drona writes them into the workflow directory at submit.
+    train_script, config_yaml = externalize_settings(train_script, header=_CONFIG_HEADER)
+    try:
+        data_py, model_py = split_into_files(train_script)
+    except Exception as e:
+        # Unexpected script shape: fall back to the single train.py of earlier versions
+        drona_add_message(f"PyTorch-Lightning: could not split the script into data.py and model.py "
+                          f"({e}); writing a single train.py instead.", "warning")
+        if export_onnx:
+            train_script = _inject_onnx_export(train_script)
+        if config_yaml:
+            _write_staged_file(env_dir, job_location, "config.yaml", config_yaml)
+        _write_staged_file(env_dir, job_location, "train.py", train_script)
+        return ""
+
+    config_yaml = (config_yaml or "").rstrip("\n") + "\n" + _CONFIG_OUTPUTS.format(
+        checkpoint="true" if checkpoint else "false", export_onnx="true" if export_onnx else "false")
+    readme = _build_readme(category, exp_name, _dataset_label(category, locals()), ep, bs, lr, prec,
+                           log_dir, checkpoint, export_onnx)
+    _write_staged_file(env_dir, job_location, "README.md", readme)
+    _write_staged_file(env_dir, job_location, "config.yaml", config_yaml)
+    _write_staged_file(env_dir, job_location, "train.py", _static_file("train.py"))
+    _write_staged_file(env_dir, job_location, "data.py", data_py)
+    _write_staged_file(env_dir, job_location, "model.py", model_py)
+    _write_staged_file(env_dir, job_location, ".drona/pl_support.py", _static_file("pl_support.py"),
+                       show_in_preview=False)
+    return ""
+
+
+_TASK_TITLES = {
+    "computer_vision": "Computer vision model",
+    "sequential": "Sequential / time-series model",
+    "gnn": "Graph neural network",
+    "generative": "Generative model",
+    "nlp": "Natural language processing model",
+    "tabular": "Tabular data model",
+    "audio": "Audio model",
+    "custom": "Bare-bones custom model",
+}
+_EXAMPLE_NAMES = {"mackey_glass": "Mackey-Glass (synthetic)", "synthetic_tabular": "Synthetic tabular (generated)",
+                  "llava-onevision": "LLaVA-OneVision"}
+
+# Per task: (dataset type, example dataset name, custom data path) variables in generate_lightning_script
+_DATASET_VARS = {
+    "computer_vision": ("ds_type", "builtin", "custom_path"),
+    "sequential": ("seq_ds_type", "seq_blt", "ts_path"),
+    "gnn": ("graph_ds_type", "graph_blt", "graph_path"),
+    "generative": ("gen_ds_type", "gen_blt", "gen_path"),
+    "nlp": ("nlp_ds_type", "nlp_blt", "nlp_path"),
+    "tabular": ("tab_ds_type", "tab_blt", "tab_path"),
+    "audio": ("audio_ds_type", "audio_blt", "audio_path"),
+}
+
+
+def _dataset_label(category, values):
+    """'the example dataset X' or 'your data in `path`', for the README."""
+    if category == "custom":
+        path = (values.get("customDatasetPath") or "").strip()
+        return f"your data in `{path}`" if path else "the placeholder data in data.py"
+    type_var, name_var, path_var = _DATASET_VARS[category]
+    if values.get(type_var) == "custom":
+        return f"your data in `{values.get(path_var) or ''}`"
+    name = values.get(name_var) or ""
+    return f"the example dataset {_EXAMPLE_NAMES.get(name, name)}"
+
+
+def _build_readme(category, name, dataset, epochs, batch_size, lr, precision, log_dir, checkpoint, export_onnx):
+    run_dir = f"{log_dir}/{name}/version_N"
+    checkpoint_row = (f"| Checkpoints (best and last, plus `.pt` weights) | `{run_dir}/checkpoints/` |\n"
+                      if checkpoint else "")
+    onnx_row = f"| ONNX model | `{log_dir}/final_model.onnx` |\n" if export_onnx else ""
+    return _static_file("README.md").format(
+        name=name, title=_TASK_TITLES.get(category, "PyTorch Lightning model"), dataset=dataset,
+        max_epochs=epochs, batch_size=batch_size, learning_rate=lr, precision=precision,
+        log_dir=log_dir, experiment=name, checkpoint_row=checkpoint_row, onnx_row=onnx_row)
+
+
+def _inject_onnx_export(train_script):
+    """Single-file fallback only: export to ONNX right after trainer.fit."""
+    onnx_export_code = '''    trainer.fit(model, datamodule=datamodule)
 
     # Export final model to ONNX
     try:
@@ -995,31 +1013,14 @@ def generate_lightning_script(
         print("ERROR: ONNX package not available. Please ensure 'module load GCC/12.3.0 ONNX/1.15.0' is loaded.")
     except Exception as e:
         print(f"Could not export model to ONNX: {e}")'''
-        train_script = train_script.replace("    trainer.fit(model, datamodule=datamodule)", onnx_export_code)
-
-    # ── Write generated files directly to job folder (only when valid) ───────
-    _write_staged_file(env_dir, job_location, "train.py", train_script)
-
-    if _is_valid_user_location(job_location):
-        port_finder = env_dir / "find_free_tb_port.sh"
-        if port_finder.is_file():
-            script_content = port_finder.read_text(encoding="utf-8")
-        else:
-            script_content = _FIND_FREE_TB_PORT_SCRIPT
-
-        _write_staged_file(
-            env_dir,
-            job_location,
-            "find_free_tb_port.sh",
-            script_content,
-            show_in_preview=False,
-        )
-
-    return train_script
+    return train_script.replace("    trainer.fit(model, datamodule=datamodule)", onnx_export_code)
 
 
-def setup_tensorboard_in_job(mode, logDir=""):
+def setup_tensorboard_in_job(mode, logDir="", enable="yes"):
+    # enable: the MONITORING "TensorBoard" checkbox; any non-empty value except no/false/0 is on
     if mode != "create":
+        return ""
+    if str(enable or "").strip().lower() in ("", "no", "false", "0"):
         return ""
 
     # Same value the generated train.py gets as LOG_DIR
@@ -1027,8 +1028,16 @@ def setup_tensorboard_in_job(mode, logDir=""):
     if log_dir.startswith("./"):
         log_dir = log_dir[2:]
 
-    return f"""# Launch TensorBoard in the background on the compute node using srun
-if [ -d "{log_dir}" ] || mkdir -p "{log_dir}"; then
+    return f"""# TensorBoard log directory: logging.log_dir in config.yaml if set there, else the form's value
+TB_LOGDIR="{log_dir}"
+if [ -f config.yaml ]; then
+    _cfg_logdir=$(grep -E '^\\s+log_dir:' config.yaml | head -n 1 | sed -E 's/^\\s+log_dir:\\s*//; s/\\s+#.*$//; s/^"(.*)"$/\\1/')
+    [ -n "$_cfg_logdir" ] && TB_LOGDIR="${{_cfg_logdir#./}}"
+fi
+export TB_LOGDIR
+
+# Launch TensorBoard in the background on the compute node using srun
+if [ -d "$TB_LOGDIR" ] || mkdir -p "$TB_LOGDIR"; then
     echo "Starting TensorBoard background server with srun..." >&2
     
     # Inline port finder logic: find a free port in range 6006-6050, then random high ports
@@ -1081,9 +1090,9 @@ if [ -d "{log_dir}" ] || mkdir -p "{log_dir}"; then
             module load tensorboard 2>/dev/null || true
 
             if command -v tensorboard >/dev/null 2>&1; then
-                tensorboard --logdir="{log_dir}" --port=$TB_PORT --bind_all
+                tensorboard --logdir="$TB_LOGDIR" --port=$TB_PORT --bind_all
             elif python3 -m tensorboard.main --help >/dev/null 2>&1; then
-                python3 -m tensorboard.main --logdir="{log_dir}" --port=$TB_PORT --bind_all
+                python3 -m tensorboard.main --logdir="$TB_LOGDIR" --port=$TB_PORT --bind_all
             else
                 echo "ERROR: TensorBoard binary or python module not found on $(hostname)" >&2
                 exit 1

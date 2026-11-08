@@ -76,7 +76,7 @@ def main():
     in_features = datamodule.in_features
     num_classes = getattr(datamodule, "num_classes", 1)
     
-    model = LitModel(in_features=in_features, out_features=num_classes)
+    model = LitModel(in_features=in_features, out_features=num_classes, lr=LR)
     loggers = build_loggers()
     
     # __CALLBACK_BLOCK__

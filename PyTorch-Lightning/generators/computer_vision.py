@@ -35,12 +35,13 @@ def _gen_computer_vision_script(
     except (ValueError, TypeError):
         ch = 3
 
-    cache_dir = "./data"
+    # Custom data: data.data_dir in config.yaml is the dataset folder; example data: download/cache folder
+    cache_dir = custom_path if ds_type == "custom" and custom_path else "./data"
 
     if ds_type == "builtin":
         dm = f'''class LitDataModule(L.LightningDataModule):
     """DataModule managing downloads, setup, and data loading for builtin datasets."""
-    def __init__(self, data_dir=DATA_DIR, batch_size={bs}, num_workers={nw}):
+    def __init__(self, data_dir=DATA_DIR, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -67,7 +68,7 @@ def _gen_computer_vision_script(
             if cv_dataset_format == "images":
                 dm = f'''class LitDataModule(L.LightningDataModule):
     """DataModule managing custom semantic segmentation datasets from raw images."""
-    def __init__(self, data_root="{_py_str(custom_path)}", batch_size={bs}, num_workers={nw}):
+    def __init__(self, data_root=DATA_DIR, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
         super().__init__()
         self.data_root = data_root
         self.batch_size = batch_size
@@ -96,7 +97,7 @@ def _gen_computer_vision_script(
             else:
                 dm = f'''class LitDataModule(L.LightningDataModule):
     """DataModule managing custom semantic segmentation datasets."""
-    def __init__(self, data_root="{_py_str(custom_path)}", batch_size={bs}, num_workers={nw}):
+    def __init__(self, data_root=DATA_DIR, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
         super().__init__()
         self.data_root = data_root
         self.batch_size = batch_size
@@ -139,7 +140,7 @@ def _gen_computer_vision_script(
 
                 dm = f'''class LitDataModule(L.LightningDataModule):
     """DataModule managing custom folder-based raw image datasets."""
-    def __init__(self, data_root="{_py_str(custom_path)}", batch_size={bs}, num_workers={nw}):
+    def __init__(self, data_root=DATA_DIR, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
         super().__init__()
         self.data_root = data_root
         self.batch_size = batch_size
@@ -177,7 +178,7 @@ def _gen_computer_vision_script(
             else:
                 dm = f'''class LitDataModule(L.LightningDataModule):
     """DataModule managing custom folder-based tensor datasets."""
-    def __init__(self, data_root="{_py_str(custom_path)}", batch_size={bs}, num_workers={nw}):
+    def __init__(self, data_root=DATA_DIR, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
         super().__init__()
         self.data_root = data_root
         self.batch_size = batch_size

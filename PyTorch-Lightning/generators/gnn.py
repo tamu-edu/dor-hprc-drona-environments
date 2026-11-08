@@ -14,7 +14,8 @@ def _gen_gnn_script(
 ):
     """Returns (train_script, None) for Graph Neural Network."""
     use_builtin = (graph_ds_type == "builtin")
-    data_dir = "./data"
+    # Custom data: data.data_dir in config.yaml is the dataset path; example data: download/cache folder
+    data_dir = graph_path if not use_builtin and graph_path else "./data"
 
     # Dataset setup code block
     if use_builtin:
@@ -34,7 +35,7 @@ def _gen_gnn_script(
         self.is_qm9 = True'''
     else:
         dataset_setup = f'''# Load custom graph dataset
-        path = "{_py_str(graph_path)}"
+        path = DATA_DIR
         if os.path.isfile(path):
             self.data = torch.load(path)
         else:

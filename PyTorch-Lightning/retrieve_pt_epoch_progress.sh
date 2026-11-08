@@ -86,12 +86,17 @@ emit_epoch_progress() {
     fi
 
     local max_epochs="10"
-    if [ -f "$LOCATION/train.py" ]; then
-        local parsed_max
-        parsed_max=$(grep -E '^\s*MAX_EPOCHS\s*=' "$LOCATION/train.py" | grep -o -E '[0-9]+' | head -n 1)
-        if [ -n "$parsed_max" ]; then
-            max_epochs="$parsed_max"
-        fi
+    local parsed_max=""
+    if [ -f "$LOCATION/config.yaml" ]; then
+        # settings file (newer workflows): "  max_epochs: 3"
+        parsed_max=$(grep -E '^\s+max_epochs:\s*[0-9]+' "$LOCATION/config.yaml" | grep -o -E '[0-9]+' | head -n 1)
+    fi
+    if [ -z "$parsed_max" ] && [ -f "$LOCATION/train.py" ]; then
+        # older workflows: "MAX_EPOCHS = 3" in train.py
+        parsed_max=$(grep -E '^\s*MAX_EPOCHS\s*=\s*[0-9]' "$LOCATION/train.py" | grep -o -E '[0-9]+' | head -n 1)
+    fi
+    if [ -n "$parsed_max" ]; then
+        max_epochs="$parsed_max"
     fi
 
     local PARSED

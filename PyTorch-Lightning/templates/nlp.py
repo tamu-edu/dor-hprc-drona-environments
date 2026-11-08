@@ -130,7 +130,7 @@ def main():
     vocab_size = len(datamodule.tokenizer.word2idx)
     num_classes = getattr(datamodule, "num_classes", 2)
     
-    model = LitModel(vocab_size=vocab_size, num_classes=num_classes)
+    model = LitModel(vocab_size=vocab_size, num_classes=num_classes, lr=LR)
     loggers = build_loggers()
     
     # __CALLBACK_BLOCK__
