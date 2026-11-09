@@ -566,6 +566,15 @@ def generate_lightning_script_if_run(
 ):
     if mode != "create":
         return ""
+    # Tasks whose example dataset is hidden in the form (missing or unreadable cluster copy).
+    # An old workflow restored with Recreate can still send "builtin" for them.
+    no_example = {"nlp": nlpDatasetType, "audio": audioDatasetType,
+                  "generative": genDatasetType, "gnn": graphDatasetType}
+    if modelCategory in no_example and str(no_example[modelCategory]).strip() == "builtin":
+        from drona_utils.core import drona_add_error
+        drona_add_error("This task has no example dataset yet. Under DATA, choose 'My own data' "
+                        "and point to your dataset.")
+        return ""
     return generate_lightning_script(
         modelCategory,
         name, datasetType, builtinDataset, customDataPath,

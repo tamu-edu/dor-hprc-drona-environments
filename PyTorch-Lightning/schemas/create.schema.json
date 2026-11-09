@@ -239,16 +239,12 @@
             "label": "Dataset",
             "options": [
               {
-                "label": "Example",
-                "value": "builtin"
-              },
-              {
                 "label": "My own data",
                 "value": "custom"
               }
             ],
-            "value": "builtin",
-            "help": "Example: a ready-to-run dataset from the cluster dataset module Datasets/fastText/2015. My own data: point at a file or directory on the cluster.",
+            "value": "custom",
+            "help": "No example dataset is available for this task yet: the cluster copy is missing or in a format the generated code can't read. Point to your own data.",
             "style": "button"
           },
           "nlpBuiltinDataset": {
@@ -370,16 +366,12 @@
             "label": "Dataset",
             "options": [
               {
-                "label": "Example",
-                "value": "builtin"
-              },
-              {
                 "label": "My own data",
                 "value": "custom"
               }
             ],
-            "value": "builtin",
-            "help": "Example: a ready-to-run dataset from the cluster dataset module Datasets/AISHELL/2017. My own data: point at a file or directory on the cluster.",
+            "value": "custom",
+            "help": "No example dataset is available for this task yet: the cluster copy is missing or in a format the generated code can't read. Point to your own data.",
             "style": "button"
           },
           "audioBuiltinDataset": {
@@ -432,16 +424,12 @@
             "label": "Dataset",
             "options": [
               {
-                "label": "Example",
-                "value": "builtin"
-              },
-              {
                 "label": "My own data",
                 "value": "custom"
               }
             ],
-            "value": "builtin",
-            "help": "Example: a ready-to-run dataset from the cluster dataset module Datasets/llava-onevision/2024. My own data: point at a file or directory on the cluster.",
+            "value": "custom",
+            "help": "No example dataset is available for this task yet: the cluster copy is missing or in a format the generated code can't read. Point to your own data.",
             "style": "button"
           },
           "genBuiltinDataset": {
@@ -511,16 +499,12 @@
             "label": "Dataset",
             "options": [
               {
-                "label": "Example",
-                "value": "builtin"
-              },
-              {
                 "label": "My own data",
                 "value": "custom"
               }
             ],
-            "value": "builtin",
-            "help": "Example: a ready-to-run dataset from the cluster dataset module Datasets/QM9. My own data: point at a file or directory on the cluster.",
+            "value": "custom",
+            "help": "No example dataset is available for this task yet: the cluster copy is missing or in a format the generated code can't read. Point to your own data.",
             "style": "button"
           },
           "graphBuiltinDataset": {
