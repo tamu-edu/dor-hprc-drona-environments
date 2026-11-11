@@ -7,7 +7,6 @@
   "GPU_MONITOR_STOP": "!retrieve_gpu_monitor_stop('gpu', $drona_gpu_monitor)",
   "JOBNAME": "$name",
   "DRIVER": "!retrieve_driver_contents($drona_create_manage_mode, $drona_cancel_jobs)",
-  "CREATE_DIR": "$location",
   "MANAGE": "!retrieve_workflow_actions($drona_create_manage_mode, $drona_delete_workflow, $drona_delete_files, $drona_create_manage_allworkflows, $drona_job_dir)",
   "SLURM": "!retrieve_af_slurm_params($drona_create_manage_mode, $alphafoldversion, $dbpreset, $gpu, $drona_walltime, $walltimegpu, $drona_account, $drona_extra_slurm, $jsoninput)",
   "maxtemplate": "!retrieve_maxtemplate($maxtemplate)",

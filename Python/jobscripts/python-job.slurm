@@ -11,7 +11,6 @@ module load WebProxy
 
 [setupEnv]
 
-cd [flocation]
 [GPU_MONITOR_START]
 [CPU_MONITOR_START]
 

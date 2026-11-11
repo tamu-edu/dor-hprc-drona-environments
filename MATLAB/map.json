@@ -2,11 +2,9 @@
   "$include": ["drona_cancel_jobs", "drona_cpu_monitor", "drona_gpu_monitor_nvml"],
   "JOBNAME": "$name",
   "DRIVER": "!retrieve_driver_contents($drona_create_manage_mode, $drona_cancel_jobs)",
-  "CREATE_DIR": "$location",
   "MANAGE": "!retrieve_workflow_actions($drona_create_manage_mode, $drona_delete_workflow, $drona_delete_files, $drona_create_manage_allworkflows, $drona_job_dir)",
   "DUMMY": "!retrieve_matlab_slurm_params($workers, $threads, $drona_memory, $drona_gpu, $drona_numgpu, $drona_walltime, $drona_account, $drona_extra_slurm)",
   "fversion": "$version",
-  "flocation": "$location",
   "fmainscript": "!retrieve_main($mainscript)",
   "matlabpath": "!retrieve_matlabpath($mainscript, $matlabpath)"
 }

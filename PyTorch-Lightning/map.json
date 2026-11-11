@@ -7,7 +7,6 @@
   "JOBNAME": "!sanitize_job_name($name)",
   "DRIVER": "!retrieve_driver_contents($drona_create_manage_mode, $drona_cancel_jobs)",
   "DUMMY": "!retrieve_pt_slurm_params($drona_create_manage_mode, $modelCategory, $drona_nodes, $numWorkers, $drona_memory, $drona_gpu, $drona_numgpu, $drona_walltime, $drona_account, $drona_extra_slurm)",
-  "flocation": "$location",
   "MANAGE": "!retrieve_workflow_actions($drona_create_manage_mode, $drona_delete_workflow, $drona_delete_files, $drona_create_manage_allworkflows, $drona_job_dir)",
   "setupEnv": "!setup_pytorch_modules_if_run($drona_create_manage_mode, $modelCategory, $datasetType, $builtinDataset, $seqBuiltinDataset, $graphBuiltinDataset, $genBuiltinDataset, $nlpDatasetType, $nlpBuiltinDataset, $tabDatasetType, $tabBuiltinDataset, $audioDatasetType, $audioBuiltinDataset, $drona_gpu, $graphDatasetType, $exportOnnx, $seqDatasetType, $genDatasetType)",
   "tbLaunch": "!setup_tensorboard_in_job($drona_create_manage_mode, $logDir, $tbEnable)",

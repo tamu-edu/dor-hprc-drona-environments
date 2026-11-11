@@ -2,9 +2,7 @@
   "$include": ["drona_cancel_jobs", "drona_cpu_monitor", "drona_gpu_monitor_nvml", "drona_slurm_params"],
   "JOBNAME": "$name",
   "DRIVER": "!retrieve_driver_contents($drona_create_manage_mode, $drona_cancel_jobs)",
-  "CREATE_DIR": "$location",
   "MANAGE": "!retrieve_workflow_actions($drona_create_manage_mode, $drona_delete_workflow, $drona_delete_files, $drona_create_manage_allworkflows, $drona_job_dir)",
-  "flocation": "$location",
   "setupEnv": "!setup_python_env($versionSelect, $pythonVersionDropdown, $createEnvName, $currentEnvDropdown, $sharedEnvDropdown)",
   "fmainscript": "$mainscript"
 }

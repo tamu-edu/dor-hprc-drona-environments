@@ -8,7 +8,6 @@
 
 module purge
 [MODULES]
-cd [flocation]
 [CPU_MONITOR_START]
 
 # tamulauncher starts one launcher per node; each runs [CPN] commands at a time

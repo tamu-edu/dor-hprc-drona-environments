@@ -6,7 +6,6 @@
 [PARTITION]
 [EXTRA]
 
-cd [flocation]
 source ./env.sh   # modules for this workflow (also for interactive runs)
 [GPU_MONITOR_START]
 [CPU_MONITOR_START]

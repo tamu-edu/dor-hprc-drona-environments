@@ -1,0 +1,151 @@
+# AlphaFold: outstanding suggestions and open items
+
+Status as of 2026-11-07. Markdown-formatted plain text, so each section can be pasted into a GitHub issue.
+Background documents (composer repo, md-files/): alphafold-further-suggestions.md,
+alphafold-any-gpu-option.md, alphafold-new-cluster-porting.md, alphafast-option-assessment.md,
+alphafold-rerun-gpu-stage-design.md.
+
+Scope tags: [env] = only this environment, [core] = Drona composer / runtime_support, [site] = needs HPRC
+(software, databases, policies).
+
+Done and app-tested already (not repeated below): A1 recycles default, A3 FASTA/preset check, B1 re-run card
+(UI), B2 size hint, B3 queue labels, C1 summary card, C2 download bundle, C3 AlphaPickle plots, D3 monitoring
+option, "Any GPU" option (core 1dc1bdf), create-form cards, README porting section.
+
+Done 2026-11-07, offline-tested only (app test pending): A4 Seeds in Create, submit-time AF3 input check
+(check_af3_input.py: placeholder, invalid JSON, empty name/sequences/seeds, seeds conflict), download bundle at
+the end of each successful GPU job (jobs also exit with the prediction's status now), C4 FREE UP SPACE card
+(clean_af_intermediates.py), AF2 viewer cache (.drona/af2_viewer_cache.json) + per-rank pLDDT from the server.
+
+---------------------------------------------------------------------------------------------------------
+
+## 1. Verification that needs real GPU jobs
+
+### 1.1 Run-time attention selection on the GPU nodes [env]
+The AF3 GPU job now picks its attention settings when it starts:
+`nvidia-smi --query-gpu=compute_cap` < 8 (T4, V100, RTX 6000/8000) -> `--flash_attention_implementation=xla`
+plus `XLA_FLAGS=--xla_disable_hlo_passes=custom-kernel-fusion-rewriter`; otherwise Triton plus
+`XLA_FLAGS=--xla_gpu_enable_triton_gemm=false` (upstream Dockerfile default). If `nvidia-smi` cannot report
+a compute capability (older driver), it falls back to Triton.
+To verify: one AF3 run on an H100 and one on an A30. The job's out file must show
+`GPU: NVIDIA ... (compute capability 9.0) -> triton attention` and the prediction must finish. Compare the GPU
+stage time with an older run that used XLA (e.g. runs/myaf3) to confirm Triton is faster. If possible also
+one run on Grace T4/RTX to confirm the XLA path (run_alphafold.py refuses to start on 7.x GPUs without it).
+
+### 1.2 "Any GPU" end to end [env + core]
+Submit an AF3 workflow with "Any GPU". Check that Slurm starts the GPU job on whichever type frees up first
+(`--partition=gpu --gres=gpu:1` on ACES), that the Manage timeline, summary, viewer and re-run card handle a job
+without a GPU type in its `--gres`, and that a walltime-only re-run ("Same as before") keeps the untyped request.
+Grace (`--partition=gpu,gpu-a40`) and FASTER are only checked as generated #SBATCH lines; one real job on each
+would confirm the multi-partition request.
+
+### 1.3 Monitoring charts from a real run [env]
+Tick Monitor CPU and Monitor GPU in Create, run AF2 (full_dbs: CPU job + GPU job) and AF3. In Manage, the Job
+Resources charts should show the CPU job's CPU data and the GPU job's CPU + GPU data, per selected job/node.
+Check that the monitors stop when the main command ends (no leftover `srun --overlap` steps), and that the
+`drona_monitoring/` files of the two jobs don't mix when both ran on the same node.
+
+### 1.4 Real Manage re-run test [env]
+B1 was offline-tested and the UI checked; a real re-run was never submitted through Manage. Test on a run whose
+GPU stage failed (TIMEOUT or wrong model directory) and on a finished AF3 run with changed seeds/recycles:
+the job file backup `<jobfile>.<oldid>`, the edited settings, the new job id in the workflow record
+(`jobinfo`, `replaced_jobs`), and that the summary/viewer switch to the newest result directory.
+
+### 1.5 Job 2311568 (runs/test) [env]
+AF3 GPU job resubmitted by hand on 2026-11-06 after the wrong-model-directory failure (registered in workflow
+57716199786). When it finishes: summary card, combined viewer, re-run card state ("done" -> only with changed
+settings), download bundle.
+
+### 1.6 Calibrate the AF3 size limits (B2) [env]
+`AF3_GPU_TOKEN_LIMITS` in utils.py: only the 80 GB value (5,120 tokens on A100/H100) comes from upstream
+docs/performance.md. The 48 GB (3,000), 24 GB (1,500) and 16 GB (1,000) values are estimates scaled by memory.
+Run inputs of ~1,000 / 1,500 / 2,000 tokens on an A30 and record peak GPU memory (monitor chart) and run time,
+then adjust the limits and the warning text. Also check the CCD ligand estimate (30 tokens each).
+
+---------------------------------------------------------------------------------------------------------
+
+## 2. Features not started
+
+### 2.1 D1: AF3 input builder [env, large]
+Today AF3 needs a hand-written `alphafold3-input.json` (or the skeleton edited in the preview tab). A builder
+in the Create form: a repeatable list of chains, each with type (protein / RNA / DNA / ligand), sequence or
+SMILES / CCD code, and number of copies; optional modifications and bonded atom pairs later. The form
+generates the JSON (dialect alphafold3, version 1, modelSeeds) and the preview shows it as today.
+Needs a repeatable-group form element (or dynamicTable as input); check what Drona supports before designing.
+Benefit: removes the main barrier for new AF3 users; also feeds the B2 size hint exactly.
+
+### 2.2 D2: batch mode [env, large]
+Several FASTA / JSON inputs in one workflow. AF3: `--input_dir` with many JSON files; AF2: a loop over FASTA
+files, or tamulauncher. CPU stages (MSA) in parallel (job array or one job per input), then one GPU job for
+all predictions so the model is compiled once. Manage needs a per-input view (summary per prediction,
+viewer picker). Design questions: one workflow record vs one per input; how re-run works per input.
+
+### 2.3 AlphaFast option for AF3 [env + site, ~1 day after a test job]
+AlphaFast (module AlphaFast/1.0.0-CUDA-12.8.0 on ACES, container in /sw/hprc/sw/bio/containers/alphafast/,
+databases in /scratch/data/bio/alphafast/db) runs the MSA search with MMseqs2 on the GPU, which removes the
+multi-hour CPU stage. AF3 only. `run_alphafast.sh` does not pass through recycles / seeds / attention, so the
+env should call the container steps itself (keeps recycles, seeds and the re-run card working). Manage changes:
+single-job timeline, output-directory file written by the new job, re-run = resubmit whole job.
+First a manual test job: which SIF, A30 vs H100 memory, run time, `--temp_dir` on node-local storage.
+Trade-off: everything then waits in the GPU queue. Full assessment: md-files/alphafast-option-assessment.md.
+AF2 is not possible without ColabFold databases [site].
+
+---------------------------------------------------------------------------------------------------------
+
+### 2.7 Viewer: load the other structures on demand [core]
+Both viewers still receive every ranked structure inline (AF3 596 residues: 2.1 MB of the 2.6 MB payload).
+Sending only the best one and fetching the others when picked does not work from env code: DynamicViewer runs
+the viewer in an iframe with sandbox="allow-scripts" (opaque origin) and a CSP whose connect-src allows only
+the approved CDNs, so the viewer cannot reach the OOD Files app. Needs a DynamicViewer feature (e.g. the parent
+fetches a file on a postMessage request, restricted to the workflow directory). The viewers already load
+structures through a promise (fetchStructure), so only that function would change. The AF2 pkl cache was done
+on 2026-11-07.
+
+## 3. Portability and shared (core) work
+
+### 3.1 GPU list from config instead of per-env retrieve_gpus [core, deferred]
+Nine envs ship their own `retrieve_gpus` with a hard-coded per-cluster list, most using the HPRC tool
+`/sw/local/bin/clustername`. Recommended: GPU types (value, label, partition) listed once per cluster
+(cluster profile or env-site config) + one shared retriever (with the B3 queue labels and "Any GPU" for every
+env) + an env-level filter (AlphaFold: no PVC/VE). AlphaFold's `retriever_scripts/retrieve_gpus` and `CLUSTER_GPU_TYPES`
+would move there. Decide together with "cluster profiles -> drona_wfe" and env-site config.
+
+### 3.2 Per-site settings file (option B / C) [env, shelved]
+Module lines, AF2/AF3 data paths, container image, example folders and the viewer Python setup are spread over
+utils.py, two AF3 job files, the create schema and retriever_scripts/retrieve_af_combined.sh (README "Porting to another
+cluster" lists them). Option B: one `configuration/sites/<cluster>.json` per cluster in this env, read by a
+small loader (half a day); built in the env-site-config layout so option C (shared `load_site_config()`
+with an override folder outside the env) can replace the loader later. Open point: picker "Examples" paths
+are static in the schema; check whether `defaultPaths` can come from a retriever.
+
+### 3.3 HPRC-specific pieces still in the env [env + core]
+- `list_accounts` calls HPRC's `list_accounts.py` (same in 11 envs). Proposed shared `drona_list_accounts`
+  in runtime_support (`sacctmgr -nP show assoc user=$USER format=account`, override in config.yml).
+- `retriever_scripts/retrieve_af_combined.sh` hard-codes EasyBuild Python 3.10 + SciPy-bundle paths for the AF3 viewer data;
+  breaks when the module tree changes. Use `module load` or plain python3 with NumPy, or rewrite the
+  computation without NumPy.
+- AF2/AF3 module lines and data paths are per cluster in code (see 3.2).
+
+### 3.4 Reset action checkboxes after Run [core, deferred]
+"Create bundle", "Re-run GPU stage" and the cancel selection stay ticked after a successful Run, so a second
+Generate/Run repeats the action. A generic schema flag (`resetAfterSubmit`) would clear them once the preview
+closes after a submit.
+
+---------------------------------------------------------------------------------------------------------
+
+## 4. Decisions and housekeeping
+
+### 4.1 Workflows created before the replacement
+On 2026-11-07 the rebuilt environment (developed as AlphaFold-rt) replaced the original AlphaFold. Workflows
+created with the original env open in the new Manage page: check one old AF2 and one old AF3 run (job file
+names, logs, timeline, viewers). The original files are in $SCRATCH/drona-snapshots/
+alphafold-original-before-rt-20261107/ (with its last uncommitted fixes as a .diff next to it).
+
+### 4.2 Small leftovers
+- AF2 CPU stage memory: the default stays 488 GB (cores lowered 48 -> 8 on 2026-11-07, both now in RESOURCES).
+  Run one large AF2 input (multimer or ~1,500 residues), read MaxRSS, then pick a lower default with headroom;
+  ask the AlphaFold expert why 488 GB was chosen first.
+- AF2 reduced_dbs prints "Parafold not available for reduced_dbs yet": check whether ParaFold supports it now,
+  else reword (it is expected behaviour, not a warning).
+- An AF2 run that finished cannot be re-run (same input gives the same models); revisit if AF2 gets options
+  worth re-running with (e.g. a different model preset).

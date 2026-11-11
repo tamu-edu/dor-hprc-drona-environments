@@ -8,7 +8,6 @@
 
 module purge
 module load Matlab/[fversion]
-cd [flocation]
 [matlabpath]
 
 # usage log shared with matlabsubmit (same format)

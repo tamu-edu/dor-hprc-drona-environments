@@ -1,8 +1,6 @@
 #!/bin/bash
 source /etc/profile
 
-cd [CREATE_DIR]
-
 [PRECHECK]
 
 # Submit the pipeline with the shared driver: each job file waits for the previous one
