@@ -1,0 +1,244 @@
+{
+  "workflowCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "WORKFLOW OPTIONS",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "WORKFLOW OPTIONS",
+      "dot": false
+    },
+    "elements": {
+      "runDestinationFinal": {
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_destination.json#/drona_runDestinationFinal"
+      },
+      "versionDropdown": {
+        "type": "dynamicSelect",
+        "label": "R version",
+        "name": "version",
+        "help": "Select the R version to use; the newest is selected by default. R_tamu is a wrapper around R with a large number of popular packages already installed, and it sets up R_LIBS_USER so you can install more packages yourself.",
+        "retriever": "retrieve_module_versions",
+        "autoSelect": "first"
+      },
+      "ContainerScripts": {
+        "type": "rowContainer",
+        "label": "Additional",
+        "elements": {
+          "mainscriptPicker": {
+            "type": "picker",
+            "label": "Main R script",
+            "name": "mainscript",
+            "help": "Select the R script (.R) you want to run, either from a location on the cluster (cluster) or uploaded from your local machine (local). If you don't select a file here, you can still enter it in the job script preview.",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "showHidden": "false",
+            "allowedFileTypes": "R"
+          },
+          "drona_fileUploader": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_import_upload.json#/drona_ImportUpload/elements/drona_fileUploader",
+            "label": "Upload additional scripts and data",
+            "help": "OPTIONAL: Upload input data or other R scripts (e.g., files sourced from the main R script) from your local machine."
+          },
+          "RpathPicker": {
+            "type": "picker",
+            "label": "Additional R_LIBS_USER paths",
+            "name": "rlibs",
+            "help": "OPTIONAL: Directories with R packages your script uses, added to R_LIBS_USER. You can add more than one directory. They are searched after the R_tamu libraries (a package that R_tamu already provides is taken from R_tamu) and before the site-wide CRAN/Bioconductor bundles. The packages must be built for the R version selected for this job, so use this with care. R_tamu already sets up R_LIBS_USER, which is the recommended way to install and use packages.",
+            "localLabel": "select",
+            "showHidden": "false",
+            "multiple": "true"
+          }
+        }
+      }
+    }
+  },
+  "resourcesCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "R RESOURCES",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "R RESOURCES",
+      "dot": false
+    },
+    "elements": {
+      "ThreadsCard": {
+        "type": "container",
+        "layout": {
+          "preset": "card",
+          "title": "Threads",
+          "dot": false
+        },
+        "elements": {
+          "ContainerThreads": {
+            "type": "rowContainer",
+            "elements": {
+              "threads": {
+                "type": "number",
+                "label": "Threads per R process",
+                "name": "threads",
+                "help": "How many cores each R process may use for R's built-in multithreading: matrix and linear-algebra math (e.g. %*%, crossprod, solve, lm/glm on large data) and packages such as data.table, ranger and xgboost. Cores requested: threads x (workers + 1). The job script sets OPENBLAS_NUM_THREADS, OMP_NUM_THREADS and MKL_NUM_THREADS to this value and exports it as DRONA_R_THREADS.",
+                "value": "1"
+              },
+              "threadsNoteSerial": {
+                "type": "staticText",
+                "name": "threadsNoteSerial",
+                "label": "",
+                "value": "<div style='background:#f1f3f5;border-left:3px solid #500000;padding:4px 10px;border-radius:4px;font-size:0.85em;'><b>Threads:</b> even without parallel code, R runs matrix math (and packages like data.table) on several cores at once. If your script does heavy matrix math, set threads to e.g. 8 to make it much faster. Otherwise keep 1.</div>",
+                "allowHtml": true,
+                "useLabel": false,
+                "condition": "parallel.none || parallel. || parallel.many"
+              },
+              "threadsNoteWorkers": {
+                "type": "staticText",
+                "name": "threadsNoteWorkers",
+                "label": "",
+                "value": "<div style='background:#f1f3f5;border-left:3px solid #500000;padding:4px 10px;border-radius:4px;font-size:0.85em;'><b>Threads:</b> keep 1 with workers. Every worker starts this many math threads, and more threads than cores makes the job <i>slower</i>. Raise it only if each worker does heavy matrix math (cores requested = threads x (workers + 1)).</div>",
+                "allowHtml": true,
+                "useLabel": false,
+                "condition": "!parallel.none && !parallel. && !parallel.many"
+              }
+            }
+          }
+        }
+      },
+      "ParallelCard": {
+        "type": "container",
+        "layout": {
+          "preset": "card",
+          "title": "Parallel",
+          "dot": false
+        },
+        "elements": {
+          "ContainerParallel": {
+            "type": "rowContainer",
+            "elements": {
+              "parallelDropdown": {
+                "type": "select",
+                "label": "How your script runs in parallel",
+                "name": "parallel",
+                "help": "How the work is spread over cores. NONE: one R process (it can still use several cores for math, see Threads per R process). SOCK, MPI, OTHER: your script starts its own workers; select the type of cluster it creates. SOCK (makeCluster(n), doParallel, future multisession) and OTHER (forking with mclapply, doMC, future multicore) run on a single node; MPI (Rmpi/snow MPI clusters, doMPI) can span nodes. MANY RUNS: your script is serial, and the job runs it many times (parameter sweeps, simulations with different seeds), several at the same time, with tamulauncher. If you are not sure, select NONE.",
+                "options": [
+                  { "value": "none", "label": "NONE (one R process)" },
+                  { "value": "sock", "label": "SOCK cluster (makeCluster, doParallel)" },
+                  { "value": "mpi", "label": "MPI cluster (Rmpi, doMPI)" },
+                  { "value": "other", "label": "OTHER (forking: mclapply, doMC)" },
+                  { "value": "many", "label": "MANY RUNS of the script (tamulauncher)" }
+                ]
+              },
+              "workers": {
+                "type": "number",
+                "label": "#workers",
+                "name": "workers",
+                "help": "Number of workers in your R cluster. This must match the cluster size in your R code; the job script exports it as DRONA_R_WORKERS, so you can use as.integer(Sys.getenv(\"DRONA_R_WORKERS\")). mclapply uses it automatically (the job script sets MC_CORES to it). One extra core is requested for the R main process. SOCK and OTHER are limited to a single node (95 workers on ACES).",
+                "value": "1",
+                "condition": "!parallel.none && !parallel. && !parallel.many"
+              }
+            }
+          },
+          "Row_runsNote": {
+            "type": "rowContainer",
+            "condition": "parallel.many",
+            "elements": {
+              "runsNote": {
+                "type": "staticText",
+                "name": "runsNote",
+                "label": "",
+                "allowHtml": true,
+                "useLabel": false,
+                "condition": "parallel.many",
+                "value": "<div style='background:#f1f3f5;border-left:3px solid #500000;padding:4px 10px;border-radius:4px;font-size:0.85em;'><b>Many runs:</b> the job runs your script many times, several at the same time. Each run is a separate <span style='font-family:monospace'>Rscript</span> with its own output in <span style='font-family:monospace'>r-runs/run-&lt;n&gt;.log</span> and its run number in <span style='font-family:monospace'>DRONA_R_RUN</span>. Give each run its own output file name, or the runs overwrite each other's results. If the job stops early (e.g. time limit), submit r-job.slurm again from the workflow directory: finished runs are skipped.</div>"
+              }
+            }
+          },
+          "ContainerRunsSize": {
+            "type": "rowContainer",
+            "condition": "parallel.many",
+            "elements": {
+              "runs": {
+                "type": "number",
+                "label": "#runs",
+                "name": "runs",
+                "value": "10",
+                "condition": "parallel.many",
+                "help": "How many times to run the script, when no arguments per run are given. Each run gets its run number (1, 2, ...) in DRONA_R_RUN, e.g. set.seed(as.integer(Sys.getenv(\"DRONA_R_RUN\")))."
+              },
+              "runnodes": {
+                "type": "number",
+                "label": "#nodes",
+                "name": "runnodes",
+                "value": "1",
+                "condition": "parallel.many",
+                "help": "Nodes to spread the runs over. Each node runs its share of the runs."
+              },
+              "runspernode": {
+                "type": "number",
+                "label": "Runs at the same time per node",
+                "name": "runspernode",
+                "condition": "parallel.many",
+                "help": "Leave empty to run as many as fit: cores per node / threads per R process. Lower it when every run needs a lot of memory."
+              }
+            }
+          },
+          "ContainerRunsArgs": {
+            "type": "rowContainer",
+            "condition": "parallel.many",
+            "elements": {
+              "runargs": {
+                "type": "textarea",
+                "label": "Arguments per run (optional)",
+                "name": "runargs",
+                "rows": 4,
+                "condition": "parallel.many",
+                "placeholder": "--alpha 0.1 --seed 1\n--alpha 0.5 --seed 2",
+                "help": "One line per run; each line becomes Rscript <main script> <line>. Read them in R with commandArgs(trailingOnly = TRUE). Empty lines and lines starting with # are skipped. Replaces #runs."
+              },
+              "runfile": {
+                "type": "picker",
+                "label": "Arguments file (optional)",
+                "name": "runfile",
+                "condition": "parallel.many",
+                "localLabel": "select",
+                "showFiles": "True",
+                "files": "True",
+                "showHidden": "false",
+                "help": "For long lists: a text file with the arguments of one run per line (same format as Arguments per run). Replaces Arguments per run and #runs."
+              }
+            }
+          }
+        }
+      },
+      "ContainerAdditional": {
+        "type": "rowContainer",
+        "elements": {
+          "memory": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
+            "label": "Memory",
+            "help": "OPTIONAL: The total amount of memory you estimate the job needs. It's best to be conservative and request more: if your job uses more memory than requested, it will be killed immediately and you might lose intermediate results. If you leave it empty, a default based on the cores requested is used."
+          },
+          "Walltime": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
+            "label": "Expected time needed to run",
+            "help": "OPTIONAL: The time you estimate the job will need. It's best to be conservative: if your job exceeds the requested time, it will be killed immediately and you might lose intermediate results. If you leave it empty, a default of 2 hours is used."
+          }
+        }
+      },
+      "ContainerAccount": {
+        "type": "rowContainer",
+        "elements": {
+          "account": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
+          },
+          "extraText": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
+          }
+        }
+      }
+    }
+  },
+  "monitoring": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse"
+  }
+}

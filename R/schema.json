@@ -1,0 +1,11 @@
+{
+  "ManageCreateContainer": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_create_manage-table.json#/drona_ManageCreateContainer"
+  },
+  "CreateContainer": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_create_manage-table.json#/drona_CreateContainer"
+  },
+  "ManageContainer": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_create_manage-table.json#/drona_ManageContainer"
+  }
+}

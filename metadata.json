@@ -1,7 +1,7 @@
 {
   "MATLAB": {
     "name": "MATLAB",
-    "description": "Generates and submits MATLAB jobs (single node, optional parallel pool and GPU). Manage mode like Generic: workflow actions, job/node picker, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs.",
+    "description": "Generates and submits MATLAB jobs (single node, optional parallel pool and GPU). Manage mode like Generic: workflow actions, job/node picker, a Job Resources card (sstat/seff, CPU monitoring chart, processes) and logs.",
     "category": "Scientific",
     "version": "2.0.0",
     "author": "Marinus Pennings",
@@ -21,7 +21,7 @@
   },
   "Generic": {
     "name": "Generic",
-    "description": "Generic Slurm environment that should work on any cluster running Slurm. Shared create/manage pages, common Slurm parameters, module picker, workflow actions (rerun/cancel), job/node picker, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs.",
+    "description": "Generic Slurm environment that should work on any cluster running Slurm. Shared create/manage pages, common Slurm parameters, module picker, workflow actions (rerun/cancel), job/node picker, a Job Resources card (sstat/seff, CPU monitoring chart, processes) and logs.",
     "category": "General",
     "cluster": "",
     "organization": "TAMU",
@@ -43,7 +43,7 @@
   },
   "LAMMPS": {
     "name": "LAMMPS",
-    "description": "Analyzes a LAMMPS input file, suggests compatible LAMMPS modules and acceleration strategies, and generates the batch job. Manage mode shows a status strip, a run report, live charts of YAML thermo output, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs. Currently only available on the TAMU ACES cluster.",
+    "description": "Analyzes a LAMMPS input file, suggests compatible LAMMPS modules and acceleration strategies, and generates the batch job. Manage mode shows a status strip, a run report, live charts of YAML thermo output, a Job Resources card (sstat/seff, CPU monitoring chart, processes) and logs. Currently only available on the TAMU ACES cluster.",
     "category": "Scientific",
     "cluster": "ACES",
     "organization": "TAMU",
@@ -52,19 +52,9 @@
     "last_updated": "2026-11-03",
     "requires_drona": ">=2.0"
   },
-  "Parabricks": {
-    "name": "Parabricks",
-    "description": "This environment allows researchers to run Parabricks through a graphical interface. Env is available on ACES and Grace.",
-    "category": "Bio",
-    "cluster": "TAMU",
-    "organization": "TAMU",
-    "version": "1.0.0",
-    "author": "Owen Schillaci, Victor Valdez",
-    "last_updated": "2025-09-09"
-  },
   "Python": {
     "name": "Python",
-    "description": "Sets up a Python environment (module, private, new or shared virtual env, managed with ModuLair) and runs a Python script. Shared create/manage pages like Generic: Slurm checks, workflow actions, job/node picker, a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs.",
+    "description": "Sets up a Python environment (module, private, new or shared virtual env, managed with ModuLair) and runs a Python script. Shared create/manage pages like Generic: Slurm checks, workflow actions, job/node picker, a Job Resources card (sstat/seff, CPU monitoring chart, processes) and logs.",
     "category": "General",
     "cluster": "",
     "organization": "TAMU",
@@ -73,15 +63,16 @@
     "last_updated": "2026-11-03",
     "requires_drona": ">=2.0"
   },
-  "R-ACES": {
-    "name": "R-ACES",
-    "description": "R environment",
+  "R": {
+    "name": "R",
+    "description": "Generates and submits R jobs (R_tamu versions per cluster, optional SOCK/MPI/other parallel cluster or many runs of the script with tamulauncher, threads per R process for multithreaded math; the preview checks the script for missing packages and parallel mistakes). Manage mode like Generic: workflow actions, job/node picker, an R Run Check card (workers or run progress, failed runs, too many threads, common R errors explained, next-run advice), a Job Resources card (sstat/seff, CPU monitoring chart, processes) and logs.",
     "category": "Scientific",
     "cluster": "ACES",
     "organization": "TAMU",
-    "version": "1.0.0",
-    "author": "",
-    "last_updated": "2025-02-03"
+    "version": "2.0.0",
+    "author": "Marinus Pennings",
+    "last_updated": "2026-11-13",
+    "requires_drona": ">=2.0"
   },
   "PyTorch-Lightning": {
     "name": "PyTorch-Lightning",

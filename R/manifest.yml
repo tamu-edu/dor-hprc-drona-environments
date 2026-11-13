@@ -1,0 +1,6 @@
+name: "R"
+description: "Generates and submits R jobs (R_tamu versions per cluster, optional SOCK/MPI/other parallel cluster or many runs of the script with tamulauncher, threads per R process for multithreaded math; the preview checks the script for missing packages and parallel mistakes). Manage mode like Generic: workflow actions, job/node picker, an R Run Check card (workers or run progress, failed runs, too many threads, common R errors explained, next-run advice), a Job Resources card (sstat/seff, CPU monitoring chart, processes) and logs."
+category: "Scientific"
+version: "2.0.0"
+requires_drona: ">=2.0"
+author: "Marinus Pennings"

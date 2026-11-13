@@ -1,0 +1,99 @@
+{
+  "hidden_jobs_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobs.json#/drona_hidden_jobs_check"
+  },
+  "hidden_status_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_status.json#/drona_hidden_selected_job_status_check"
+  },
+  "hidden_jobdir_path": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobdir.json#/drona_hidden_jobdir_path"
+  },
+  "hidden_gpu_monitor_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_gpu_chart.json#/drona_hidden_gpu_chart_check"
+  },
+  "hidden_cpu_monitor_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_cpu_chart.json#/drona_hidden_cpu_chart_check"
+  },
+  "workflowActions": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_manage_actions.json#/drona_workflowActions",
+    "layout": {
+      "preset": "card",
+      "title": "WORKFLOW ACTIONS",
+      "dot": false,
+      "collapsed": true
+    }
+  },
+  "workingDirectory": {
+    "type": "container",
+    "condition": "!drona_info_jobs.",
+    "layout": {
+      "preset": "bar",
+      "title": "Workflow Directory:"
+    },
+    "elements": {
+      "drona_jobDirLabel": {
+        "type": "staticText",
+        "useLabel": false,
+        "name": "drona_job_dir_html",
+        "isDynamic": true,
+        "allowHtml": true,
+        "condition": "!drona_job_dir.",
+        "retrieverParams": {
+          "JOB_DIR": "$drona_job_dir",
+          "WORKDIR_STYLE": "inline"
+        },
+        "retriever": "drona_info_jobdir_html.sh"
+      }
+    }
+  },
+  "slurmPanel": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_jobs_panel.json#/drona_slurmPanel"
+  },
+  "job_container": {
+    "type": "container",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "layout": {
+      "preset": "bar",
+      "title": "Job Scope:"
+    },
+    "elements": {
+      "drona_job_scope": {
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_scopes.json#/drona_job_scope"
+      }
+    }
+  },
+  "job_logs": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_logs.json#/drona_logCollapse/elements/drona_log_tabs",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_job_scope.",
+    "layout": {
+      "preset": "card",
+      "title": "Job Logs · Job $drona_job_scope",
+      "dot": false,
+      "collapsed": true
+    }
+  },
+  "r_run_check": {
+    "type": "staticText",
+    "name": "r_run_check",
+    "useLabel": false,
+    "isDynamic": true,
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_job_scope. && !drona_job_dir.",
+    "retriever": "retrieve_r_report.sh",
+    "retrieverParams": {
+      "JOBDIR": "$drona_job_dir",
+      "JOBID": "$drona_job_scope",
+      "STATUS": "$drona_status"
+    },
+    "refreshInterval": "30",
+    "refreshWhile": "!drona_status.DONE",
+    "showRefreshButton": true,
+    "allowHtml": true,
+    "layout": {
+      "preset": "card",
+      "title": "R Run Check · Job $drona_job_scope"
+    }
+  },
+  "job_resources": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_resources.json#/drona_job_resources"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "$include": ["drona_cancel_jobs", "drona_cpu_monitor"],
+  "JOBNAME": "$name",
+  "DRIVER": "!retrieve_driver_contents($drona_create_manage_mode, $drona_cancel_jobs)",
+  "MANAGE": "!retrieve_workflow_actions($drona_create_manage_mode, $drona_delete_workflow, $drona_delete_files, $drona_create_manage_allworkflows, $drona_job_dir)",
+  "DUMMY": "!retrieve_r_slurm_params($parallel, $workers, $threads, $runnodes, $runspernode, $drona_memory, $drona_walltime, $drona_account, $drona_extra_slurm, $runs, $runargs, $runfile)",
+  "LOADR": "!retrieve_r_module($version)",
+  "RLIBS": "!retrieve_r_libs($rlibs)",
+  "fmainscript": "!retrieve_main($mainscript, $version, $rlibs, $parallel, $threads, $runs, $runargs, $runfile, $runnodes, $runspernode)"
+}

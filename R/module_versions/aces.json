@@ -1,0 +1,22 @@
+[
+  {
+    "value": "GCC/14.3.0 OpenMPI/5.0.8 R_tamu/4.5.2",
+    "label": "R_tamu/4.5.2"
+  },
+  {
+    "value": "GCC/14.2.0 OpenMPI/5.0.7 R_tamu/4.5.1",
+    "label": "R_tamu/4.5.1"
+  },
+  {
+    "value": "GCC/13.3.0 OpenMPI/5.0.3 R_tamu/4.4.2",
+    "label": "R_tamu/4.4.2"
+  },
+  {
+    "value": "GCC/13.2.0 OpenMPI/4.1.6 R_tamu/4.4.1",
+    "label": "R_tamu/4.4.1"
+  },
+  {
+    "value": "GCC/12.2.0 OpenMPI/4.1.4 R_tamu/4.2.2",
+    "label": "R_tamu/4.2.2"
+  }
+]

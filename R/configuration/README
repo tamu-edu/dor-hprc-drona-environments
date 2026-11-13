@@ -1,0 +1,41 @@
+R version list (admin task)
+===========================
+
+The R version dropdown lists module_versions/<cluster>.json, one file per cluster.
+Each option's value is the full "module load" argument (toolchain first, e.g.
+"GCC/14.3.0 OpenMPI/5.0.8 R_tamu/4.5.2"), so no toolchains are hard-coded in
+the environment. The form only reads the file; it never runs "module spider",
+which can be slow when a file system is struggling.
+
+Build or refresh the file on each cluster where the environment is offered, on
+a node where "module spider" shows what users of that cluster see, and again
+after an R_tamu version is installed or removed there:
+
+  ./generate_module_versions.py R_tamu
+
+It writes ../module_versions/<cluster>.json (cluster from clustername; use
+--cluster to override, -o for another directory), newest version first, which
+is the default in the form. The file is replaced in one step and left alone
+when no versions are found. Without a file for a cluster the dropdown says
+"Not configured on this cluster" and the job script is not generated.
+
+Other environments: generate_module_versions.py and ../retrieve_module_versions
+are not specific to R. Copy both, run the generator with your module name, and
+use a dynamicSelect with "retriever": "retrieve_module_versions" and
+"autoSelect": "first"; "module load [VALUE]" in the job script then loads the
+module with its toolchain.
+
+Package check (admin task, after the version list)
+==================================================
+
+The job script preview warns when the main script uses packages that are not
+installed for the selected R version. It only lists directories, so it needs
+each version's library directories, recorded once per cluster:
+
+  ./generate_r_libraries.py
+
+It loads every version in ../module_versions/<cluster>.json and writes
+../module_versions/<cluster>.libs.json (R_tamu's library, the R_LIBS_SITE
+bundles, base R, and the personal R_LIBS_USER location under $SCRATCH). Run it
+again whenever generate_module_versions.py is rerun or a bundle changes.
+Without the file the package check is skipped; nothing else is affected.
