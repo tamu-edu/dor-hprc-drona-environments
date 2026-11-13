@@ -1,0 +1,1198 @@
+{
+  "runDestinationFinal": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_destination.json#/drona_runDestinationFinal",
+    "help": "Optional. Leave blank to use defaults. If empty, the engine will assign a job ID and staging path automatically. Spaces in the job name are converted to underscores."
+  },
+  "taskCard": {
+    "type": "container",
+    "layout": {
+      "preset": "card",
+      "title": "TASK",
+      "dot": false
+    },
+    "elements": {
+      "modelCategory": {
+        "type": "radioGroup",
+        "name": "modelCategory",
+        "label": "Task type",
+        "help": "Picks the train.py template. Custom: bare-bones template, any data. Vision: classification/segmentation/ViT on images (.png, .jpg, .jpeg, .bmp, .webp) or .pt tensors. Time series: LSTM/GRU/1D CNN/Transformer on .csv. Text: .csv, .tsv, .txt. Tabular: .csv. Audio: .wav, .mp3, .flac, .ogg. Generative: VAE/GAN/diffusion on images. Graph: PyTorch Geometric .pt.",
+        "options": [
+          {
+            "label": "Vision",
+            "value": "computer_vision"
+          },
+          {
+            "label": "Text (NLP)",
+            "value": "nlp"
+          },
+          {
+            "label": "Time series",
+            "value": "sequential"
+          },
+          {
+            "label": "Tabular",
+            "value": "tabular"
+          },
+          {
+            "label": "Audio",
+            "value": "audio"
+          },
+          {
+            "label": "Graph (GNN)",
+            "value": "gnn"
+          },
+          {
+            "label": "Generative",
+            "value": "generative"
+          },
+          {
+            "label": "Custom",
+            "value": "custom"
+          }
+        ],
+        "value": "computer_vision",
+        "style": "button"
+      }
+    }
+  },
+  "dataCard": {
+    "type": "container",
+    "layout": {
+      "preset": "card",
+      "title": "DATA",
+      "dot": false
+    },
+    "elements": {
+      "customDataRow": {
+        "type": "rowContainer",
+        "label": "Dataset",
+        "condition": "modelCategory.custom",
+        "elements": {
+          "customDatasetPath": {
+            "type": "picker",
+            "label": "Import dataset",
+            "name": "customDatasetPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "help": "Select a file or directory containing your custom training dataset (e.g. .pt, .csv, .npy, .h5, or dataset folder). This path will be loaded inside the generated train.py script."
+          }
+        }
+      },
+      "cvDataRow": {
+        "type": "rowContainer",
+        "label": "Dataset",
+        "condition": "modelCategory.computer_vision",
+        "elements": {
+          "datasetType": {
+            "type": "radioGroup",
+            "name": "datasetType",
+            "label": "Dataset",
+            "options": [
+              {
+                "label": "Example",
+                "value": "builtin"
+              },
+              {
+                "label": "My own data",
+                "value": "custom"
+              }
+            ],
+            "value": "builtin",
+            "help": "Example: a ready-to-run dataset from the cluster dataset module Datasets/ImageNet-PyTorch/2012. My own data: point at a file or directory on the cluster.",
+            "style": "button"
+          },
+          "builtinDataset": {
+            "type": "hidden",
+            "name": "builtinDataset",
+            "value": "ImageNet"
+          }
+        }
+      },
+      "cvExampleRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.computer_vision && datasetType.builtin",
+        "elements": {
+          "cvDataNote": {
+            "type": "staticText",
+            "name": "cvDataNote",
+            "label": "",
+            "value": "<div style=\"background:#f6f7f9;border-left:3px solid #500000;border-radius:4px;padding:4px 10px;font-size:0.875em;line-height:1.4;color:#334155\"><span style=\"font-size:0.8em;font-weight:700;letter-spacing:0.04em;color:#500000\">EXAMPLE DATA</span> <strong>ImageNet 2012</strong><span style=\"color:#64748b\"> · 1.28 M training images, 1000 classes. From the cluster, no download.</span></div>",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "cvCustomRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.computer_vision && datasetType.custom",
+        "elements": {
+          "customDataPath": {
+            "type": "picker",
+            "label": "Data directory",
+            "name": "customDataPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "False",
+            "help": "Path to dataset root with train/, val/, and optionally test/ subdirectories. For classification (CNN, MLP, ViT), each class must be a subfolder containing raw image files (.png, .jpg, .jpeg, .bmp, .webp) or .pt tensors. For U-Net segmentation, requires images/ and masks/ subdirectories with matching image files (.png, .jpg, .jpeg, .bmp, .webp) or .pt tensors.",
+            "files": "False"
+          },
+          "cvDatasetFormat": {
+            "type": "radioGroup",
+            "label": "Format",
+            "name": "cvDatasetFormat",
+            "value": "tensors",
+            "options": [
+              {
+                "label": "Raw Images (.png, .jpg, etc.)",
+                "value": "images"
+              },
+              {
+                "label": "PyTorch Tensors (.pt)",
+                "value": "tensors"
+              }
+            ],
+            "help": "Choose whether your custom data folder contains raw images (.png, .jpg, .jpeg, .bmp, .webp organized by class subdirectories, or images/masks subdirectories for UNet) or pre-processed PyTorch tensor (.pt) files."
+          }
+        }
+      },
+      "seqDataRow": {
+        "type": "rowContainer",
+        "label": "Dataset",
+        "condition": "modelCategory.sequential",
+        "elements": {
+          "seqDatasetType": {
+            "type": "radioGroup",
+            "name": "seqDatasetType",
+            "label": "Dataset",
+            "options": [
+              {
+                "label": "Example",
+                "value": "builtin"
+              },
+              {
+                "label": "My own data",
+                "value": "custom"
+              }
+            ],
+            "value": "builtin",
+            "help": "Example: a ready-to-run dataset from data generated in the job. My own data: point at a file or directory on the cluster.",
+            "style": "button"
+          },
+          "seqBuiltinDataset": {
+            "type": "hidden",
+            "name": "seqBuiltinDataset",
+            "value": "mackey_glass"
+          }
+        }
+      },
+      "seqExampleRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.sequential && seqDatasetType.builtin",
+        "elements": {
+          "seqDataNote": {
+            "type": "staticText",
+            "name": "seqDataNote",
+            "label": "",
+            "value": "<div style=\"background:#f6f7f9;border-left:3px solid #500000;border-radius:4px;padding:4px 10px;font-size:0.875em;line-height:1.4;color:#334155\"><span style=\"font-size:0.8em;font-weight:700;letter-spacing:0.04em;color:#500000\">EXAMPLE DATA</span> <strong>Mackey-Glass</strong><span style=\"color:#64748b\"> · synthetic chaotic time series, generated in the job.</span></div>",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "seqCustomRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.sequential && seqDatasetType.custom",
+        "elements": {
+          "tsDataPath": {
+            "type": "picker",
+            "label": "CSV dataset file",
+            "name": "tsDataPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "help": "Path to a CSV file (.csv) where each row represents a sequential time step and columns contain numeric features and target values."
+          },
+          "targetColumn": {
+            "type": "text",
+            "label": "Target column",
+            "name": "targetColumn",
+            "value": "target",
+            "help": "Name of the column to predict in the CSV file."
+          }
+        }
+      },
+      "nlpDataRow": {
+        "type": "rowContainer",
+        "label": "Dataset",
+        "condition": "modelCategory.nlp",
+        "elements": {
+          "nlpDatasetType": {
+            "type": "radioGroup",
+            "name": "nlpDatasetType",
+            "label": "Dataset",
+            "options": [
+              {
+                "label": "My own data",
+                "value": "custom"
+              }
+            ],
+            "value": "custom",
+            "help": "No example dataset is available for this task yet: the cluster copy is missing or in a format the generated code can't read. Point to your own data.",
+            "style": "button"
+          },
+          "nlpBuiltinDataset": {
+            "type": "hidden",
+            "name": "nlpBuiltinDataset",
+            "value": "fastText"
+          }
+        }
+      },
+      "nlpExampleRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.nlp && nlpDatasetType.builtin",
+        "elements": {
+          "nlpDataNote": {
+            "type": "staticText",
+            "name": "nlpDataNote",
+            "label": "",
+            "value": "<div style=\"background:#f6f7f9;border-left:3px solid #500000;border-radius:4px;padding:4px 10px;font-size:0.875em;line-height:1.4;color:#334155\"><span style=\"font-size:0.8em;font-weight:700;letter-spacing:0.04em;color:#500000\">EXAMPLE DATA</span> <strong>fastText</strong><span style=\"color:#64748b\"> · text data from the cluster, no download.</span></div>",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "nlpCustomRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.nlp && nlpDatasetType.custom",
+        "elements": {
+          "nlpCustomPath": {
+            "type": "picker",
+            "label": "Text/CSV file",
+            "name": "nlpCustomPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "help": "Select a custom text file (.txt), tab-delimited file (.tsv), or comma-separated file (.csv) containing raw text strings and labels."
+          }
+        }
+      },
+      "tabDataRow": {
+        "type": "rowContainer",
+        "label": "Dataset",
+        "condition": "modelCategory.tabular",
+        "elements": {
+          "tabDatasetType": {
+            "type": "radioGroup",
+            "name": "tabDatasetType",
+            "label": "Dataset",
+            "options": [
+              {
+                "label": "Example",
+                "value": "builtin"
+              },
+              {
+                "label": "My own data",
+                "value": "custom"
+              }
+            ],
+            "value": "builtin",
+            "help": "Example: a ready-to-run dataset from data generated in the job. My own data: point at a file or directory on the cluster.",
+            "style": "button"
+          },
+          "tabBuiltinDataset": {
+            "type": "hidden",
+            "name": "tabBuiltinDataset",
+            "value": "synthetic_tabular"
+          }
+        }
+      },
+      "tabExampleRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.tabular && tabDatasetType.builtin",
+        "elements": {
+          "tabDataNote": {
+            "type": "staticText",
+            "name": "tabDataNote",
+            "label": "",
+            "value": "<div style=\"background:#f6f7f9;border-left:3px solid #500000;border-radius:4px;padding:4px 10px;font-size:0.875em;line-height:1.4;color:#334155\"><span style=\"font-size:0.8em;font-weight:700;letter-spacing:0.04em;color:#500000\">EXAMPLE DATA</span> <strong>Synthetic tabular data</strong><span style=\"color:#64748b\"> · generated in the job.</span></div>",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "tabCustomRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.tabular && tabDatasetType.custom",
+        "elements": {
+          "tabCustomPath": {
+            "type": "picker",
+            "label": "CSV file",
+            "name": "tabCustomPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "help": "Select a custom comma-separated values file (.csv) containing numeric/categorical tabular features and a target column."
+          },
+          "tabTargetColumn": {
+            "type": "text",
+            "label": "Target column",
+            "name": "tabTargetColumn",
+            "value": "target",
+            "help": "Name of target column in your custom CSV file."
+          }
+        }
+      },
+      "audioDataRow": {
+        "type": "rowContainer",
+        "label": "Dataset",
+        "condition": "modelCategory.audio",
+        "elements": {
+          "audioDatasetType": {
+            "type": "radioGroup",
+            "name": "audioDatasetType",
+            "label": "Dataset",
+            "options": [
+              {
+                "label": "My own data",
+                "value": "custom"
+              }
+            ],
+            "value": "custom",
+            "help": "No example dataset is available for this task yet: the cluster copy is missing or in a format the generated code can't read. Point to your own data.",
+            "style": "button"
+          },
+          "audioBuiltinDataset": {
+            "type": "hidden",
+            "name": "audioBuiltinDataset",
+            "value": "AISHELL"
+          }
+        }
+      },
+      "audioExampleRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.audio && audioDatasetType.builtin",
+        "elements": {
+          "audioDataNote": {
+            "type": "staticText",
+            "name": "audioDataNote",
+            "label": "",
+            "value": "<div style=\"background:#f6f7f9;border-left:3px solid #500000;border-radius:4px;padding:4px 10px;font-size:0.875em;line-height:1.4;color:#334155\"><span style=\"font-size:0.8em;font-weight:700;letter-spacing:0.04em;color:#500000\">EXAMPLE DATA</span> <strong>AISHELL</strong><span style=\"color:#64748b\"> · Mandarin speech recordings from the cluster, no download.</span></div>",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "audioCustomRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.audio && audioDatasetType.custom",
+        "elements": {
+          "audioCustomPath": {
+            "type": "picker",
+            "label": "Audio directory",
+            "name": "audioCustomPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "False",
+            "files": "False",
+            "help": "Path to dataset root containing audio files (.wav, .mp3, .flac, .ogg) arranged by class subfolder."
+          }
+        }
+      },
+      "genDataRow": {
+        "type": "rowContainer",
+        "label": "Dataset",
+        "condition": "modelCategory.generative",
+        "elements": {
+          "genDatasetType": {
+            "type": "radioGroup",
+            "name": "genDatasetType",
+            "label": "Dataset",
+            "options": [
+              {
+                "label": "My own data",
+                "value": "custom"
+              }
+            ],
+            "value": "custom",
+            "help": "No example dataset is available for this task yet: the cluster copy is missing or in a format the generated code can't read. Point to your own data.",
+            "style": "button"
+          },
+          "genBuiltinDataset": {
+            "type": "hidden",
+            "name": "genBuiltinDataset",
+            "value": "llava-onevision"
+          }
+        }
+      },
+      "genExampleRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.generative && genDatasetType.builtin",
+        "elements": {
+          "genDataNote": {
+            "type": "staticText",
+            "name": "genDataNote",
+            "label": "",
+            "value": "<div style=\"background:#f6f7f9;border-left:3px solid #500000;border-radius:4px;padding:4px 10px;font-size:0.875em;line-height:1.4;color:#334155\"><span style=\"font-size:0.8em;font-weight:700;letter-spacing:0.04em;color:#500000\">EXAMPLE DATA</span> <strong>LLaVA-OneVision</strong><span style=\"color:#64748b\"> · images from the cluster, no download.</span></div>",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "genCustomRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.generative && genDatasetType.custom",
+        "elements": {
+          "genCustomPath": {
+            "type": "picker",
+            "label": "Data directory",
+            "name": "genCustomPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "False",
+            "files": "False",
+            "help": "Root directory containing train/ and val/ subdirectories. Each class is a subfolder containing raw image files (.png, .jpg, .jpeg, .bmp, .webp) or .pt tensor files to reconstruct."
+          },
+          "genDatasetFormat": {
+            "type": "radioGroup",
+            "label": "Format",
+            "name": "genDatasetFormat",
+            "value": "tensors",
+            "options": [
+              {
+                "label": "Raw Images (.png, .jpg, etc.)",
+                "value": "images"
+              },
+              {
+                "label": "PyTorch Tensors (.pt)",
+                "value": "tensors"
+              }
+            ],
+            "help": "Choose whether your custom data folder contains raw images (.png, .jpg, .jpeg, .bmp, .webp) or pre-processed PyTorch tensor (.pt) files."
+          }
+        }
+      },
+      "gnnDataRow": {
+        "type": "rowContainer",
+        "label": "Dataset",
+        "condition": "modelCategory.gnn",
+        "elements": {
+          "graphDatasetType": {
+            "type": "radioGroup",
+            "name": "graphDatasetType",
+            "label": "Dataset",
+            "options": [
+              {
+                "label": "My own data",
+                "value": "custom"
+              }
+            ],
+            "value": "custom",
+            "help": "No example dataset is available for this task yet: the cluster copy is missing or in a format the generated code can't read. Point to your own data.",
+            "style": "button"
+          },
+          "graphBuiltinDataset": {
+            "type": "hidden",
+            "name": "graphBuiltinDataset",
+            "value": "QM9"
+          }
+        }
+      },
+      "gnnExampleRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.gnn && graphDatasetType.builtin",
+        "elements": {
+          "gnnDataNote": {
+            "type": "staticText",
+            "name": "gnnDataNote",
+            "label": "",
+            "value": "<div style=\"background:#f6f7f9;border-left:3px solid #500000;border-radius:4px;padding:4px 10px;font-size:0.875em;line-height:1.4;color:#334155\"><span style=\"font-size:0.8em;font-weight:700;letter-spacing:0.04em;color:#500000\">EXAMPLE DATA</span> <strong>QM9</strong><span style=\"color:#64748b\"> · about 134 k small molecules as graphs, from the cluster, no download.</span></div>",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "gnnCustomRow": {
+        "type": "rowContainer",
+        "label": "",
+        "condition": "modelCategory.gnn && graphDatasetType.custom",
+        "elements": {
+          "graphDataPath": {
+            "type": "picker",
+            "label": "Graph file or directory",
+            "name": "graphDataPath",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "help": "Path to a custom PyTorch Geometric graph data file (.pt) or dataset directory containing data.pt."
+          }
+        }
+      }
+    }
+  },
+  "modelCard": {
+    "type": "container",
+    "condition": "!modelCategory.custom",
+    "layout": {
+      "preset": "card",
+      "title": "MODEL",
+      "dot": false
+    },
+    "elements": {
+      "cvModelRow": {
+        "type": "rowContainer",
+        "label": "Architecture",
+        "condition": "modelCategory.computer_vision",
+        "elements": {
+          "cvModelArch": {
+            "type": "select",
+            "label": "",
+            "name": "cvModelArch",
+            "value": "cnn",
+            "options": [
+              {
+                "value": "cnn",
+                "label": "CNN Classification"
+              },
+              {
+                "value": "mlp",
+                "label": "MLP Classification"
+              },
+              {
+                "value": "vit",
+                "label": "Vision Transformer (ViT)"
+              },
+              {
+                "value": "unet",
+                "label": "U-Net Semantic Segmentation"
+              }
+            ],
+            "condition": "datasetType.custom",
+            "help": "Architecture for your own image data."
+          },
+          "cvExampleNote": {
+            "type": "staticText",
+            "name": "cvExampleNote",
+            "label": "",
+            "value": "<div style=\"background:#f6f7f9;border-left:3px solid #500000;border-radius:4px;padding:4px 10px;font-size:0.875em;line-height:1.4;color:#334155\"><span style=\"font-size:0.8em;font-weight:700;letter-spacing:0.04em;color:#500000\">EXAMPLE MODEL</span> <strong>CNN classifier</strong><span style=\"color:#64748b\"> · always used with the ImageNet example (1000 classes, 224 px).</span></div>",
+            "condition": "datasetType.builtin",
+            "allowHtml": true,
+            "useLabel": false
+          }
+        }
+      },
+      "cvSettingsRow": {
+        "type": "rowContainer",
+        "label": "Images",
+        "condition": "modelCategory.computer_vision && datasetType.custom",
+        "elements": {
+          "cvImageSize": {
+            "type": "number",
+            "label": "Image size (px)",
+            "name": "cvImageSize",
+            "value": "0",
+            "help": "Target image dimension (H=W in pixels) for resizing during training. Default is 0 for automatic detection of image size.",
+            "min": 0,
+            "max": 4096
+          },
+          "cvChannels": {
+            "type": "select",
+            "label": "Channels",
+            "name": "cvChannels",
+            "value": "3",
+            "options": [
+              {
+                "value": "3",
+                "label": "RGB (3 channels)"
+              },
+              {
+                "value": "1",
+                "label": "Grayscale (1 channel)"
+              }
+            ],
+            "help": "Number of input channels. Use Grayscale (1 channel) for MNIST or grayscale medical scans, RGB (3 channels) for color photos."
+          }
+        }
+      },
+      "seqModelRow": {
+        "type": "rowContainer",
+        "label": "Architecture",
+        "condition": "modelCategory.sequential",
+        "elements": {
+          "seqModelType": {
+            "type": "select",
+            "label": "",
+            "name": "seqModelType",
+            "value": "lstm",
+            "options": [
+              {
+                "value": "lstm",
+                "label": "LSTM (Long Short-Term Memory)"
+              },
+              {
+                "value": "gru",
+                "label": "GRU (Gated Recurrent Unit)"
+              },
+              {
+                "value": "cnn1d",
+                "label": "1D CNN (Temporal ConvNet)"
+              },
+              {
+                "value": "transformer",
+                "label": "Transformer Encoder"
+              }
+            ],
+            "help": "Select sequence modeling architecture (LSTM, GRU, 1D CNN, or Transformer) to train on sequence .csv data."
+          },
+          "seqTaskType": {
+            "type": "radioGroup",
+            "name": "seqTaskType",
+            "label": "Task type",
+            "options": [
+              {
+                "label": "Regression",
+                "value": "regression"
+              },
+              {
+                "label": "Classification",
+                "value": "classification"
+              }
+            ],
+            "value": "regression"
+          }
+        }
+      },
+      "seqSettingsRow": {
+        "type": "rowContainer",
+        "label": "Sequence",
+        "condition": "modelCategory.sequential",
+        "elements": {
+          "seqLen": {
+            "type": "number",
+            "label": "Lookback window",
+            "name": "seqLen",
+            "value": "50",
+            "min": 1,
+            "help": "Number of past time steps the model sees."
+          },
+          "predLen": {
+            "type": "number",
+            "label": "Prediction horizon",
+            "name": "predLen",
+            "value": "1",
+            "min": 1,
+            "help": "Number of future time steps to predict."
+          },
+          "hiddenSize": {
+            "type": "number",
+            "label": "Hidden size",
+            "name": "hiddenSize",
+            "value": "128",
+            "min": 1
+          },
+          "numLstmLayers": {
+            "type": "number",
+            "label": "Layers",
+            "name": "numLstmLayers",
+            "value": "2",
+            "min": 1,
+            "max": 32
+          }
+        }
+      },
+      "nlpModelRow": {
+        "type": "rowContainer",
+        "label": "Architecture",
+        "condition": "modelCategory.nlp",
+        "elements": {
+          "nlpModelType": {
+            "type": "select",
+            "label": "",
+            "name": "nlpModelType",
+            "value": "attention",
+            "options": [
+              {
+                "value": "attention",
+                "label": "Text Classification (Attention/Transformer)"
+              },
+              {
+                "value": "seq2seq",
+                "label": "Sequence-to-Sequence (Seq2Seq)"
+              }
+            ],
+            "help": "Select NLP modeling architecture for text classification or seq2seq tasks accepting .csv, .tsv, or .txt datasets."
+          },
+          "nlpMaxSeqLen": {
+            "type": "number",
+            "label": "Max sequence length",
+            "name": "nlpMaxSeqLen",
+            "value": "128",
+            "help": "Max token sequence length for truncation/padding.",
+            "min": 8,
+            "max": 8192
+          }
+        }
+      },
+      "tabModelRow": {
+        "type": "rowContainer",
+        "label": "Architecture",
+        "condition": "modelCategory.tabular",
+        "elements": {
+          "tabModelType": {
+            "type": "select",
+            "label": "",
+            "name": "tabModelType",
+            "value": "mlp",
+            "options": [
+              {
+                "value": "mlp",
+                "label": "DeepMLP"
+              },
+              {
+                "value": "resnet",
+                "label": "ResNet for Tabular"
+              },
+              {
+                "value": "tabnet",
+                "label": "TabNet Primitives"
+              }
+            ],
+            "help": "Select Tabular deep learning architecture (DeepMLP, ResNet, TabNet) to train on structured .csv data."
+          },
+          "tabTaskType": {
+            "type": "radioGroup",
+            "name": "tabTaskType",
+            "label": "Task type",
+            "options": [
+              {
+                "label": "Regression",
+                "value": "regression"
+              },
+              {
+                "label": "Classification",
+                "value": "classification"
+              }
+            ],
+            "value": "regression",
+            "help": "Choose between regression (continuous values) or classification (discrete classes) for your tabular task."
+          }
+        }
+      },
+      "audioModelRow": {
+        "type": "rowContainer",
+        "label": "Architecture",
+        "condition": "modelCategory.audio",
+        "elements": {
+          "audioModelType": {
+            "type": "select",
+            "label": "",
+            "name": "audioModelType",
+            "value": "classification",
+            "options": [
+              {
+                "value": "classification",
+                "label": "Acoustic Classification"
+              },
+              {
+                "value": "speech",
+                "label": "Speech Processing"
+              },
+              {
+                "value": "synthesis",
+                "label": "Waveform Synthesis"
+              }
+            ],
+            "help": "Select audio modeling task and architecture (accepts .wav, .mp3, .flac, .ogg audio files)."
+          },
+          "audioTransformType": {
+            "type": "select",
+            "label": "Audio features",
+            "name": "audioTransformType",
+            "value": "mel_spectrogram",
+            "options": [
+              {
+                "value": "mel_spectrogram",
+                "label": "Mel-Spectrogram"
+              },
+              {
+                "value": "spectrogram",
+                "label": "Spectrogram"
+              },
+              {
+                "value": "mfcc",
+                "label": "MFCC"
+              }
+            ],
+            "help": "How raw audio is turned into model input (torchaudio.transforms)."
+          }
+        }
+      },
+      "genModelRow": {
+        "type": "rowContainer",
+        "label": "Architecture",
+        "condition": "modelCategory.generative",
+        "elements": {
+          "genModelType": {
+            "type": "select",
+            "label": "",
+            "name": "genModelType",
+            "value": "vae",
+            "options": [
+              {
+                "value": "vae",
+                "label": "VAE (Variational Autoencoder)"
+              },
+              {
+                "value": "gan",
+                "label": "GAN (Generative Adversarial Network)"
+              },
+              {
+                "value": "diffusion",
+                "label": "Diffusion Model (DDPM)"
+              }
+            ],
+            "help": "Select generative model architecture (VAE, GAN, or Diffusion DDPM) for image generation from raw images (.png, .jpg, .jpeg, .bmp, .webp) or .pt tensors."
+          },
+          "latentDim": {
+            "type": "number",
+            "label": "Latent dimension (z)",
+            "name": "latentDim",
+            "value": "128",
+            "min": 1
+          }
+        }
+      },
+      "gnnModelRow": {
+        "type": "rowContainer",
+        "label": "Architecture",
+        "condition": "modelCategory.gnn",
+        "elements": {
+          "gnnLayerType": {
+            "type": "select",
+            "label": "",
+            "name": "gnnLayerType",
+            "value": "gcn",
+            "options": [
+              {
+                "value": "gcn",
+                "label": "GCN (Graph Convolutional Network)"
+              },
+              {
+                "value": "gat",
+                "label": "GAT (Graph Attention Network)"
+              },
+              {
+                "value": "sage",
+                "label": "GraphSAGE"
+              }
+            ],
+            "help": "Select GNN message-passing architecture (GCN, GAT, GraphSAGE) to train on graph .pt datasets."
+          },
+          "gnnHiddenDim": {
+            "type": "number",
+            "label": "Hidden dimension",
+            "name": "gnnHiddenDim",
+            "value": "64",
+            "min": 1
+          },
+          "gnnNumLayers": {
+            "type": "number",
+            "label": "Number of layers",
+            "name": "gnnNumLayers",
+            "value": "2",
+            "min": 1,
+            "max": 32
+          }
+        }
+      }
+    }
+  },
+  "trainingCard": {
+    "type": "container",
+    "layout": {
+      "preset": "card",
+      "title": "TRAINING",
+      "dot": false
+    },
+    "elements": {
+      "trainRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "epochs": {
+            "type": "number",
+            "label": "Epochs",
+            "name": "epochs",
+            "value": "10",
+            "min": 1
+          },
+          "batchSize": {
+            "type": "number",
+            "label": "Batch size",
+            "name": "batchSize",
+            "value": "32",
+            "min": 1,
+            "help": "Samples per step for each training process. With several GPUs the effective batch is this times the number of GPUs."
+          },
+          "learningRate": {
+            "type": "text",
+            "label": "Learning rate",
+            "name": "learningRate",
+            "value": "1e-3",
+            "placeholder": "e.g. 0.001 or 1e-3",
+            "help": "Decimal or scientific notation only (e.g. 0.001, 1e-3). Invalid values are rejected when the job script is generated."
+          }
+        }
+      },
+      "trainingAdvanced": {
+        "type": "collapsibleRowContainer",
+        "title": "ADVANCED",
+        "default_state": "collapsed",
+        "layout": {
+          "preset": "card",
+          "title": "ADVANCED",
+          "summary": "seed $seed · precision $precision · log every $logEveryNSteps steps · checkpoint $checkpointEnable · ONNX $exportOnnx",
+          "compact": true
+        },
+        "elements": {
+          "advRow1": {
+            "type": "rowContainer",
+            "label": "",
+            "elements": {
+              "seed": {
+                "type": "number",
+                "label": "Random seed",
+                "name": "seed",
+                "value": "42",
+                "help": "Seed for PyTorch Lightning and dataset randomness. Default is 42.",
+                "min": 0
+              },
+              "precision": {
+                "type": "select",
+                "name": "precision",
+                "label": "Training precision",
+                "value": "tf32",
+                "options": [
+                  {
+                    "value": "tf32",
+                    "label": "TF32 (recommended for H100/A30 Tensor Cores)"
+                  },
+                  {
+                    "value": "bf16-mixed",
+                    "label": "BF16 mixed precision (precision='bf16-mixed')"
+                  },
+                  {
+                    "value": "16-mixed",
+                    "label": "FP16 mixed precision (precision='16-mixed')"
+                  },
+                  {
+                    "value": "32",
+                    "label": "FP32 full precision (no TF32)"
+                  }
+                ],
+                "help": "Controls numeric precision and Tensor Core use. TF32 keeps float32 Trainer precision but calls torch.set_float32_matmul_precision('high') for faster matmuls on H100/A30. BF16 mixed enables Lightning automatic mixed precision (precision='bf16-mixed') for additional speedup. FP32 disables Tensor Core TF32 (highest precision, slower)."
+              },
+              "logEveryNSteps": {
+                "type": "number",
+                "label": "Log every N steps",
+                "name": "logEveryNSteps",
+                "value": "50",
+                "min": 1,
+                "help": "How often training metrics are written to TensorBoard."
+              }
+            }
+          },
+          "advRow2": {
+            "type": "rowContainer",
+            "label": "",
+            "elements": {
+              "logDir": {
+                "type": "picker",
+                "label": "Log directory",
+                "name": "logDir",
+                "localLabel": "Location",
+                "showFiles": "False",
+                "files": "False",
+                "defaultLocation": "./lightning_logs",
+                "defaultPaths": {
+                  "HOME": "$HOME",
+                  "SCRATCH": "/scratch/user/$USER"
+                },
+                "useHPCDefaultPaths": "False",
+                "help": "Directory where Lightning TensorBoard/CSV logs and checkpoints are written. Defaults to ./lightning_logs relative to the job staging directory."
+              }
+            }
+          },
+          "advRow3": {
+            "type": "rowContainer",
+            "label": "",
+            "elements": {
+              "checkpointEnable": {
+                "type": "checkbox",
+                "label": "Save best checkpoint",
+                "name": "checkpointEnable",
+                "value": "Yes",
+                "checked": true,
+                "help": "When enabled, saves the best-performing model checkpoint based on minimum validation loss. When disabled, defaults to saving only the final model state at the last epoch."
+              },
+              "exportOnnx": {
+                "type": "checkbox",
+                "label": "Export to ONNX",
+                "name": "exportOnnx",
+                "value": "",
+                "condition": "!modelCategory.gnn",
+                "help": "When enabled, exports the trained model to ONNX format (final_model.onnx) at the end of the training run."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "slurmCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "RESOURCES",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "RESOURCES",
+      "dot": false
+    },
+    "elements": {
+      "ContainerNodes": {
+        "type": "rowContainer",
+        "label": "Nodes & data loading",
+        "elements": {
+          "drona_nodes": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerTasks/elements/drona_nodes",
+            "label": "Number of nodes",
+            "value": "1",
+            "help": "Number of nodes to train on. Tasks are set automatically: one task per GPU on each node (one per node without GPUs), each with DataLoader workers + 1 CPUs."
+          },
+          "numWorkers": {
+            "type": "number",
+            "label": "Data workers",
+            "name": "numWorkers",
+            "value": "0",
+            "help": "Background processes that load data for each training process. Each process gets workers + 1 CPUs. 0 loads data in the main process; 2-8 usually keeps a GPU busy.",
+            "min": 0,
+            "max": 32
+          }
+        }
+      },
+      "drona_ContainerGPU": {
+        "type": "rowContainer",
+        "label": "GPU",
+        "condition": "drona_training.",
+        "elements": {
+          "drona_gpuDropdown": {
+            "type": "dynamicSelect",
+            "label": "Use Accelerator",
+            "help": "Only select an accelerator if your job will utilize them. You might need to setup the environment for the accelerator you selected in the job script.",
+            "name": "drona_gpu",
+            "retriever": "retrieve_gpus",
+            "hideWhenSingle": true,
+            "autoSelect": "first"
+          },
+          "drona_numgpus": {
+            "type": "number",
+            "label": "#GPUs",
+            "help": "Number of accelerators you want to use.",
+            "name": "drona_numgpu",
+            "value": "1",
+            "condition": " !drona_gpu.none && !drona_gpu. "
+          }
+        }
+      },
+      "ptResourceSummaryRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "ptResourceSummary": {
+            "type": "staticText",
+            "name": "ptResourceSummary",
+            "useLabel": false,
+            "isDynamic": true,
+            "allowHtml": true,
+            "showRefreshButton": false,
+            "retriever": "retrieve_pt_resource_summary.sh",
+            "retrieverParams": {
+              "NODES": "$drona_nodes",
+              "WORKERS": "$numWorkers",
+              "GPU": "$drona_gpu",
+              "NUMGPU": "$drona_numgpu",
+              "BATCH": "$batchSize"
+            }
+          }
+        }
+      },
+      "slurmAdditional": {
+        "type": "collapsibleRowContainer",
+        "title": "ADDITIONAL",
+        "default_state": "collapsed",
+        "layout": {
+          "preset": "card",
+          "title": "ADDITIONAL",
+          "compact": true,
+          "summary": "walltime $drona_walltime · memory $drona_memory · account $drona_account · extra $drona_extra_slurm"
+        },
+        "elements": {
+          "drona_ContainerAdditional": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional"
+          }
+        }
+      }
+    }
+  },
+  "monitoringCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "MONITORING",
+    "default_state": "collapsed",
+    "layout": {
+      "preset": "card",
+      "title": "MONITORING",
+      "summary": "CPU $drona_cpu_monitor · GPU $drona_gpu_monitor · TensorBoard $tbEnable"
+    },
+    "elements": {
+      "drona_monitoringRow": {
+        "type": "rowContainer",
+        "label": "",
+        "elements": {
+          "drona_cpuMonitorEnable": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse/elements/drona_monitoringRow/elements/drona_cpuMonitorEnable"
+          },
+          "drona_gpuMonitorEnable": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse/elements/drona_monitoringRow/elements/drona_gpuMonitorEnable"
+          },
+          "tbEnable": {
+            "type": "checkbox",
+            "name": "tbEnable",
+            "label": "TensorBoard",
+            "style": "button",
+            "value": "yes",
+            "checked": true,
+            "help": "Start a TensorBoard server inside the job so you can follow the training curves live from Manage. Logs for TensorBoard are always written; without this you can still start TensorBoard later from Manage (as a separate small job)."
+          }
+        }
+      }
+    }
+  }
+}

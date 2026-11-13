@@ -1,0 +1,19 @@
+#!/bin/bash
+#SBATCH --job-name=[JOBNAME]
+#SBATCH --time=[TIME] --mem=[MEM]
+#SBATCH --ntasks=[TASKS] --nodes=[NODES] --ntasks-per-node=[TASKS_PER_NODE] --cpus-per-task=[CPUS]
+#SBATCH --output=out.%j --error=error.%j
+[PARTITION]
+[EXTRA]
+
+cd [flocation]
+source ./env.sh   # modules for this workflow (also for interactive runs)
+[GPU_MONITOR_START]
+[CPU_MONITOR_START]
+[tbLaunch]
+
+# one training process per task (per GPU); Lightning reads the ranks from Slurm
+srun --cpus-per-task=$SLURM_CPUS_PER_TASK python3 train.py --config config.yaml
+
+[GPU_MONITOR_STOP]
+[CPU_MONITOR_STOP]

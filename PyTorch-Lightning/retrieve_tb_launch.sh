@@ -571,11 +571,30 @@ if [ -z "$TB_PORT" ]; then
   exit 1
 fi
 
-echo "$TB_PORT" > tb_separate_port.txt
-
 echo "Starting TensorBoard on port $TB_PORT..."
 tensorboard --logdir="{tb_logdir}" --port=$TB_PORT --bind_all &
 TB_PID=$!
+
+# Publish the port only after this node accepts connections. The manage
+# page runs on a login host that often cannot open a TCP socket to the
+# compute node, so the port file is the ready signal for the inline UI.
+TB_READY=0
+for _i in $(seq 1 60); do
+  if ! kill -0 "$TB_PID" 2>/dev/null; then
+    echo "ERROR: TensorBoard exited before accepting connections on port $TB_PORT" >&2
+    exit 1
+  fi
+  if bash -c "echo >/dev/tcp/127.0.0.1/$TB_PORT" 2>/dev/null; then
+    TB_READY=1
+    break
+  fi
+  sleep 1
+done
+if [ "$TB_READY" != "1" ]; then
+  echo "ERROR: TensorBoard did not accept connections on port $TB_PORT" >&2
+  exit 1
+fi
+echo "$TB_PORT" > "{job_dir}/tb_separate_port.txt"
 
 python3 -c '
 import os, sys, time
@@ -690,17 +709,6 @@ wait $TB_PID
             is_tb_job_active = True
             tb_job_state = "PENDING"
 
-# Jobs submitted with the checkbox off write tb_injob.txt = No.
-# Older jobs have no marker and still start TensorBoard in the allocation.
-injob_requested = True
-injob_flag_file = os.path.join(job_dir, "tb_injob.txt")
-if os.path.isfile(injob_flag_file):
-    try:
-        with open(injob_flag_file, "r") as f:
-            injob_requested = f.read().strip().lower() in ("yes", "true", "1")
-    except Exception:
-        pass
-
 # Re-read port values after potential script execution/auto-start
 injob_port = None
 injob_port_file = os.path.join(job_dir, "tb_port.txt")
@@ -742,15 +750,22 @@ def check_port(host, port_val):
         return False
 
 socket_train_host = "127.0.0.1" if train_node == "localhost" else train_node
-socket_separate_host = "127.0.0.1" if separate_node == "localhost" else separate_node
 
 is_injob_running = False
 if injob_port is not None:
     is_injob_running = check_port(socket_train_host, injob_port)
 
-is_separate_running = False
-if is_tb_job_active and separate_port is not None:
-    is_separate_running = check_port(socket_separate_host, separate_port)
+# A direct connect from the retriever host to the compute node is not a
+# reliable ready check: login nodes frequently cannot open that socket even
+# while the OnDemand /rnode/ proxy can. The job publishes tb_separate_port.txt
+# only after TensorBoard is accepting connections on the compute node.
+is_separate_running = (
+    is_tb_job_active
+    and tb_job_state == "RUNNING"
+    and separate_port is not None
+    and separate_node not in ("", "localhost", "127.0.0.1")
+    and not str(separate_node).startswith("(")
+)
 
 tb_job_end_time_str = None
 if is_tb_job_active and tb_job_id:
@@ -836,15 +851,24 @@ if is_tb_job_active or is_separate_running or still_submitting:
     disabled_attr = "disabled"
     disabled_style = "background-color: #f1f5f9; color: #94a3b8; cursor: not-allowed; opacity: 0.8;"
 
+separate_iframe_html = ""
 if is_separate_running:
     sep_proxy_url = f'/rnode/{separate_node}/{separate_port}/'
-    action_button_html = f"""<a href="{html.escape(sep_proxy_url)}" target="_blank" class="tb-btn-primary">Open TensorBoard Web UI</a>
+    escaped_sep_url = html.escape(sep_proxy_url)
+    action_button_html = f"""<a href="{escaped_sep_url}" target="_blank" class="tb-btn-primary">Open TensorBoard Web UI</a>
 <button type="button" class="tb-btn-danger" style="margin-left: 8px;" onclick="this.disabled = true; this.innerHTML = '<span class=\\'tb-spinner\\'></span> Ending Session...'; this.style.opacity = '0.7'; this.style.cursor = 'not-allowed'; var input = document.querySelector('input[name=\\'tbStopTrigger\\']'); if (input) {{ var val = Date.now().toString() + \':\' + \'{os.path.basename(job_dir)}\'; var lastVal = input.value; var setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; if (setter) {{ setter.call(input, val); }} else {{ input.value = val; }} var tracker = input._valueTracker; if (tracker) {{ tracker.setValue(lastVal); }} input.dispatchEvent(new Event('input', {{ bubbles: true }})); input.dispatchEvent(new Event('change', {{ bubbles: true }})); input.dispatchEvent(new Event('blur', {{ bubbles: true }})); }}">End TensorBoard Job</button>"""
     until_msg = ""
     if tb_job_end_time_str:
         until_msg = f'<div style="font-size: 0.88em; color: #475569; margin-top: 4px; margin-bottom: 12px;">This job is running until <strong>{html.escape(tb_job_end_time_str)}</strong>.{countdown_msg}</div>'
     tb_status_msg = f"""<div style="color: #16a34a; font-weight: 600; margin-bottom: 4px;">TensorBoard job {tb_job_id} is running on node <code>{html.escape(separate_node)}</code> port <code>{separate_port}</code>.</div>
 {until_msg}"""
+    separate_iframe_html = f"""
+    <div class="tb-ui-wrapper" style="margin-top: 16px; margin-bottom: 16px;">
+      <div class="tb-ui-iframe-container">
+        <iframe src="{escaped_sep_url}" class="tb-ui-iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" title="TensorBoard UI"></iframe>
+      </div>
+    </div>
+    """
 elif is_tb_job_active:
     if tb_job_state == "PENDING":
         action_button_html = f"""<button type="button" class="tb-btn-start tb-btn-disabled" style="background-color: #cbd5e1 !important; color: #64748b !important; cursor: not-allowed !important; pointer-events: none !important;" disabled><span class="tb-spinner"></span> Job Pending ({tb_job_id})...</button>
@@ -880,6 +904,7 @@ step2_content = f"""
         End job after 10 min inactivity
     </label>
 </div>
+{separate_iframe_html}
 <div class="tb-tip" style="color: #475569;">TensorBoard will be submitted as a separate Slurm job, and you will be charged 1 SU per hour.</div>
 """
 
@@ -919,7 +944,7 @@ else:
     <div style="color: #ef4444; font-weight: 600; margin-bottom: 12px;">Training job is not running.</div>
     """
 
-show_injob = is_injob_running or (injob_requested and (is_train_job_active or not train_job_id))
+show_injob = is_train_job_active or not train_job_id
 
 if show_injob:
     tb_steps_html = f"""

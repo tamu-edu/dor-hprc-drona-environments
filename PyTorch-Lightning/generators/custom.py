@@ -9,7 +9,6 @@ _DEFAULT_CUSTOM_STUB = '''#!/usr/bin/env python3
 """Generated PyTorch Lightning training script — Custom (Bare-bones)."""
 import os
 import torch
-# __MATMUL_PRECISION_BLOCK__
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 try:
@@ -32,6 +31,7 @@ NUM_WORKERS = 0
 MAX_EPOCHS = 10
 ACCELERATOR = "cpu"
 DEVICES = 1
+NUM_NODES = int(os.environ.get("SLURM_JOB_NUM_NODES", "1"))
 PRECISION = 32
 LOG_EVERY_N_STEPS = 50
 SEED = 42
@@ -85,10 +85,10 @@ def main():
     # ]
 
     trainer = L.Trainer(
-        max_epochs=MAX_EPOCHS,
-        accelerator=ACCELERATOR,
+        max_epochs=MAX_EPOCHS, 
+        accelerator=ACCELERATOR, 
         devices=DEVICES,
-        precision=PRECISION,
+        num_nodes=NUM_NODES,
         # callbacks=callbacks,
     )
     trainer.fit(model, datamodule=datamodule)

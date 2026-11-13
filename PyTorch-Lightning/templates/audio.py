@@ -5,7 +5,6 @@ Generated PyTorch Lightning training script — Audio & Signal Processing.
 
 import os
 import torch
-# __MATMUL_PRECISION_BLOCK__
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
@@ -30,7 +29,8 @@ NUM_WORKERS = __NUM_WORKERS__
 MAX_EPOCHS = __MAX_EPOCHS__
 ACCELERATOR = "__ACCELERATOR__"
 DEVICES = __DEVICES__
-PRECISION = __PRECISION__
+NUM_NODES = int(os.environ.get("SLURM_JOB_NUM_NODES", "1"))
+PRECISION = __PRECISION__              # Trainer precision (32, "16-mixed", "bf16-mixed"); TF32 keeps 32 and enables Tensor Core matmuls
 LOG_EVERY_N_STEPS = __LOG_EVERY_N_STEPS__
 SEED = __SEED__
 
@@ -134,7 +134,7 @@ def main():
     
     num_classes = getattr(datamodule, "num_classes", 2)
     
-    model = LitModel(in_channels=in_channels, feature_shape=sample_feat.shape, num_classes=num_classes)
+    model = LitModel(in_channels=in_channels, feature_shape=sample_feat.shape, num_classes=num_classes, lr=LR)
     loggers = build_loggers()
     
     # __CALLBACK_BLOCK__
@@ -143,6 +143,7 @@ def main():
         max_epochs=MAX_EPOCHS,
         accelerator=ACCELERATOR,
         devices=DEVICES,
+        num_nodes=NUM_NODES,
         precision=PRECISION,
         log_every_n_steps=LOG_EVERY_N_STEPS,
         logger=loggers if loggers else None,

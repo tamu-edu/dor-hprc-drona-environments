@@ -1,0 +1,175 @@
+{
+  "hidden_jobs_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobs.json#/drona_hidden_jobs_check"
+  },
+  "hidden_status_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_status.json#/drona_hidden_selected_job_status_check"
+  },
+  "hidden_workflow_status_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_status.json#/drona_hidden_workflow_status_check"
+  },
+  "hidden_jobdir_path": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobdir.json#/drona_hidden_jobdir_path"
+  },
+  "hidden_gpu_monitor_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_gpu_chart.json#/drona_hidden_gpu_chart_check"
+  },
+  "hidden_cpu_monitor_check": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_cpu_chart.json#/drona_hidden_cpu_chart_check"
+  },
+  "workflowActions": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_manage_actions.json#/drona_workflowActions"
+  },
+  "workingDirectory": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_jobdir_view.json#/drona_workingDirectoryBar"
+  },
+  "pt_epoch_progress": {
+    "type": "staticText",
+    "name": "pt_epoch_html",
+    "useLabel": false,
+    "isDynamic": true,
+    "allowHtml": true,
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "refreshInterval": "10",
+    "refreshWhile": "drona_status.RUNNING",
+    "retrieverParams": {
+      "LOCATION": "$drona_job_dir"
+    },
+    "retriever": "retrieve_pt_epoch_progress.sh"
+  },
+  "slurmJobsTable": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_jobs_table.json#/drona_slurmJobsTable"
+  },
+  "cancel_jobs": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_jobs_panel.json#/drona_slurmPanel/elements/drona_cancel_jobs",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_workflow_status.DONE",
+    "layout": [
+      {
+        "preset": "card",
+        "title": "Cancel Job"
+      },
+      "list",
+      {
+        "maxHeight": "220px",
+        "overflowY": "auto"
+      }
+    ]
+  },
+  "scope_row": {
+    "type": "rowContainer",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "elements": {
+      "job_container": {
+        "type": "container",
+        "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+        "layout": {
+          "preset": "bar",
+          "title": "Job Scope:"
+        },
+        "elements": {
+          "drona_job_scope": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_scopes.json#/drona_job_scope"
+          }
+        }
+      },
+      "node_container": {
+        "type": "container",
+        "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_job_scope.",
+        "layout": {
+          "preset": "bar",
+          "title": "Node Scope:",
+          "badge": "Job $drona_job_scope"
+        },
+        "elements": {
+          "drona_node_scope": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_scopes.json#/drona_node_scope"
+          }
+        }
+      }
+    }
+  },
+  "seff_section": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_seff.json#/drona_job_summary_section"
+  },
+  "sstat_section": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_sstat.json#/drona_sstat_section"
+  },
+  "job_logs": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_logs.json#/drona_logCollapse",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs. && !drona_job_scope."
+  },
+  "cpu_chart": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_cpu_chart.json#/drona_cpu_chart",
+    "enableZoom": "drona_status.DONE",
+    "zoomRetrieverParams": {
+      "MAX_POINTS": 0
+    },
+    "condition": "!drona_node_scope. && drona_cpu_monitor_active.ACTIVE"
+  },
+  "gpu_chart": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_gpu_chart.json#/drona_gpu_chart",
+    "enableZoom": "drona_status.DONE",
+    "zoomRetrieverParams": {
+      "MAX_POINTS": 0
+    },
+    "condition": "!drona_node_scope. && drona_gpu_monitor_active.ACTIVE"
+  },
+  "processes_section": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_info_processes.json#/drona_processes_section"
+  },
+  "hidden_logdir": {
+    "type": "hidden",
+    "name": "resolved_logdir",
+    "isDynamic": true,
+    "refreshInterval": "30",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "retrieverParams": {
+      "JOB_DIR": "$drona_job_dir"
+    },
+    "retriever": "retrieve_pt_logdir.sh"
+  },
+  "hidden_tb_start_trigger": {
+    "type": "text",
+    "name": "tbStartTrigger",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "value": ""
+  },
+  "hidden_tb_stop_trigger": {
+    "type": "text",
+    "name": "tbStopTrigger",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "value": ""
+  },
+  "hidden_tb_logdir": {
+    "type": "picker",
+    "label": "TensorBoard Log Directory",
+    "name": "tbLogDir",
+    "localLabel": "Location",
+    "showFiles": "False",
+    "files": "False",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "help": "Select a custom log directory for TensorBoard."
+  },
+  "tb_launch_section": {
+    "type": "rowContainer",
+    "label": "TensorBoard — Setup Instructions",
+    "condition": "!drona_create_manage_allworkflows. && !drona_info_jobs.",
+    "elements": {
+      "tbLaunchStatus": {
+        "type": "staticText",
+        "name": "tb_launch_html",
+        "label": "",
+        "isDynamic": true,
+        "allowHtml": true,
+        "refreshInterval": "10",
+        "retrieverParams": {
+          "RESOLVED_LOGDIR": "$resolved_logdir",
+          "CUSTOM_LOGDIR": "$tbLogDir",
+          "TB_START_TRIGGER": "$tbStartTrigger",
+          "TB_STOP_TRIGGER": "$tbStopTrigger"
+        },
+        "retriever": "retrieve_tb_launch.sh"
+      }
+    }
+  }
+}

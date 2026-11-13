@@ -20,7 +20,8 @@ def _gen_nlp_script(
 ):
     """Returns (train_script, None)."""
     use_builtin = (nlp_ds_type == "builtin")
-    data_dir = "./data"
+    # Custom data: data.data_dir in config.yaml is the dataset path; example data: download/cache folder
+    data_dir = nlp_path if not use_builtin and nlp_path else "./data"
 
     if not use_builtin and not nlp_path:
         _drona_msg("Custom NLP dataset path is required.", "error")
@@ -87,7 +88,7 @@ def _gen_nlp_script(
         import os
         import pandas as pd
         
-        path = "{_py_str(nlp_path)}"
+        path = DATA_DIR
         data_file = path if os.path.isfile(path) else None
         if not data_file and os.path.isdir(path):
             for r_dir, dirs, files in os.walk(path):

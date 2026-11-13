@@ -1,4 +1,6 @@
 #!/bin/bash
 source /etc/profile
 
-[MONITOR]
+[CANCEL]
+
+[MANAGE]

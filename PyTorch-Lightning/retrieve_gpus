@@ -4,11 +4,20 @@ cluster=`/sw/local/bin/clustername`
 case $cluster in
     aces)
         if [ "$MODEL_CATEGORY" = "gnn" ]; then
-            echo "[ { \"value\": \"\", \"label\": \"NONE\" }, { \"value\": \"a30\", \"label\": \"A30\" } ]"
+            echo "[ { \"value\": \"a30\", \"label\": \"A30\" }, { \"value\": \"none\", \"label\": \"NONE (CPU only)\" } ]"
         else
-            echo "[ { \"value\": \"\", \"label\": \"NONE\" },  { \"value\": \"h100\", \"label\": \"H100\" }, { \"value\": \"a30\", \"label\": \"A30\" } ]"
+            echo "[ { \"value\": \"a30\", \"label\": \"A30\" }, { \"value\": \"h100\", \"label\": \"H100\" }, { \"value\": \"none\", \"label\": \"NONE (CPU only)\" } ]"
         fi
 	;;
+    grace)
+        echo "[ { \"value\": \"t4\", \"label\": \"T4\" }, { \"value\": \"a40\", \"label\": \"A40\" }, { \"value\": \"rtx\", \"label\": \"RTX\" }, { \"value\": \"none\", \"label\": \"NONE (CPU only)\" } ]"
+        ;;
+    faster)
+        echo "[ { \"value\": \"t4\", \"label\": \"T4\" }, { \"value\": \"a40\", \"label\": \"A40\" }, { \"value\": \"a30\", \"label\": \"A30\" }, { \"value\": \"a10\", \"label\": \"A10\" }, { \"value\": \"none\", \"label\": \"NONE (CPU only)\" } ]"
+        ;;
+    launch)
+       echo "[ { \"value\": \"a30\", \"label\": \"A30\" }, { \"value\": \"none\", \"label\": \"NONE (CPU only)\" } ]"
+	;;       
     *)
-        echo "[ { \"value\": \"\", \"label\": \"NONE\" } ]"
+        echo "[ { \"value\": \"none\", \"label\": \"NONE (CPU only)\" } ]"
 esac

@@ -21,7 +21,8 @@ def _gen_audio_script(
 ):
     """Returns (train_script, None)."""
     use_builtin = (audio_ds_type == "builtin")
-    data_dir = "./data"
+    # Custom data: data.data_dir in config.yaml is the dataset path; example data: download/cache folder
+    data_dir = audio_path if not use_builtin and audio_path else "./data"
 
     if not use_builtin and not audio_path:
         _drona_msg("Custom Audio dataset path is required.", "error")
@@ -63,7 +64,7 @@ def _gen_audio_script(
         dataset_setup = f'''# Index custom user audio files
         import os
         
-        path = "{_py_str(audio_path)}"
+        path = DATA_DIR
         if not os.path.exists(path):
             raise FileNotFoundError(f"Custom audio path does not exist: {{path}}")
             

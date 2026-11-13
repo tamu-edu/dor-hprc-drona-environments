@@ -22,8 +22,9 @@ def _gen_generative_script(
     gen_dataset_format="tensors",
 ):
     """Returns (train_script, prefetch_script_or_None)."""
-    cache_dir = "./data"
     use_builtin = gen_dataset_type != "custom"
+    # Custom data: data.data_dir in config.yaml is the dataset folder; example data: download/cache folder
+    cache_dir = gen_custom_path if not use_builtin and gen_custom_path else "./data"
 
     if use_builtin:
         if gen_dataset_type == "llava-onevision":
@@ -32,7 +33,7 @@ def _gen_generative_script(
             raise ValueError(f"Prepared generative dataset '{gen_dataset_type}' is not available via cluster modules. Direct internet downloads are disabled. Please provide a custom dataset directory or select LLaVA-OneVision.")
         dm = f'''class LitDataModule(L.LightningDataModule):
     """DataModule managing downloads, setup, and data loading for VAE builtin datasets."""
-    def __init__(self, data_dir=DATA_DIR, batch_size={bs}, num_workers={nw}):
+    def __init__(self, data_dir=DATA_DIR, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -58,7 +59,7 @@ def _gen_generative_script(
         if gen_dataset_format == "images":
             dm = f'''class LitDataModule(L.LightningDataModule):
     """DataModule managing custom folder-based raw image datasets for VAE."""
-    def __init__(self, data_root="{_py_str(gen_custom_path)}", batch_size={bs}, num_workers={nw}):
+    def __init__(self, data_root=DATA_DIR, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
         super().__init__()
         self.data_root = data_root
         self.batch_size = batch_size
@@ -81,7 +82,7 @@ def _gen_generative_script(
         else:
             dm = f'''class LitDataModule(L.LightningDataModule):
     """DataModule managing custom folder-based tensor datasets for VAE."""
-    def __init__(self, data_root="{_py_str(gen_custom_path)}", batch_size={bs}, num_workers={nw}):
+    def __init__(self, data_root=DATA_DIR, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
         super().__init__()
         self.data_root = data_root
         self.batch_size = batch_size

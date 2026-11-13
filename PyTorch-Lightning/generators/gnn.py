@@ -14,7 +14,8 @@ def _gen_gnn_script(
 ):
     """Returns (train_script, None) for Graph Neural Network."""
     use_builtin = (graph_ds_type == "builtin")
-    data_dir = "./data"
+    # Custom data: data.data_dir in config.yaml is the dataset path; example data: download/cache folder
+    data_dir = graph_path if not use_builtin and graph_path else "./data"
 
     # Dataset setup code block
     if use_builtin:
@@ -34,7 +35,7 @@ def _gen_gnn_script(
         self.is_qm9 = True'''
     else:
         dataset_setup = f'''# Load custom graph dataset
-        path = "{_py_str(graph_path)}"
+        path = DATA_DIR
         if os.path.isfile(path):
             self.data = torch.load(path)
         else:
@@ -76,7 +77,6 @@ Supports GCN, GAT, and GraphSAGE message-passing models.
 
 import os
 import torch
-# __MATMUL_PRECISION_BLOCK__
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -104,7 +104,8 @@ NUM_WORKERS = {nw}
 MAX_EPOCHS = {ep}
 ACCELERATOR = "{_py_str(acc)}"
 DEVICES = {dev}
-PRECISION = {prec_val}
+NUM_NODES = int(os.environ.get("SLURM_JOB_NUM_NODES", "1"))
+PRECISION = {prec_val}              # Trainer precision (32, "16-mixed", "bf16-mixed"); TF32 keeps 32 and enables Tensor Core matmuls
 LOG_EVERY_N_STEPS = {log_n}
 SEED = {seed_val}
 
