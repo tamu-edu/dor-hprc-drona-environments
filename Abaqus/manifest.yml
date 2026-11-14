@@ -1,0 +1,6 @@
+name: "Abaqus"
+description: "Generates and submits Abaqus jobs (ABAQUS versions per cluster; serial, threads or MPI over nodes; optional NVIDIA GPUs for Abaqus/Standard; memory= set from the request; user subroutines with the Intel compiler, Explicit double precision, restart/import (oldjob=), submodeling (globalmodel=), data check). Manage mode like Generic: workflow actions, job/node picker, an Abaqus Progress card (step/increment progress from the .sta file, cutbacks, license/lock-file/memory problems and ***ERRORs explained), a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs."
+category: "Scientific"
+version: "1.0.0"
+requires_drona: ">=2.0"
+author: "Marinus Pennings"

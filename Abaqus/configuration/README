@@ -1,0 +1,24 @@
+Abaqus version list (admin task)
+================================
+
+The version dropdown lists ../module_versions/<cluster>.json, one file per cluster.
+Each option's value is the "module load" argument (e.g. "ABAQUS/2025"). The form only
+reads the file; it never runs "module spider".
+
+Build or refresh it on each cluster where the environment is offered, and again after
+an ABAQUS version is installed or removed there:
+
+  ./generate_module_versions.py ABAQUS
+
+Without a file for a cluster the dropdown says "Not configured on this cluster".
+generate_module_versions.py is the same script as in the R environment.
+
+Compiler for user subroutines (optional)
+----------------------------------------
+A job with a user subroutine loads a compiler module. The default is intel-compilers/2023.2.1
+(ifort 2021.10 and ifx). To use another one per Abaqus version, add
+../module_versions/<cluster>.compilers.json, e.g.
+
+  { "ABAQUS/2025": "intel-compilers/2023.2.1", "default": "intel-compilers/2023.2.1" }
+
+It must match the compiler in the Abaqus site abaqus_v6.env (compile_fortran / link_sl).

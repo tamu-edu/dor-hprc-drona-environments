@@ -1,0 +1,240 @@
+{
+  "workflowCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "WORKFLOW OPTIONS",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "WORKFLOW OPTIONS",
+      "dot": false
+    },
+    "elements": {
+      "runDestinationFinal": {
+        "$ref": "$DRONA_RUNTIME_DIR/forms/drona_job_destination.json#/drona_runDestinationFinal"
+      },
+      "versionDropdown": {
+        "type": "dynamicSelect",
+        "label": "Abaqus version",
+        "name": "version",
+        "help": "Select the Abaqus version to use; the newest is selected by default. Abaqus is restricted software: you need to be on the access list (contact the HPRC helpdesk).",
+        "retriever": "retrieve_module_versions",
+        "autoSelect": "first"
+      },
+      "ContainerScripts": {
+        "type": "rowContainer",
+        "elements": {
+          "inputPicker": {
+            "type": "picker",
+            "label": "Abaqus input file",
+            "name": "inputfile",
+            "help": "Your Abaqus input file (.inp), on the cluster or uploaded from your computer. Its name becomes the job name (job.odb, job.dat, ...). Files it reads (*INCLUDE etc.) are found automatically when it is on the cluster.",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "showHidden": "false",
+            "allowedFileTypes": "inp"
+          },
+          "usersub": {
+            "type": "picker",
+            "label": "User subroutine (optional)",
+            "name": "usersub",
+            "help": "Only if your model uses a user subroutine (UMAT, VUMAT, UEL, DLOAD, ...): the Fortran (.f) or C/C++ file, on the cluster or uploaded. Put all subroutines in one file. The compiler is loaded for you.",
+            "remoteLabel": "local",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "showHidden": "false",
+            "allowedFileTypes": "f,for,f90,c,cc,cpp,cxx,o"
+          },
+          "drona_fileUploader": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_import_upload.json#/drona_ImportUpload/elements/drona_fileUploader",
+            "label": "Other model files (optional)",
+            "help": "Only needed when you upload the input file and it reads other files (*INCLUDE, amplitude or mesh files, abaqus_v6.env). Upload them here. Files of an input file on the cluster are found automatically."
+          }
+        }
+      }
+    }
+  },
+  "resourcesCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "ABAQUS RESOURCES",
+    "default_state": "expanded",
+    "layout": {
+      "preset": "card",
+      "title": "ABAQUS RESOURCES",
+      "dot": false
+    },
+    "elements": {
+      "ContainerAdditional": {
+        "type": "rowContainer",
+        "elements": {
+          "cores": {
+            "type": "number",
+            "label": "CPU cores (parallel run)",
+            "name": "cores",
+            "value": "4",
+            "help": "How many CPU cores Abaqus runs on in parallel; 1 runs it in serial. Up to a full node, Abaqus uses threads on one node; more cores are spread over several nodes with MPI automatically. Small models often run best on 1 to 8 cores, and more cores use more license tokens (about 5 x cores^0.422: 1 core 5, 8 cores 12, 32 cores 21)."
+          },
+          "memory": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_memory",
+            "label": "Memory",
+            "help": "OPTIONAL: The total amount of memory you estimate the job needs. Abaqus is told to use 90% of it (memory=), so it stays inside the request. Too little memory makes Abaqus/Standard write to disk (slow) or stop; the .dat file of a datacheck run shows the memory the model needs. If you leave it empty, a default is used."
+          },
+          "Walltime": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_Walltime",
+            "label": "Expected time needed to run",
+            "help": "OPTIONAL: The time you estimate the job will need. It's best to be conservative: if your job exceeds the requested time, it will be killed immediately and you might lose intermediate results. If you leave it empty, a default of 2 hours is used."
+          }
+        }
+      },
+      "ContainerAccount": {
+        "type": "rowContainer",
+        "elements": {
+          "account": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_account"
+          },
+          "extraText": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerAdditional/elements/drona_extraText"
+          }
+        }
+      }
+    }
+  },
+  "analysisCollapse": {
+    "type": "collapsibleRowContainer",
+    "title": "ADVANCED (optional)",
+    "default_state": "collapsed",
+    "layout": {
+      "preset": "card",
+      "title": "ADVANCED (optional)",
+      "dot": false
+    },
+    "elements": {
+      "ContainerRun": {
+        "type": "rowContainer",
+        "elements": {
+          "runtype": {
+            "type": "select",
+            "label": "Run",
+            "name": "runtype",
+            "help": "ANALYSIS: the normal run. DATA CHECK: checks the model and reports the memory it needs, without solving; handy before a big job. SYNTAX CHECK: checks the input file only.",
+            "options": [
+              {
+                "value": "analysis",
+                "label": "Analysis"
+              },
+              {
+                "value": "datacheck",
+                "label": "Data check only"
+              },
+              {
+                "value": "syntaxcheck",
+                "label": "Syntax check only"
+              }
+            ]
+          },
+          "parallelDropdown": {
+            "type": "select",
+            "label": "Parallel mode",
+            "name": "parallel",
+            "help": "AUTOMATIC (recommended): threads on one node, MPI when the cores need more than one node. THREADS: always one node (shared memory). MPI: separate processes, also on one node; some Abaqus/Explicit models run faster with MPI.",
+            "options": [
+              {
+                "value": "auto",
+                "label": "Automatic"
+              },
+              {
+                "value": "threads",
+                "label": "Threads (one node)"
+              },
+              {
+                "value": "mpi",
+                "label": "MPI"
+              }
+            ]
+          },
+          "precision": {
+            "type": "select",
+            "label": "Precision (Explicit only)",
+            "name": "precision",
+            "help": "Abaqus/Explicit runs in single precision by default. Choose double for long runs with many increments. Abaqus/Standard always uses double precision, so leave this for Standard models.",
+            "options": [
+              {
+                "value": "default",
+                "label": "Default (single)"
+              },
+              {
+                "value": "explicit",
+                "label": "Double: analysis (explicit)"
+              },
+              {
+                "value": "both",
+                "label": "Double: packager and analysis (both)"
+              },
+              {
+                "value": "constant",
+                "label": "Double: constraints only (constant)"
+              }
+            ]
+          }
+        }
+      },
+      "ContainerGPU": {
+        "type": "rowContainer",
+        "elements": {
+          "gpuDropdown": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU/elements/drona_gpuDropdown",
+            "label": "Use GPU",
+            "help": "Rarely needed. NVIDIA GPUs speed up only the direct solver of Abaqus/Standard, for large implicit models (about a million degrees of freedom or more). Abaqus/Explicit doesn't use GPUs. Leave at no GPU unless you have measured a speed-up."
+          },
+          "numgpus": {
+            "$ref": "$DRONA_RUNTIME_DIR/forms/drona_slurm_resources.json#/drona_slurmCollapse/elements/drona_ContainerGPU/elements/drona_numgpus"
+          }
+        }
+      },
+      "ContainerOldjob": {
+        "type": "rowContainer",
+        "elements": {
+          "oldjob": {
+            "type": "picker",
+            "label": "Restart / import from job",
+            "name": "oldjob",
+            "help": "Only for input files with *RESTART, READ or *IMPORT: select a file of the earlier job (e.g. its .odb). Its other files are picked up automatically.",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "showHidden": "false",
+            "allowedFileTypes": "odb,res,mdl,stt,prt,sim,inp"
+          },
+          "globalmodel": {
+            "type": "picker",
+            "label": "Global model (submodeling)",
+            "name": "globalmodel",
+            "help": "Only for input files with *SUBMODEL: select the global model's .odb.",
+            "localLabel": "cluster",
+            "showFiles": "True",
+            "files": "True",
+            "showHidden": "false",
+            "allowedFileTypes": "odb,fil,sim"
+          }
+        }
+      },
+      "ContainerOptions": {
+        "type": "rowContainer",
+        "elements": {
+          "abqoptions": {
+            "type": "text",
+            "label": "Other abaqus options",
+            "name": "abqoptions",
+            "placeholder": "e.g. parallel=domain",
+            "help": "OPTIONAL: Other options for the abaqus command, as option=value separated by spaces. job, input, cpus, mp_mode, gpus, memory, scratch, user, double, oldjob, globalmodel and datacheck are set from the form."
+          }
+        }
+      }
+    }
+  },
+  "monitoring": {
+    "$ref": "$DRONA_RUNTIME_DIR/forms/drona_monitoring.json#/drona_monitoringCollapse"
+  }
+}

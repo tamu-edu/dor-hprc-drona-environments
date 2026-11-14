@@ -30,6 +30,17 @@
     "last_updated": "2026-11-03",
     "requires_drona": ">=2.0"
   },
+  "Abaqus": {
+    "name": "Abaqus",
+    "description": "Generates and submits Abaqus jobs (ABAQUS versions per cluster; serial, threads or MPI over nodes; optional NVIDIA GPUs for Abaqus/Standard; memory= set from the request; user subroutines with the Intel compiler, Explicit double precision, restart/import (oldjob=), submodeling (globalmodel=), data check). Manage mode like Generic: workflow actions, job/node picker, an Abaqus Progress card (step/increment progress from the .sta file, cutbacks, license/lock-file/memory problems and ***ERRORs explained), a Job Resources card (sstat/seff, CPU/GPU monitoring charts, processes) and logs.",
+    "category": "Scientific",
+    "cluster": "ACES",
+    "organization": "TAMU",
+    "version": "1.0.0",
+    "author": "Marinus Pennings",
+    "last_updated": "2026-11-13",
+    "requires_drona": ">=2.0"
+  },
   "AlphaFold": {
     "name": "AlphaFold",
     "description": "AlphaFold 2 (ParaFold full_dbs or reduced_dbs) and AlphaFold 3 structure prediction, run as a CPU job (MSA) followed by a GPU job. Manage mode shows the Slurm jobs, pipeline timeline, logs, results summary, PAE / structure viewers, download bundle and a GPU-stage re-run.",

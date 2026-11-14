@@ -1,0 +1,21 @@
+#!/bin/bash
+# GPU options for the Abaqus resources form (drona_gpu, shared GPU dropdown in drona_slurm_resources.json).
+# No PVC (Abaqus only supports NVIDIA GPUs). "any" requests a GPU of any type (see utils.py ANY_GPU_PROXY).
+
+cluster=`/sw/local/bin/clustername`
+case $cluster in
+    aces)
+        echo '[ { "value": "none", "label": "NO GPU" }, { "value": "any", "label": "ANY GPU" }, { "value": "h100", "label": "H100" }, { "value": "a30", "label": "A30" } ]'
+        ;;
+    grace)
+        echo '[ { "value": "none", "label": "NO GPU" }, { "value": "any", "label": "ANY GPU" }, { "value": "t4", "label": "T4" }, { "value": "a40", "label": "A40" }, { "value": "rtx", "label": "RTX" } ]'
+        ;;
+    faster)
+        echo '[ { "value": "none", "label": "NO GPU" }, { "value": "any", "label": "ANY GPU" }, { "value": "t4", "label": "T4" }, { "value": "a40", "label": "A40" }, { "value": "a30", "label": "A30" }, { "value": "a10", "label": "A10" } ]'
+        ;;
+    launch)
+        echo '[ { "value": "none", "label": "NO GPU" }, { "value": "any", "label": "ANY GPU" }, { "value": "a30", "label": "A30" } ]'
+        ;;
+    *)
+        echo '[ { "value": "none", "label": "NO GPU" } ]'
+esac

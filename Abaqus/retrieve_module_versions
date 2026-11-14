@@ -1,0 +1,12 @@
+#!/bin/bash
+# Version dropdown options for this cluster: module_versions/<cluster>.json, built by an admin
+# with configuration/generate_module_versions.py. Only reads a file, so the form never waits
+# for "module spider". Runs from the environment directory.
+
+cluster=`/sw/local/bin/clustername 2>/dev/null`
+file="$(dirname "$0")/module_versions/${cluster}.json"
+if [ -n "$cluster" ] && [ -s "$file" ]; then
+    cat "$file"
+else
+    echo '[ { "value": "", "label": "Not configured on this cluster (see configuration/README)" } ]'
+fi
