@@ -106,6 +106,11 @@ def retrieve_lammps_gpu_monitor_stop(gpu_type, monitor_enabled):
     return retrieve_gpu_monitor_stop(gpu_type, monitor_enabled)
 
 
+# LAMMPS writes log.lammps in the directory it runs in (the input file's directory, see
+# compute_workdir), which may be read-only: always write it to the job directory instead.
+LOG_OPT = '-log "$DRONA_SUBMIT_DIR/log.lammps"'
+
+
 def get_selected_lmp_cmd(json_input, gpu_count, cpu_count):
     if not json_input:
         return "lmp command: Error (No acceleration strategy detected)"
@@ -118,13 +123,13 @@ def get_selected_lmp_cmd(json_input, gpu_count, cpu_count):
     framework = data.get("framework")
     if framework == "kokkos":
         mpi_cmd = f"{mpi_exe} -np {y} " if y > 1 else ""
-        return f"{prefix}{mpi_cmd}{lmp_exe} -k on g {x} -sf kk -pk kokkos gpu/aware on -in $INFILE"
+        return f"{prefix}{mpi_cmd}{lmp_exe} -k on g {x} -sf kk -pk kokkos gpu/aware on {LOG_OPT} -in $INFILE"
     if framework == "gpu":
         mpi_cmd = f"{mpi_exe} -np {x} " if x > 1 else ""
-        return f"{prefix}{mpi_cmd}{lmp_exe} -sf gpu -pk gpu {x} -in $INFILE"
+        return f"{prefix}{mpi_cmd}{lmp_exe} -sf gpu -pk gpu {x} {LOG_OPT} -in $INFILE"
     if framework == "openmp":
-        return f"{prefix}{lmp_exe} -sf omp -pk omp {y} -in $INFILE"
-    return f"{prefix}{lmp_exe} -in $INFILE # (no acceleration framework detected)"
+        return f"{prefix}{lmp_exe} -sf omp -pk omp {y} {LOG_OPT} -in $INFILE"
+    return f"{prefix}{lmp_exe} {LOG_OPT} -in $INFILE # (no acceleration framework detected)"
 
 
 def get_selected_setup(json_input):
@@ -145,7 +150,15 @@ def get_selected_summary(json_input):
 
 
 def compute_workdir(path_to_file):
-    return os.path.dirname(path_to_file)
+    """LAMMPS runs in the input file's directory, so relative read_data/include paths work."""
+    workdir = os.path.dirname(path_to_file or "")
+    if workdir and os.path.isdir(workdir) and not os.access(workdir, os.W_OK | os.X_OK):
+        drona_add_message(
+            "LAMMPS runs in the input file's directory, %s, and you cannot write there: dump, restart "
+            "and write_data output of your input will fail. Copy the input (and the files it reads) "
+            "to a directory you own and select that copy. log.lammps goes to the job directory." % workdir,
+            "warning")
+    return workdir
 
 
 def generate_full_report(mode, filename):
