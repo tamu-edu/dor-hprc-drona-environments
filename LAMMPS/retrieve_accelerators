@@ -1,7 +1,8 @@
 #!/bin/bash
 # Options for the LAMMPS hardware filter (dynamicCheckboxGroup filter_accel): accelerators/<cluster>.json,
 # built by an admin with configuration/generate_accelerators.py. Only reads a file, so the form never
-# waits for Slurm. Without a file for this cluster only CPU is offered.
+# waits for Slurm. Without a file for this cluster only CPU is offered
+# (create_text.py shows a warning at the top of the page).
 
 cluster="${DRONA_CLUSTER:-$(scontrol show config 2>/dev/null | sed -n 's/^ClusterName *= *//p')}"
 cluster="${cluster,,}"
@@ -10,4 +11,4 @@ if [ -n "$cluster" ] && [ -s "$file" ]; then
     python3 -c 'import json,sys; print(json.dumps([{"value": o["value"], "label": o.get("label", o["value"])} for o in json.load(open(sys.argv[1]))]))' "$file" \
         && exit 0
 fi
-echo '[ { "value": "cpu", "label": "CPU (no accelerator list for this cluster, see configuration/README)" } ]'
+echo '[ { "value": "cpu", "label": "CPU" } ]'

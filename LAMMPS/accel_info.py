@@ -84,10 +84,19 @@ CSS = """
 .dc-lmp-create .intro { background:#ffffff; border:1px solid #e2e8f0; border-left:3px solid #500000;
   border-radius:8px; padding:10px 14px; margin-bottom:10px; }
 .dc-lmp-create .intro p { margin:0; }
+.dc-lmp-create .warn { background:#fffbeb; border:1px solid #fde68a; border-left:3px solid #d97706;
+  border-radius:8px; padding:8px 14px; margin-top:8px; color:#78350f; }
 .dc-lmp-create code { font-family:var(--drona-font-mono, monospace); font-size:var(--drona-text-caption, 12px);
   background:#f1f5f9; border:1px solid #e2e8f0; border-radius:4px; padding:0 4px; white-space:nowrap; }
 </style>
 """
+
+
+NO_FILE_WARNING = (
+    "<div class='warn'><b>GPU options are not set up for this cluster yet</b>, so only CPU strategies "
+    "are offered. Administrators: run <code>LAMMPS/configuration/generate_accelerators.py</code> "
+    "(see <code>configuration/README</code>).</div>"
+)
 
 
 def card(body):

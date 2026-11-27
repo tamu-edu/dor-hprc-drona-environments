@@ -27,5 +27,10 @@ You may edit label, vendor, constraints and counts in the file by hand; a re-run
 types it finds again, adds new types and drops types that are gone (it prints what it did).
 Unknown type names get vendor "unknown" and a warning: set nvidia, intel or amd.
 
-Without a file for a cluster the filter only offers CPU. utils.py then falls back to the
-rules of the 1.x environment (h100/a30 NVIDIA, PVC xelink2/xelink4).
+The files are site data and are not in git (LAMMPS/.gitignore): after installing or updating
+the environment on a cluster, run the generator there (and re-add any hand-set "counts", e.g.
+ACES PVC [1, 2, 4, 8]; keep a copy of a hand-edited file outside the repo).
+
+Without a file for a cluster the page is CPU-only: the hardware filter offers only CPU, the
+strategy list only CPU builds, and the top of the page shows a warning that GPU options are
+not set up, pointing administrators here.

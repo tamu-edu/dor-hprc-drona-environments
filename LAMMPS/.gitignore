@@ -1,0 +1,3 @@
+# Per-cluster accelerator lists are site data, built on each cluster with
+# configuration/generate_accelerators.py; never commit them.
+accelerators/*.json

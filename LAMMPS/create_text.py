@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Fixed texts of the LAMMPS environment page: the intro card (retrieve_welcome_message.sh) and the
 thermo tip under the input file picker (retrieve_create_tips.sh). Same look as the other create-page
-cards (accel_info.card). No cluster-specific text: availability shows in its own card."""
+cards (accel_info.card). No cluster-specific text: availability shows in its own card. Without an accelerator list for
+the cluster the intro carries a warning."""
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from accel_info import card  # noqa: E402
+from accel_info import NO_FILE_WARNING, card, load_accelerators  # noqa: E402
 
 INTRO = (
     "<div class='intro'>"
@@ -23,4 +24,8 @@ THERMO_TIP = (
 )
 
 if __name__ == "__main__":
-    print(card(THERMO_TIP if sys.argv[1:] == ["tip"] else INTRO))
+    if sys.argv[1:] == ["tip"]:
+        print(card(THERMO_TIP))
+    else:
+        # Without accelerators/<cluster>.json only CPU is offered: say so at the top of the page
+        print(card(INTRO + ("" if load_accelerators() else NO_FILE_WARNING)))

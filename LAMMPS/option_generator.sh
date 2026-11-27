@@ -7,5 +7,9 @@ python3 read_file.py $FILE || exit 0
 to_csv() { python3 -c 'import sys; from accel_info import parse_list; print(",".join(parse_list(sys.argv[1])))' "$1" 2>/dev/null; }
 acceleratoropts=$(to_csv "$FILTER_ACCEL")
 packageopts=$(to_csv "$FILTER_PKG")
+# No accelerators/<cluster>.json: CPU only, as in the hardware filter (an empty filter would list GPU builds)
+if [ -z "$acceleratoropts" ] && ! python3 -c 'import sys; from accel_info import load_accelerators; sys.exit(0 if load_accelerators() else 1)' 2>/dev/null; then
+    acceleratoropts=cpu
+fi
 source /sw/hprc/sw/lammps-validator/env.sh
 /sw/hprc/sw/lammps-validator/main.py --file $FILE --accelerators "$acceleratoropts" --packages "$packageopts"

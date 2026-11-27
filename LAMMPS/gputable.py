@@ -6,7 +6,7 @@ Reads gpuavail JSON (gpuavail_to_json.py) on stdin: "config" lists every GPU nod
 (count x TYPE:gpus), "avail(merged)" the nodes with free GPUs as (count x TYPE:free gpus).
 Partly used nodes ("asterisk") are not counted, as before. Types and labels come from
 accelerators/<cluster>.json, in its order, so the rows match the hardware filter; without that
-file every type except VE is shown. Types with nothing free get no rows. FILTER_ACCEL (the checked hardware filter) dims the other rows.
+file only a short note is shown (the page is CPU-only then). Types with nothing free get no rows. FILTER_ACCEL (the checked hardware filter) dims the other rows.
 """
 import json
 import os
@@ -94,8 +94,12 @@ def main():
         data = json.loads(sys.stdin.read())
     except ValueError as err:
         return card("<div class='muted'>Accelerator availability is not available right now (%s).</div>" % e(err))
+    accelerators = load_accelerators()
+    if not accelerators:
+        return card("<div class='muted'>GPU availability is shown once the accelerator list for this "
+                    "cluster is set up (see the note at the top of the page).</div>")
     checked = set(parse_list(os.environ.get("FILTER_ACCEL", ""))) - {"cpu"}
-    return render(data, load_accelerators(), checked)
+    return render(data, accelerators, checked)
 
 
 if __name__ == "__main__":
