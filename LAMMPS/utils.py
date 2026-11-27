@@ -1,18 +1,37 @@
+import json
 import os
 import subprocess
+from functools import lru_cache
 from pathlib import Path
 
 from drona_utils import drona_add_additional_file, drona_add_message
-from drona_runtime_utils import (retrieve_gpu_monitor_start_nvml, retrieve_gpu_monitor_stop,
-                                 retrieve_slurm_params)
+from drona_runtime_utils import (drona_cluster_name, retrieve_gpu_monitor_start_nvml,
+                                 retrieve_gpu_monitor_stop, retrieve_slurm_params)
 
 from lammps_report import main
 
 # Defaults used when the Resources fields are left empty (same as the 1.x environment)
 DEFAULT_MEMORY = "40G"
 DEFAULT_WALLTIME = "02:00"
-# NVIDIA accelerators; the shared GPU monitor uses NVML, so it does not cover PVC
-NVIDIA_GPUS = ("h100", "a30")
+# Accelerators per cluster: accelerators/<cluster>.json, built by an admin with
+# configuration/generate_accelerators.py (also the hardware filter options, retrieve_accelerators).
+# "vendor": the shared GPU monitor uses NVML, so it only runs for nvidia (not PVC).
+# "constraints": GPU count -> Slurm --constraint (e.g. PVC Xe Link: 2 -> xelink2).
+ACCELERATORS_DIR = Path(__file__).resolve().parent / "accelerators"
+
+
+@lru_cache(maxsize=None)
+def _accelerators():
+    """{value: entry} from accelerators/<cluster>.json; {} without a file (CPU only, see retrieve_accelerators)."""
+    try:
+        with open(ACCELERATORS_DIR / (drona_cluster_name() + ".json")) as f:
+            return {o["value"]: o for o in json.load(f) if isinstance(o, dict) and o.get("value")}
+    except (OSError, ValueError, TypeError, KeyError):
+        return {}
+
+
+def _is_nvidia(gpu_type):
+    return _accelerators().get((gpu_type or "").lower(), {}).get("vendor") == "nvidia"
 
 
 def retrieve_driver_contents(mode, cancel_jobs=""):
@@ -48,7 +67,8 @@ def retrieve_lammps_slurm_params(mode, json_input, gpu_count, cpu_count, memory,
     """Turn the selected acceleration strategy into Slurm resources and let the shared cluster checks
     add the mappings (TASKS, NODES, CPUS, MEM, TIME, PARTITION, EXTRA).
     GPU strategies: one MPI task per CPU count (default: one per GPU). CPU strategies: one task with
-    cpu_count threads. PVC jobs with 2 or 4 PVCs also get the matching xelink constraint.
+    cpu_count threads. A GPU count listed under "constraints" for the accelerator (e.g. PVC 2/4:
+    xelink2/xelink4) adds that --constraint.
     Manage mode (cancel/remove) submits no job script, so nothing is checked there."""
     if mode == "manage":
         return ""
@@ -66,21 +86,22 @@ def retrieve_lammps_slurm_params(mode, json_input, gpu_count, cpu_count, memory,
         tasks, cpus = 1, y
     else:
         gpu, numgpu = accelerator, str(x)
-        if accelerator == "pvc" and x in (2, 4):
-            extra = f"{extra} --constraint=xelink{x}".strip()
+        constraint = (_accelerators().get(accelerator, {}).get("constraints") or {}).get(str(x))
+        if constraint:
+            extra = f"{extra} --constraint={constraint}".strip()
 
     return retrieve_slurm_params("1", str(tasks), str(cpus), memory or DEFAULT_MEMORY, gpu, numgpu,
                                  walltime or DEFAULT_WALLTIME, account, extra)
 
 
 def retrieve_lammps_gpu_monitor_start(gpu_type, monitor_enabled):
-    if gpu_type not in NVIDIA_GPUS:
+    if not _is_nvidia(gpu_type):
         return ""
     return retrieve_gpu_monitor_start_nvml(gpu_type, monitor_enabled)
 
 
 def retrieve_lammps_gpu_monitor_stop(gpu_type, monitor_enabled):
-    if gpu_type not in NVIDIA_GPUS:
+    if not _is_nvidia(gpu_type):
         return ""
     return retrieve_gpu_monitor_stop(gpu_type, monitor_enabled)
 

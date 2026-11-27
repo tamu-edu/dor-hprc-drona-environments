@@ -1,10 +1,25 @@
 #!/usr/bin/env python3
 """Read fields from a lammps-validator acceleration strategy (the JSON value of the
-"Module and Acceleration Strategy" select). Used by utils.py and, as a CLI, by the
+"Acceleration strategy" table (formerly a select)). Used by utils.py and, as a CLI, by the
 extract_*.sh retrievers. Must not import Drona modules: the retrievers run it standalone."""
 import argparse
 import json
+import os
 import sys
+
+FRAMEWORKS = {"kokkos": "Kokkos", "gpu": "GPU package", "openmp": "OpenMP", "intel": "Intel package",
+              "opt": "OPT package"}
+
+
+def setup_line(strategy):
+    """The module load line of a strategy (the table row already shows hardware, package, build)."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from accel_info import card, e
+    data = strategy.get("data")
+    if not isinstance(data, dict):
+        return card("<div>%s</div>" % e(strategy.get("summary-txt", strategy.get("summary", ""))))
+    setup = data.get("setup") or ("module load LAMMPS/%s" % data["module"] if data.get("module") else "")
+    return card("<div class='muted'>Loads: <code style='white-space:normal'>%s</code></div>" % e(setup)) if setup else ""
 
 
 def main(tool, input_data_str, verbose=False):
@@ -22,6 +37,8 @@ def main(tool, input_data_str, verbose=False):
     if "value" in input_data.keys():
         input_data = input_data["value"]
 
+    if tool == 'setup-line':
+        return setup_line(input_data)
     if tool in ('summary-html', 'summary-txt'):
         if tool in input_data.keys():
             return input_data[tool]
@@ -35,6 +52,31 @@ def main(tool, input_data_str, verbose=False):
             return "cpu"
         print("Error: 'data' field not found for the selected acceleration strategy.")
         sys.exit(1)
+    if tool == 'accel-vendor':
+        # nvidia / intel / amd / cpu, from accelerators/<cluster>.json; "other" for a GPU not in the file
+        gpu_type = main('gpu-type', json.dumps(input_data))
+        if gpu_type == "cpu":
+            return "cpu"
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from accel_info import load_accelerators
+        for o in load_accelerators():
+            if str(o["value"]).lower() == str(gpu_type).lower():
+                return (o.get("vendor") or "other").lower()
+        return "other"
+    if tool in ('gpu-count-kind', 'gpu-counts'):
+        # "counts" of the strategy's accelerator in accelerators/<cluster>.json: the allowed GPU counts
+        gpu_type = main('gpu-type', json.dumps(input_data))
+        counts, name = [], str(gpu_type).upper()
+        if gpu_type != "cpu":
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from accel_info import load_accelerators
+            for o in load_accelerators():
+                if str(o["value"]).lower() == str(gpu_type).lower() and isinstance(o.get("counts"), list):
+                    counts = [str(c) for c in o["counts"]]
+                    name = o.get("label") or name
+        if tool == 'gpu-counts':
+            return json.dumps([{"value": c, "label": "%s \u00d7 %s" % (c, name)} for c in counts])
+        return "" if gpu_type == "cpu" else ("list" if counts else "number")
     if tool == 'data':
         if 'data' in input_data.keys():
             return input_data['data']

@@ -1,0 +1,31 @@
+LAMMPS accelerator list (admin task)
+====================================
+
+The "Filter results by" hardware checkboxes list ../accelerators/<cluster>.json, one file per
+cluster. utils.py reads the same file: "vendor" decides whether the NVML GPU monitor runs
+(nvidia only), "constraints" maps a GPU count to a Slurm --constraint (e.g. PVC Xe Link).
+An optional "counts" list, e.g. "counts": [1, 2, 4, 8], limits the GPU counts users can request
+for that type: the create form shows a dropdown with those values instead of a number field
+(ACES PVC: 1, 2, 4 or 8 only). The generator never adds it; set it by hand.
+The form only reads the file; it never runs sinfo.
+
+Build or refresh it on each cluster where the environment is offered, and again after GPU
+types are added or removed there:
+
+  ./generate_accelerators.py            # writes ../accelerators/<cluster>.json
+  ./generate_accelerators.py -n         # dry run: print the list, write nothing
+
+It takes the GPU types from Slurm (sinfo GRES) and adds CPU. Every GPU type is listed, also
+one the LAMMPS validator has no builds for yet (checking only that type then shows no
+strategies). Options:
+  --require-build   leave out GPU types the validator (/sw/hprc/sw/lammps-validator,
+                    --validator) has no builds for
+  --exclude ve      leave types out
+  --cluster NAME    default: DRONA_CLUSTER, else Slurm ClusterName
+
+You may edit label, vendor, constraints and counts in the file by hand; a re-run keeps them for
+types it finds again, adds new types and drops types that are gone (it prints what it did).
+Unknown type names get vendor "unknown" and a warning: set nvidia, intel or amd.
+
+Without a file for a cluster the filter only offers CPU. utils.py then falls back to the
+rules of the 1.x environment (h100/a30 NVIDIA, PVC xelink2/xelink4).

@@ -1,107 +1,10 @@
 import re
-import yaml
 import sys
 import os
 import argparse
 import json
 import math
 import bisect
-
-try:
-    from yaml import CSafeLoader as Loader
-except ImportError:
-    from yaml import SafeLoader as Loader
-
-def generate_svg_plot(xdata, ydata, xlabel, ylabel):
-    if not xdata or not ydata or len(xdata) != len(ydata):
-        return "<p>Invalid data for plot</p>"
-    
-    width = 400
-    height = 300
-    padding = 50
-    
-    xmin, xmax = min(xdata), max(xdata)
-    
-    # Ensure the y-axis always includes 0
-    ymin = min(0, min(ydata))
-    ymax = max(0, max(ydata))
-    
-    if xmax == xmin: xmax = xmin + 1
-    if ymax == ymin: ymax = ymin + 1
-    
-    def scale_x(x):
-        return padding + (x - xmin) / (xmax - xmin) * (width - 2 * padding)
-    
-    def scale_y(y):
-        return height - (padding + (y - ymin) / (ymax - ymin) * (height - 2 * padding))
-    
-    points = []
-    markers = []
-    for x, y in zip(xdata, ydata):
-        sx = scale_x(x)
-        sy = scale_y(y)
-        points.append(f"{sx},{sy}")
-        # Add a circular marker for each data point
-        markers.append(f'<circle cx="{sx}" cy="{sy}" r="4" fill="#003c71" />')
-    
-    polyline = f'<polyline fill="none" stroke="#003c71" stroke-width="2" points="{" ".join(points)}" />'
-    markers_svg = "\n        ".join(markers)
-    
-    # Find exactly where Y=0 sits on the canvas
-    zero_y = scale_y(0)
-    
-    # Place labels at the top or bottom of the graph boundary, never floating in the middle
-    if zero_y < height / 2:
-        # 0 line is in the top half; place labels above the plot area
-        x_tick_y = padding - 10
-        x_title_y = padding - 25
-    else:
-        # 0 line is in the bottom half (or middle); place labels below the plot area
-        x_tick_y = height - padding + 20
-        x_title_y = height - padding + 35
-    
-    svg = f"""
-    <svg width="{width}" height="{height}" style="border: 1px solid #ccc; margin: 5px;">
-        <text x="{width/2}" y="{x_title_y}" text-anchor="middle">{xlabel}</text>
-        <text x="15" y="{height/2}" text-anchor="middle" transform="rotate(-90 15,{height/2})">{ylabel}</text>
-        {polyline}
-        {markers_svg}
-        <!-- Axes -->
-        <line x1="{padding}" y1="{zero_y}" x2="{width-padding}" y2="{zero_y}" stroke="black" />
-        <line x1="{padding}" y1="{padding}" x2="{padding}" y2="{height-padding}" stroke="black" />
-        <!-- Labels -->
-        <text x="{padding}" y="{x_tick_y}" font-size="10">{int(xmin)}</text>
-        <text x="{width-padding}" y="{x_tick_y}" font-size="10" text-anchor="end">{int(xmax)}</text>
-        <text x="{padding-5}" y="{height-padding}" font-size="10" text-anchor="end">{ymin:.2g}</text>
-        <text x="{padding-5}" y="{padding}" font-size="10" text-anchor="end" dominant-baseline="hanging">{ymax:.2g}</text>
-    </svg>
-    """
-    return svg
-
-def read_yaml_blocks(filepath, stop_after_keywords=False):
-    """
-    Reads the LAMMPS output file and extracts YAML blocks.
-    If stop_after_keywords is True, aborts reading immediately after finding the header.
-    """
-    docs = ""
-    with open(filepath, "r") as f:
-        for line in f:
-            m = re.search(r"^(keywords:.*$|data:$|---$|\.\.\.$|  - \[.*\]$)", line)
-            if m:
-                matched_line = m.group(0)
-                docs += matched_line + '\n'
-                
-                # CPU Optimization: Abort early if we just need the options/keywords
-                if stop_after_keywords and matched_line.startswith("keywords:"):
-                    break
-
-    # Handle incomplete last block
-    stripped_docs = docs.strip()
-    if stripped_docs and not stripped_docs.endswith("..."):
-        docs += "...\n"
-
-    return list(yaml.load_all(docs, Loader=Loader))
-
 
 # ---------------------------------------------------------------------------
 # Thermo parser used by --chart-data and --get-opts.
@@ -333,7 +236,7 @@ def build_chart_rows(filepath, filter_list=None, max_points=400, keep_constant=F
 
 
 def main():
-    parser = argparse.ArgumentParser(description="LAMMPS output monitor and plot generator")
+    parser = argparse.ArgumentParser(description="LAMMPS thermo output reader for the Manage page")
     parser.add_argument("jobdir", help="Directory containing the job output")
     parser.add_argument("jobid", help="The job ID")
     
@@ -342,7 +245,6 @@ def main():
     
     # Require exactly one of these action flags
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--generate-plots", action="store_true", help="Output HTML/SVG plot grid")
     group.add_argument("--get-opts", action="store_true", help="Output plot options as a JSON array")
     group.add_argument("--chart-data", action="store_true", help="Output thermo rows as a JSON array for the chart element")
 
@@ -352,8 +254,7 @@ def main():
                         help="--chart-data: keep keywords whose value never changes")
 
     args = parser.parse_args()
-    json_out = args.get_opts or args.chart_data
-    
+
     # Parse the filter list if provided
     filter_list = None
     if args.filter:
@@ -364,20 +265,14 @@ def main():
             if not isinstance(filter_list, list):
                 raise ValueError("Parsed JSON is not a list")
         except Exception as e:
-            if json_out:
-                print("[]")
-                print(f"Error parsing --filter JSON: {str(e)}", file=sys.stderr)
-                return
-            print(f"<p>Error parsing --filter JSON: {str(e)}</p>")
-            sys.exit(1)
+            print("[]")
+            print(f"Error parsing --filter JSON: {str(e)}", file=sys.stderr)
+            return
 
     filepath = os.path.join(args.jobdir, f"out.{args.jobid}")
 
     if not os.path.exists(filepath):
-        if json_out:
-            print("[]")
-        else:
-            print(f"<p>Output file not found: '{filepath}'</p>")
+        print("[]")
         return
 
     # Options for the "Show only" checkboxes: keywords of the first thermo block
@@ -408,51 +303,6 @@ def main():
         print(json.dumps(rows, separators=(",", ":")))
         return
 
-    # Legacy HTML/SVG route (old schemas): still uses the YAML reader
-    try:
-        blocks = read_yaml_blocks(filepath)
-    except Exception as e:
-        print(f"<p>Error parsing YAML: {str(e)}</p>")
-        return
-
-    # Handle the plot generation route
-    if args.generate_plots:
-        all_plots_html = '<div style="display: flex; flex-wrap: wrap;">'
-        
-        for block in blocks:
-            if not block or 'keywords' not in block or 'data' not in block:
-                continue
-            
-            keywords = block['keywords']
-            data = block['data']
-            
-            if not keywords or not data:
-                continue
-                
-            xlabel = keywords[0]
-            xdata = [row[0] for row in data if len(row) > 0]
-            
-            for j in range(1, len(keywords)):
-                ylabel = keywords[j]
-                
-                # Apply the filter if it exists
-                if filter_list and ylabel not in filter_list:
-                    continue
-                
-                ydata = [row[j] for row in data if len(row) > j]
-                
-                if len(xdata) == len(ydata):
-                    all_plots_html += generate_svg_plot(xdata, ydata, xlabel, ylabel)
-        
-        all_plots_html += '</div>'
-        
-        if all_plots_html == '<div style="display: flex; flex-wrap: wrap;"></div>':
-            if filter_list:
-                print("<p>No data found that matches the selected options.</p>")
-            else:
-                print("<p>No data found.</p>")
-        else:
-            print(all_plots_html)
 
 if __name__ == "__main__":
     main()
