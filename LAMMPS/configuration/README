@@ -34,3 +34,31 @@ ACES PVC [1, 2, 4, 8]; keep a copy of a hand-edited file outside the repo).
 Without a file for a cluster the page is CPU-only: the hardware filter offers only CPU, the
 strategy list only CPU builds, and the top of the page shows a warning that GPU options are
 not set up, pointing administrators here.
+
+Editing the file by hand (example: ACES PVC counts)
+---------------------------------------------------
+Add or change keys in the entry for a type; keep the JSON valid (comma between keys, none
+after the last one):
+
+  {
+    "value": "pvc",
+    "label": "PVC (Intel Max 1100)",
+    "vendor": "intel",
+    "constraints": {"2": "xelink2", "4": "xelink4"},
+    "counts": [1, 2, 4, 8]
+  },
+
+Check it (from LAMMPS/):
+
+  python3 -m json.tool accelerators/aces.json >/dev/null && echo valid
+  DRONA_CLUSTER=aces REPORT_JSON='{"data":{"accelerator":"pvc"}}' bash retrieve_gpu_counts.sh
+      # -> options "1 x PVC ...", "2 x PVC ...", "4 x PVC ...", "8 x PVC ..."
+
+Then hard-refresh the Drona page. Types without "counts" get a number field.
+
+After installing or updating the environment on a cluster
+--------------------------------------------------------
+  1. cd LAMMPS/configuration && ./generate_accelerators.py -n   # look at the result
+  2. ./generate_accelerators.py                                 # write it
+  3. re-add hand-set keys such as "counts" (see above), or copy back a saved file
+  4. open the LAMMPS page: no "GPU options are not set up" warning, GPU types in the filter
